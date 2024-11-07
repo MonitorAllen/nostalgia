@@ -1,0 +1,57 @@
+basePath: /
+definitions:
+  api.userResponse:
+    properties:
+      create_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password_changed_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is an API for Nostalgia by Gin
+  title: Nostalgia HTTP API
+  version: "1.0"
+paths:
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: create a new user
+      parameters:
+      - description: 用户名
+        in: body
+        name: username
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.userResponse'
+        "400":
+          description: 'error": ""}'
+          schema:
+            type: json
+        "404":
+          description: 'error": ""}'
+          schema:
+            type: json
+        "500":
+          description: 'error": ""}'
+          schema:
+            type: json
+      summary: create a new user
+      tags:
+      - user
+swagger: "2.0"

@@ -1,0 +1,17 @@
+ALTER TABLE IF EXISTS verify_emails DROP CONSTRAINT IF EXISTS verify_emails_user_id_fkey;
+
+DROP TABLE IF EXISTS verify_emails;
+
+ALTER TABLE IF EXISTS sessions DROP CONSTRAINT IF EXISTS sessions_user_id_fkey;
+
+DROP TABLE IF EXISTS sessions;
+
+ALTER TABLE IF EXISTS tags DROP CONSTRAINT IF EXISTS tags_article_id_fkey;
+
+DROP TABLE IF EXISTS tags;
+
+ALTER TABLE IF EXISTS articles DROP CONSTRAINT IF EXISTS articles_owner_fkey;
+
+DROP TABLE IF EXISTS articles;
+
+DROP TABLE IF EXISTS users;
