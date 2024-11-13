@@ -10,13 +10,14 @@
       <div
         :class="[isNavOpen ? 'flex absolute w-full bg-white nav-open h-auto shadow-1' : '']"
         class="flex-column align-content-between md:shadow-none hidden lg:flex lg:flex-row lg:static menu-box"
+        ref="leftPanelRef"
       >
         <ul class="flex flex-column hidden lg:flex-row lg:static menu-box m-0"
             :class="[isNavOpen ? 'flex w-full' :  '']">
           <li v-for="(item, index) in navItems" :key="index" class="h-full">
             <router-link
               :class="[isNavOpen ? 'py-3 md:border-bottom-none down' : '', $route.path === item.route ? 'border-left-2' : '', { active: $route.path === item.route }]"
-              class="flex h-full py-0 px-4 lg:border-left-none lg:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a"
+              class="flex h-full py-0 px-4 lg:border-left-none lg:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a column-a"
               :to="{ path: item.route }"
             >
               <span :class="item.icon"></span>
@@ -35,7 +36,7 @@
       class="flex flex-column md:flex-row absolute sm:relative z-5 bg-white shadow-1 sm:shadow-none
       w-full sm:w-auto h-auto align-items-start sm:align-items-center
       top-100 sm:top-0 left-0 sm:left-auto">
-      <ul class="flex w-full flex-column sm:flex-row gap-3 align-items-start sm:align-items-center sm:p-0 m-0 h-full">
+      <ul class="flex w-full flex-column sm:flex-row sm:gap-3 row-gap-2 align-items-start sm:align-items-center sm:p-0 m-0 h-full">
         <li class="w-full sm:w-auto p-2 sm:p-0">
           <InputText placeholder="Search" type="text" class="w-full sm:w-auto" />
         </li>
@@ -62,15 +63,15 @@
             </ul>
           </div>
         </li>
-        <li class="flex flex-column md:flex-row h-full" v-else>
+        <li class="flex flex-column sm:flex-row h-full row-gap-2" v-else>
           <router-link
-            class="flex h-full py-0 px-3 md:border-left-none md:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a"
+            class="flex h-full py-0 px-3 sm:border-left-none sm:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a column-a"
             to="/login"
           >
             <span>登录</span>
           </router-link>
           <router-link
-            class="flex h-full py-0 px-3 lg:border-left-none lg:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a"
+            class="flex h-full py-0 px-3 sm:border-left-none sm:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a column-a"
             to="/register"
           >
             <span>注册</span>
@@ -110,9 +111,19 @@ const toggleDropdown = (event) => {
 
 const toggleProfileRef = ref(null)
 const rightSidePanelOpenRef = ref(null)
+const leftPanelRef = ref(null)
 
 // 点击其他地方关闭下拉框
 const handleClickOutside = (event) => {
+  if (
+    navIcon.value &&
+    leftPanelRef.value &&
+    !leftPanelRef.value.contains(event.target) &&
+    !navIcon.value.contains(event.target)
+  ) {
+    isNavOpen.value = false
+  }
+
   if (
     dropdownVisible.value &&
     !profileRef.value.contains(event.target) &&

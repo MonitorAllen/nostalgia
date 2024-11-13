@@ -55,8 +55,8 @@
           </div>
           <Paginator :rows="limit" :totalRecords="totalRecords" @page="onPageChange"></Paginator>
         </div>
-        <div class="flex align-items-center justify-content-center h-4rem bg-primary font-bold border-round m-2" v-else>
-          <span>这个家伙很懒什么都没有留下</span>
+        <div class="flex align-items-center justify-content-center mt-2 h-7rem font-bold border-dashed border-round border-300" v-else>
+          <span class="text-color-secondary ">这个家伙很懒什么都没有留下</span>
         </div>
       </div>
       <div class="block w-full relative px-2 mt-2 left-side">

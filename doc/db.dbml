@@ -14,12 +14,12 @@ Table users as U {
   is_email_verified boolean [not null, default: false]
   about varchar [not null, default: '', note: '介绍']
   role varchar [not null, default: 'visitor']
-  create_at timestamptz [not null, default: `now()`]
-  update_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
-  delete_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  deleted_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
 }
 
-Table post as P {
+Table articles as A {
   id uuid [pk]
   title varchar [not null, note: '标题']
   summary varchar [not null, default: '', note: '摘要']
@@ -28,41 +28,52 @@ Table post as P {
   likes int [not null, default: 0, note: '点赞数']
   is_publish boolean [not null, default: false, note: '是否发布']
   owner uuid [ref: > U.id, not null, note: '拥有者']
-  create_at timestamptz [not null, default: `now()`]
-  update_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
-  delete_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  deleted_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
 
   indexes {
-    (is_publish, create_at)
+    (is_publish, created_at)
     //(owner, ext) [unique]
   }
+}
+
+Table comments as C {
+  id bigserial [pk]
+  content varchar [not null, note: '评论内容']
+  article_id uuid [ref: > A.id, not null, note: '文章ID']
+  parent_id int [not null, default: 0, note: '父评论ID']
+  from_user_id uuid [not null, note: '评论人ID']
+  to_user_id uuid [not null, note: '被评论人ID']
+  created_at timestamptz [not null, default: `now()`]
+  deleted_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
 }
 
 Table tag as T {
   id bigserial [pk]
   name varchar [not null, note: '名称']
-  post_id uuid [ref: > P.id, not null, note: '文章ID']
-  create_at timestamptz [not null, default: `now()`]
+  article_id uuid [ref: > A.id, not null, note: '文章ID']
+  created_at timestamptz [not null, default: `now()`]
 }
 
 
-Table "sessions" {
-  "id" uuid [pk]
-  "username" varchar [ref: > U.id, not null]
-  "refresh_token" varchar [not null]
-  "user_agent" varchar [not null]
-  "client_ip" varchar [not null]
-  "is_blocked" boolean [not null, default: false]
-  "expires_at" timestamptz [not null]
-  "create_at" timestamptz [not null, default: `now()`]
+Table sessions {
+  id uuid [pk]
+  username varchar [ref: > U.id, not null]
+  refresh_token varchar [not null]
+  user_agent varchar [not null]
+  client_ip varchar [not null]
+  is_blocked boolean [not null, default: false]
+  expires_at timestamptz [not null]
+  created_at timestamptz [not null, default: `now()`]
 }
 
-TABLE "verify_emails" {
-    "id"          bigserial [pk]
-    "user_id"     varchar     [ref: > U.id, not null]
-    "email"       varchar     [not null]
-    "secret_code" varchar     [not null]
-    "is_used"     bool        [not null, default: false]
-    "create_at"   timestamptz [not null, default: `now()`]
-    "expired_at"  timestamptz [not null, default: `now() + interval '15 minutes'`]
+TABLE verify_emails {
+    id          bigserial [pk]
+    user_id     varchar     [ref: > U.id, not null]
+    email       varchar     [not null]
+    secret_code varchar     [not null]
+    is_used     bool        [not null, default: false]
+    created_at   timestamptz [not null, default: `now()`]
+    expired_at  timestamptz [not null, default: `now() + interval '15 minutes'`]
 }
