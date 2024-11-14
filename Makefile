@@ -56,4 +56,9 @@ evans:
 redis:
 	docker run --name redis -p 6379:6379 -d redis:7-alpine
 
+server_docker_up:
+	docker start postgres12
+	docker start redis
+	go run main.go
+
 .PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis

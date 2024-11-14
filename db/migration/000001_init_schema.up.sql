@@ -7,9 +7,9 @@ CREATE TABLE "users" (
                          "is_email_verified" boolean NOT NULL DEFAULT false,
                          "about" varchar NOT NULL DEFAULT '',
                          "role" varchar NOT NULL DEFAULT 'visitor',
-                         "create_at" timestamptz NOT NULL DEFAULT (now()),
-                         "update_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
-                         "delete_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
+                         "created_at" timestamptz NOT NULL DEFAULT (now()),
+                         "updated_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
+                         "deleted_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
 );
 
 CREATE TABLE "articles" (
@@ -21,16 +21,16 @@ CREATE TABLE "articles" (
                         "likes" int NOT NULL DEFAULT 0,
                         "is_publish" boolean NOT NULL DEFAULT false,
                         "owner" uuid NOT NULL,
-                        "create_at" timestamptz NOT NULL DEFAULT (now()),
-                        "update_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
-                        "delete_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
+                        "created_at" timestamptz NOT NULL DEFAULT (now()),
+                        "updated_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
+                        "deleted_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
 );
 
 CREATE TABLE "tags" (
                        "id" bigserial PRIMARY KEY,
                        "name" varchar NOT NULL,
                        "article_id" uuid NOT NULL,
-                       "create_at" timestamptz NOT NULL DEFAULT (now())
+                       "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "sessions" (
@@ -41,7 +41,7 @@ CREATE TABLE "sessions" (
                             "client_ip" varchar NOT NULL,
                             "is_blocked" boolean NOT NULL DEFAULT false,
                             "expires_at" timestamptz NOT NULL,
-                            "create_at" timestamptz NOT NULL DEFAULT (now())
+                            "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "verify_emails" (
@@ -50,7 +50,7 @@ CREATE TABLE "verify_emails" (
                                  "email" varchar NOT NULL,
                                  "secret_code" varchar NOT NULL,
                                  "is_used" bool NOT NULL DEFAULT false,
-                                 "create_at" timestamptz NOT NULL DEFAULT (now()),
+                                 "created_at" timestamptz NOT NULL DEFAULT (now()),
                                  "expired_at" timestamptz NOT NULL DEFAULT (now() + interval '15 minutes')
 );
 

@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row justify-content-center">
-    <div class="article-box flex flex-column m-auto p-2 mt-3">
+    <div class="article-box flex flex-column m-auto p-2 mt-3 mb-3">
       <div class="flex flex-column align-items-center">
         <div>
           <h2 class="article-title">{{ title }}</h2>
