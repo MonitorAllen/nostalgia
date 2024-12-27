@@ -1,7 +1,6 @@
 <template>
   <div class="flex flex-row justify-content-center">
-    <div class="flex flex-column gap-5" style="width: 1000px;">
-
+    <div class="flex flex-column gap-5">
       <div class="main-container">
         <div class="editor-container editor-container_classic-editor" ref="editorContainerElement">
           <div class="editor-container__editor">
@@ -22,16 +21,16 @@
            style="border-color: #e2e8f0">
         <FloatLabel>
           <InputText id="title" v-model="post.title" class="w-full"></InputText>
-          <label for="title">Title</label>
+          <label for="title">标题</label>
         </FloatLabel>
         <FloatLabel>
           <Textarea id="summary" class="w-full" rows="3" v-model="post.summary" autoResize />
-          <label for="summary">Summary</label>
+          <label for="summary">简介</label>
         </FloatLabel>
         <div class="flex flex-column gap-3">
-          <label class="ml-2.5" style="line-height: 1px; font-size: 12px; color: #64748b; margin-top: -1rem;"
-                 for="isPublish">IsPublish</label>
-          <ToggleButton id="isPublish" v-model="isPublish" onLabel="Publish" offLabel="Unpublish"
+          <label style="position: relative; left: 0.75rem; line-height: 1px; font-size: 12px; color: #64748b; margin-top: -1rem;"
+                 for="isPublish">是否发布</label>
+          <ToggleButton id="isPublish" v-model="isPublish" onLabel="发布" offLabel="取消发布"
                         onIcon="pi pi-lock-open"
                         offIcon="pi pi-lock" class="" aria-label="Do you confirm" />
         </div>
@@ -64,8 +63,6 @@ import {
 
 import translations from 'ckeditor5/translations/zh-cn.js'
 
-import 'ckeditor5/ckeditor5.css'
-
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
 
 import 'ckeditor5/ckeditor5.css'
@@ -74,13 +71,15 @@ import 'ckeditor5-premium-features/ckeditor5-premium-features.css'
 import { ref, onMounted, type Ref } from 'vue'
 import { useArticleStore } from '@/store/module/article'
 import { useToast } from 'primevue/usetoast';
+import router from '@/router'
+import { useUserStore } from '@/store/module/user'
 
 const editor = ref<ClassicEditor|null>(null)
 const config: Ref<EditorConfig>= ref({})
 const editorData = ref('')
 const isLayoutReady = ref(false)
 
-const { id } = defineProps<{
+let { id } = defineProps<{
   id?: string
 }>()
 
@@ -100,7 +99,7 @@ let post = ref<Post>({
 let isPublish = ref(false)
 
 const articleStore = useArticleStore()
-
+const userStore = useUserStore()
 const toast = useToast();
 
 // 当编辑器准备好时的回调
@@ -128,28 +127,35 @@ const save = () => {
     post.value.content = editorData.value
     post.value.is_publish = isPublish.value
     articleStore.updateArticle(post.value).then((res) => {
-      toast.add({ severity: 'success', summary: 'Success Message', detail: "保存成功" })
+      toast.add({ severity: 'success', summary: 'Success', detail: "保存成功", life: 2500 })
     }).catch((err) => {
-      toast.add({ severity: 'error', summary: 'Error Message', detail: err.response.data.error, life: 1.5})
+      toast.add({ severity: 'error', summary: 'Error', detail: err.response.data.error, life: 2500})
     })
   } else {
     post.value.content = editorData.value
     post.value.is_publish = isPublish.value
     articleStore.createArticle(post.value).then((res) => {
-      toast.add({ severity: 'success', summary: 'Success Message', detail: "保存成功" })
+      toast.add({ severity: 'success', summary: 'Success', detail: "保存成功" })
     }).catch((err) => {
-      toast.add({ severity: 'error', summary: 'Error Message', detail: err.response.data.error, life: 1.5})
+      toast.add({ severity: 'error', summary: 'Error', detail: err.response.data.error, life: 2500})
     })
   }
 }
 
 
-onMounted(() => {
-  // 设置 CKEditor 编辑区域的最小高度
-  /*const editableElement = editorComponent.value.$el.querySelector('.ck-editor__editable_inline')
-  if (editableElement) {
-    editableElement.style.minHeight = '450px' // 设置最小高度为 300px
-  }*/
+onMounted(async () => {
+  if (id === '') {
+    post.value.title = '新建文章'
+    post.value.is_publish = false
+    await articleStore.createArticle(post.value).then((res) => {
+      id = res.data.id
+      router.replace(`/article/edit/${id}`)
+      // toast.add({ severity: 'error', summary: 'Error', detail: res.data.error, life: 2500})
+    }).catch((err) => {
+      toast.add({ severity: 'error', summary: 'Error', detail: err.response.data.error, life: 2500})
+    })
+  }
+  
   const baseUrl = import.meta.env.VITE_APP_BASE_URL
 
   config.value = {
@@ -328,15 +334,14 @@ onMounted(() => {
     },
     simpleUpload: {
       // The URL that the images are uploaded to.
-      uploadUrl: `${baseUrl}/upload`,
+      uploadUrl: `${baseUrl}/upload/${id}`,
 
       // Enable the XMLHttpRequest.withCredentials property.
       withCredentials: true,
 
       // Headers sent along with the XMLHttpRequest to the upload server.
       headers: {
-        // 'X-CSRF-TOKEN': 'CSRF-Token',
-        Authorization: 'Bearer <JSON Web Token>'
+        Authorization: `Bearer ${userStore.token}`
       }
     },
     language: 'zh-cn',
@@ -370,6 +375,8 @@ onMounted(() => {
   isLayoutReady.value = true
 })
 
+
+
 interface Post {
   id: string
   title: string,
@@ -390,6 +397,7 @@ interface Post {
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 .main-container {
+  width: 1000px !important;
   font-family: 'Lato';
   width: fit-content;
   margin-left: auto;
@@ -404,5 +412,12 @@ interface Post {
 
 .editor-container_classic-editor .editor-container__editor .ck-editor__editable_inline{
   min-height: 450px !important;
+  min-width: 1000px;
+  max-width: none !important;
+}
+
+.ck.ck-toolbar {
+  width: auto !important;
+  max-width: none !important;
 }
 </style>

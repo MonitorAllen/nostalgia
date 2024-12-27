@@ -1,21 +1,19 @@
-#DB_URL=postgresql://allen:xzw990609@@rm-cn-g4t3srndq000e4to.rwlb.rds.aliyuncs.com:5432/simple_bank?sslmode=disable
 DB_URL=postgresql://root:root@localhost:5432/nostalgia?sslmode=disable
 
 postgres:
-	docker run --name postgres12 --network nostalgia-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=root -d postgres:12-alpine
+	docker run --name postgres --network nostalgia-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=root -d postgres:12-alpine
 
 createdb:
-	docker exec -it postgres12 createdb --username=root --owner=root nostalgia
+	docker exec -it postgres createdb --username=root --owner=root nostalgia
 
 dropdb:
-	docker exec -it postgres12 dropdb nostalgia
+	docker exec -it postgres dropdb nostalgia
 
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
-migrateup1:
+migrate up1:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up 1
-
 
 migratedown:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down
@@ -36,7 +34,7 @@ sqlc:
 	sqlc generate
 
 test:
-	go test -v -cover -short ./...
+	go test -v -cover -short -count=1 ./...
 
 server:
 	go run main.go

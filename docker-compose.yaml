@@ -22,7 +22,6 @@ services:
       - "8080:8080"
     environment:
       - DB_SOURCE=postgresql://root:root@postgres:5432/nostalgia?sslmode=disable
-#      - DB_SOURCE=postgresql://allen:xzw990609@@rm-cn-g4t3srndq000e4to.rwlb.rds.aliyuncs.com:5432/nostalgia?sslmode=disable
       - REDIS_ADDRESS=redis:6379
     depends_on:
       - postgres

@@ -111,7 +111,7 @@ func TestCreateUserAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
 				store.EXPECT().
 					CreateUserTx(gomock.Any(), gomock.Any()).
-					Times(0).
+					Times(1).
 					Return(db.CreateUserTxResult{}, sql.ErrConnDone)
 
 				taskDistributor.EXPECT().
@@ -171,11 +171,12 @@ func TestCreateUserAPI(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
+			storeCtrl := gomock.NewController(t)
+			defer storeCtrl.Finish()
+			store := mockdb.NewMockStore(storeCtrl)
 
-			store := mockdb.NewMockStore(ctrl)
-			taskDistributor := mockwk.NewMockTaskDistributor(ctrl)
+			taskCtrl := gomock.NewController(t)
+			taskDistributor := mockwk.NewMockTaskDistributor(taskCtrl)
 			tc.buildStubs(store, taskDistributor)
 
 			// start test server and send request
@@ -186,7 +187,7 @@ func TestCreateUserAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users"
+			url := "/api/users"
 
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
@@ -311,7 +312,7 @@ func TestUserLoginAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users/login"
+			url := "/api/users/login"
 
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)

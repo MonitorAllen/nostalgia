@@ -61,6 +61,7 @@ func (server *Server) setupRouter() {
 
 	// /temp/upload 静态资源不受中间件影响
 	router.Static("/temp/upload", "./temp/upload")
+	router.Static("/resources/", "./resources")
 
 	router.POST("/api/users", server.createUser)
 	router.POST("/api/users/login", server.loginUser)
@@ -69,11 +70,17 @@ func (server *Server) setupRouter() {
 	router.GET("/api/articles/:id", server.getArticle)
 	router.GET("/api/articles", server.listArticle)
 
-	router.POST("/api/upload", server.uploadFile).Use(authMiddleware(server.tokenMaker), uploadFileMiddleware(server.config))
+	router.GET("/api/comments/:article_id", server.listCommentsByArticleID)
 
-	authRoutes := router.Group("/api").Use(authMiddleware(server.tokenMaker))
+	authRoutes := router.Group("/api/").Use(authMiddleware(server.tokenMaker))
+
 	authRoutes.POST("/articles", server.createArticle)
 	authRoutes.PUT("/articles", server.updateArticle)
+
+	authRoutes.POST("/comments", server.createComment)
+	authRoutes.DELETE("/comments/:id", server.deleteComment)
+
+	authRoutes.POST("/upload/:id", server.uploadFile).Use(uploadFileMiddleware(server.config))
 
 	server.router = router
 }

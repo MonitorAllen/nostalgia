@@ -14,16 +14,21 @@ FROM articles
 WHERE id = $1
 LIMIT 1;
 
+-- name: GetArticleForUpdate :one
+SELECT * FROM articles
+WHERE id = $1 LIMIT 1
+FOR NO KEY UPDATE;
+
 -- name: ListArticles :many
-SELECT p.id, p.title, p.summary, p.content, p.views, p.likes, p.is_publish, p.owner, p.create_at, p.update_at, p.delete_at, u.username,
-       COALESCE(ARRAY_AGG(t.name), '{}') AS tags
+SELECT p.id, p.title, p.summary, p.content, p.views, p.likes, p.is_publish, p.owner, p.created_at, p.updated_at, p.deleted_at, u.username,
+       COALESCE(ARRAY_AGG(COALESCE(t.name, '')), ARRAY[]::TEXT[])::TEXT[] AS tags
 FROM articles p
 LEFT JOIN tags t on p.id = t.article_id
 LEFT JOIN users u on p.owner = u.id
 WHERE
     p.is_publish = sqlc.narg(is_publish)
-GROUP BY p.id, p.title, p.summary, p.content, p.views, p.likes, p.is_publish, p.owner, p.create_at, p.update_at, p.delete_at, u.username
-ORDER BY p.create_at DESC
+GROUP BY p.id, p.title, p.summary, p.content, p.views, p.likes, p.is_publish, p.owner, p.created_at, p.updated_at, p.deleted_at, u.username
+ORDER BY p.created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: CountArticles :one
@@ -38,6 +43,6 @@ SET
     summary = COALESCE(sqlc.narg(summary), summary),
     content = COALESCE(sqlc.narg(content), content),
     is_publish = COALESCE(sqlc.narg(is_publish), is_publish),
-    update_at = COALESCE(sqlc.narg(update_at), update_at)
+    updated_at = COALESCE(sqlc.narg(updated_at), updated_at)
 WHERE id = sqlc.arg(id)
 RETURNING *;;

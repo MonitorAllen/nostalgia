@@ -54,7 +54,7 @@ CREATE TABLE "verify_emails" (
                                  "expired_at" timestamptz NOT NULL DEFAULT (now() + interval '15 minutes')
 );
 
-CREATE INDEX ON "articles" ("is_publish", "create_at");
+CREATE INDEX ON "articles" ("is_publish", "created_at");
 
 COMMENT ON COLUMN "users"."about" IS '介绍';
 

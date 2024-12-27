@@ -22,6 +22,7 @@ type createUserRequest struct {
 }
 
 type userResponse struct {
+	ID              uuid.UUID `json:"id"`
 	Username        string    `json:"username"`
 	FullName        string    `json:"full_name"`
 	Email           string    `json:"email"`
@@ -31,11 +32,12 @@ type userResponse struct {
 
 func newUserResponse(user db.User) userResponse {
 	return userResponse{
+		ID:              user.ID,
 		Username:        user.Username,
 		FullName:        user.FullName,
 		Email:           user.Email,
 		IsEmailVerified: user.IsEmailVerified,
-		CreateAt:        user.CreateAt,
+		CreateAt:        user.CreatedAt,
 	}
 }
 
@@ -142,13 +144,13 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.ID, user.Role, server.config.AccessTokenDuration)
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.ID, user.Username, user.Role, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.ID, user.Role, server.config.RefreshTokenDuration)
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.ID, user.Username, user.Role, server.config.RefreshTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -242,7 +244,7 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(refreshPayload.UserID, refreshPayload.Role, server.config.AccessTokenDuration)
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(refreshPayload.UserID, refreshPayload.Username, refreshPayload.Role, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

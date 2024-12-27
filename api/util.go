@@ -6,7 +6,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/h2non/filetype"
 	"net/http"
+	"strings"
 )
+
+type uploadFileRequest struct {
+	ID string `uri:"id"`
+}
 
 type uploadFileResponse struct {
 	Url      string `json:"url"`
@@ -14,7 +19,11 @@ type uploadFileResponse struct {
 }
 
 func (server *Server) uploadFile(ctx *gin.Context) {
-	uploadFile, err := ctx.FormFile("file")
+	var req uploadFileRequest
+
+	_ = ctx.BindUri(&req)
+
+	uploadFile, err := ctx.FormFile("upload")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error()}})
 		return
@@ -37,7 +46,13 @@ func (server *Server) uploadFile(ctx *gin.Context) {
 
 	kind, _ := filetype.Match(head)
 	saveFileName := fmt.Sprintf("%s.%s", newFileName.String(), kind.Extension)
-	filePath := fmt.Sprintf("./temp/upload/%s", saveFileName)
+
+	filePath := ""
+	if req.ID != "" {
+		filePath = fmt.Sprintf("./resources/%s/%s", req.ID, saveFileName)
+	} else {
+		filePath = fmt.Sprintf("./temp/upload/%s", saveFileName)
+	}
 
 	err = ctx.SaveUploadedFile(uploadFile, filePath)
 	if err != nil {
@@ -45,8 +60,10 @@ func (server *Server) uploadFile(ctx *gin.Context) {
 		return
 	}
 
+	filePath = strings.TrimLeft(filePath, ".")
+
 	resp := uploadFileResponse{
-		Url:      fmt.Sprintf("http://%s/%s/%s", server.config.HTTPServerAddress, "/temp/upload/", saveFileName),
+		Url:      fmt.Sprintf("http://%s%s", "172.19.228.63:8080", filePath),
 		Filename: saveFileName,
 	}
 

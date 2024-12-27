@@ -12,6 +12,7 @@ import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 
 import ToastService from 'primevue/toastservice'
+import ConfirmationService from 'primevue/confirmationservice';
 
 import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
 
@@ -31,6 +32,7 @@ app.use(VueAxios, axios)
 axios.defaults.baseURL = import.meta.env.VITE_APP_BASE_URL
 
 app.use(ToastService)
+app.use(ConfirmationService)
 
 app.use(CkeditorPlugin)
 

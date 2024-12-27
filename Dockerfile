@@ -1,6 +1,5 @@
 # Build stage
 FROM golang:1.22-alpine3.20 AS builder
-
 WORKDIR /app
 COPY . .
 RUN go env -w GO111MODULE=on && go env -w GOPROXY=https://goproxy.cn,direct && go build -o main main.go
@@ -19,6 +18,6 @@ COPY wait-for.sh .
 RUN chmod +x /app/wait-for.sh
 COPY db/migration ./db/migration
 
-EXPOSE 8080 9090
+EXPOSE 8080
 CMD [ "/app/main" ]
 ENTRYPOINT [ "/app/start.sh" ]

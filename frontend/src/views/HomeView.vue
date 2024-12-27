@@ -18,7 +18,8 @@
               <div class="flex flex-column w-9 justify-content-between">
                 <div class="flex flex-column justify-content-start">
                   <div class="flex text-lg font-medium text-2xl text-primary">
-                    <a class="text-green-300" :href="`/article/${item.id}`">{{ item.title }}</a>
+                    <a class="text-green-300" :href="`/article/${item.id}`" target="_blank">{{ item.title }}
+                    </a>
                   </div>
                   <p class="flex font-medium text-sm mt-2">
                     {{ item.summary }}
@@ -38,7 +39,7 @@
                     </div>
                     <div class="flex align-items-center">
                       <i class="pi pi-calendar" style="font-size: .75rem"></i>
-                      <div class="font-medium text-xs ml-1">{{ date.format(item.create_at, 'YYYY-MM-DD') }}</div>
+                      <div class="font-medium text-xs ml-1">{{ date.format(item.created_at, 'YYYY-MM-DD') }}</div>
                     </div>
                     <div class="flex align-items-center">
                       <i class="pi pi-thumbs-up" style="font-size: .75rem"></i>

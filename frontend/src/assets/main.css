@@ -61,9 +61,7 @@ table {
   width: 100%; /* 表格宽度占满父元素 */
 }
 
-p {
-  margin: 0 0 1em; /* 段落元素的默认下间距 */
-}
+
 
 blockquote {
   margin: 0;

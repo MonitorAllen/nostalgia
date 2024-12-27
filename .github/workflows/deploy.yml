@@ -13,21 +13,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Login to Alibaba Cloud ACR
+        uses: aliyun/acr-login@v1
         with:
-          role-to-assume: arn:aws:iam::123456789012:role/my-github-actions-role
-          aws-region: ap-east-1
+          login-server: https://registry.cn-shenzhen.aliyuncs.com
+          username: "${{ secrets.ACR_USERNAME }}"
+          password: "${{ secrets.ACR_PASSWORD }}"
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push docker image to Amazon ECR
+      - name: Build and push image to Alibaba ACR
         env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: my-ecr-repo
+          ACR_REGISTRY: registry.cn-shenzhen.aliyuncs.com
+          ACR_NAMESPACE: monitorallen
+          ACR_REPOSITORY: nostalgia
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker build -t $ACR_REGISTRY/$ACR_NAMESPACE/$ACR_REPOSITORY:$IMAGE_TAG .
+          docker push $ACR_REGISTRY/$ACR_NAMESPACE/$ACR_REPOSITORY:$IMAGE_TAG

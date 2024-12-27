@@ -36,9 +36,9 @@ func createRandomArticle(t *testing.T) Article {
 	require.Equal(t, int32(0), post.Likes)
 	require.False(t, post.IsPublish)
 	require.Equal(t, arg.Owner, post.Owner)
-	require.NotZero(t, post.CreateAt)
-	require.True(t, post.UpdateAt.IsZero())
-	require.True(t, post.DeleteAt.IsZero())
+	require.NotZero(t, post.CreatedAt)
+	require.True(t, post.UpdatedAt.IsZero())
+	require.True(t, post.DeletedAt.IsZero())
 
 	return post
 }
@@ -64,9 +64,9 @@ func TestGetArticle(t *testing.T) {
 	require.Equal(t, post.Likes, getArticle.Likes)
 	require.Equal(t, post.IsPublish, getArticle.IsPublish)
 	require.Equal(t, post.Owner, getArticle.Owner)
-	require.WithinDuration(t, post.CreateAt, getArticle.CreateAt, time.Second)
-	require.WithinDuration(t, post.UpdateAt, getArticle.UpdateAt, time.Second)
-	require.WithinDuration(t, post.DeleteAt, getArticle.DeleteAt, time.Second)
+	require.WithinDuration(t, post.CreatedAt, getArticle.CreatedAt, time.Second)
+	require.WithinDuration(t, post.UpdatedAt, getArticle.UpdatedAt, time.Second)
+	require.WithinDuration(t, post.DeletedAt, getArticle.DeletedAt, time.Second)
 }
 
 func TestListArticles(t *testing.T) {
@@ -103,7 +103,7 @@ func TestUpdateArticleOnlyTitle(t *testing.T) {
 			String: util.RandomString(6),
 			Valid:  true,
 		},
-		UpdateAt: pgtype.Timestamptz{
+		UpdatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
 		},
@@ -117,8 +117,8 @@ func TestUpdateArticleOnlyTitle(t *testing.T) {
 	require.Equal(t, oldArticle.Summary, updatedArticle.Summary)
 	require.Equal(t, oldArticle.Content, updatedArticle.Content)
 	require.Equal(t, oldArticle.IsPublish, updatedArticle.IsPublish)
-	require.WithinDuration(t, oldArticle.CreateAt, updatedArticle.CreateAt, time.Second)
-	require.NotZero(t, updatedArticle.UpdateAt)
+	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
+	require.NotZero(t, updatedArticle.UpdatedAt)
 }
 
 func TestUpdateArticleOnlySummary(t *testing.T) {
@@ -129,7 +129,7 @@ func TestUpdateArticleOnlySummary(t *testing.T) {
 			String: util.RandomString(6),
 			Valid:  true,
 		},
-		UpdateAt: pgtype.Timestamptz{
+		UpdatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
 		},
@@ -143,8 +143,8 @@ func TestUpdateArticleOnlySummary(t *testing.T) {
 	require.NotEqual(t, oldArticle.Summary, updatedArticle.Summary)
 	require.Equal(t, oldArticle.Content, updatedArticle.Content)
 	require.Equal(t, oldArticle.IsPublish, updatedArticle.IsPublish)
-	require.WithinDuration(t, oldArticle.CreateAt, updatedArticle.CreateAt, time.Second)
-	require.NotZero(t, updatedArticle.UpdateAt)
+	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
+	require.NotZero(t, updatedArticle.UpdatedAt)
 }
 
 func TestUpdateArticleOnlyContent(t *testing.T) {
@@ -155,7 +155,7 @@ func TestUpdateArticleOnlyContent(t *testing.T) {
 			String: util.RandomString(32),
 			Valid:  true,
 		},
-		UpdateAt: pgtype.Timestamptz{
+		UpdatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
 		},
@@ -169,8 +169,8 @@ func TestUpdateArticleOnlyContent(t *testing.T) {
 	require.Equal(t, oldArticle.Summary, updatedArticle.Summary)
 	require.NotEqual(t, oldArticle.Content, updatedArticle.Content)
 	require.Equal(t, oldArticle.IsPublish, updatedArticle.IsPublish)
-	require.WithinDuration(t, oldArticle.CreateAt, updatedArticle.CreateAt, time.Second)
-	require.NotZero(t, updatedArticle.UpdateAt)
+	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
+	require.NotZero(t, updatedArticle.UpdatedAt)
 }
 
 func TestUpdateArticleOnlyIsPublish(t *testing.T) {
@@ -181,7 +181,7 @@ func TestUpdateArticleOnlyIsPublish(t *testing.T) {
 			Bool:  !oldArticle.IsPublish,
 			Valid: true,
 		},
-		UpdateAt: pgtype.Timestamptz{
+		UpdatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
 		},
@@ -195,8 +195,8 @@ func TestUpdateArticleOnlyIsPublish(t *testing.T) {
 	require.Equal(t, oldArticle.Summary, updatedArticle.Summary)
 	require.Equal(t, oldArticle.Content, updatedArticle.Content)
 	require.NotEqual(t, oldArticle.IsPublish, updatedArticle.IsPublish)
-	require.WithinDuration(t, oldArticle.CreateAt, updatedArticle.CreateAt, time.Second)
-	require.NotZero(t, updatedArticle.UpdateAt)
+	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
+	require.NotZero(t, updatedArticle.UpdatedAt)
 }
 
 func TestUpdateArticleAllFields(t *testing.T) {
@@ -219,7 +219,7 @@ func TestUpdateArticleAllFields(t *testing.T) {
 			Bool:  !oldArticle.IsPublish,
 			Valid: true,
 		},
-		UpdateAt: pgtype.Timestamptz{
+		UpdatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
 		},
@@ -233,6 +233,6 @@ func TestUpdateArticleAllFields(t *testing.T) {
 	require.NotEqual(t, oldArticle.Summary, updatedArticle.Summary)
 	require.NotEqual(t, oldArticle.Content, updatedArticle.Content)
 	require.NotEqual(t, oldArticle.IsPublish, updatedArticle.IsPublish)
-	require.WithinDuration(t, oldArticle.CreateAt, updatedArticle.CreateAt, time.Second)
-	require.NotZero(t, updatedArticle.UpdateAt)
+	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
+	require.NotZero(t, updatedArticle.UpdatedAt)
 }

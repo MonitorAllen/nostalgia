@@ -70,7 +70,7 @@ func TestCreateArticleAPI(t *testing.T) {
 				"is_publish": post.IsPublish,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Role, time.Minute)
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateArticleParams{
@@ -98,7 +98,7 @@ func TestCreateArticleAPI(t *testing.T) {
 				"is_publish": post.IsPublish,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Role, time.Minute)
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -118,7 +118,7 @@ func TestCreateArticleAPI(t *testing.T) {
 				"is_publish": post.IsPublish,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Role, time.Minute)
+				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
@@ -150,7 +150,7 @@ func TestCreateArticleAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/posts"
+			url := "/api/articles"
 
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
@@ -231,7 +231,7 @@ func TestGetArticleAPI(t *testing.T) {
 			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/posts/%s", tc.postID)
+			url := fmt.Sprintf("/api/articles/%s", tc.postID)
 
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
@@ -248,9 +248,27 @@ func TestListArticleAPI(t *testing.T) {
 	user, _ := randomUser(t)
 
 	n := 5
-	posts := make([]db.Article, n)
+	listArticlesRows := make([]db.ListArticlesRow, n)
 	for i := 0; i < n; i++ {
-		posts[i] = randomArticle(t, user.ID)
+		article := randomArticle(t, user.ID)
+		listArticlesRows[i] = db.ListArticlesRow{
+			ID:        article.ID,
+			Title:     article.Title,
+			Summary:   article.Summary,
+			Content:   article.Content,
+			Views:     article.Views,
+			Likes:     article.Likes,
+			IsPublish: article.IsPublish,
+			Owner:     article.Owner,
+			CreatedAt: article.CreatedAt,
+			UpdatedAt: article.UpdatedAt,
+			DeletedAt: article.DeletedAt,
+			Username: pgtype.Text{
+				String: user.Username,
+				Valid:  true,
+			},
+			Tags: []string{""},
+		}
 	}
 
 	type Query struct {
@@ -282,11 +300,15 @@ func TestListArticleAPI(t *testing.T) {
 				store.EXPECT().
 					ListArticles(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
-					Return(posts, nil)
+					Return(listArticlesRows, nil)
+				store.EXPECT().
+					CountArticles(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(int64(n), nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchArticles(t, recorder.Body, posts)
+				requireBodyMatchArticles(t, recorder.Body, listArticlesRows)
 			},
 		},
 		{
@@ -314,7 +336,7 @@ func TestListArticleAPI(t *testing.T) {
 				store.EXPECT().
 					ListArticles(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return([]db.Article{}, sql.ErrConnDone)
+					Return([]db.ListArticlesRow{}, sql.ErrConnDone)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -336,7 +358,7 @@ func TestListArticleAPI(t *testing.T) {
 			server := newTestServer(t, store, nil)
 			recorder := httptest.NewRecorder()
 
-			url := "/posts"
+			url := "/api/articles"
 
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
@@ -355,14 +377,14 @@ func TestListArticleAPI(t *testing.T) {
 	}
 }
 
-func requireBodyMatchArticles(t *testing.T, body *bytes.Buffer, posts []db.Article) {
+func requireBodyMatchArticles(t *testing.T, body *bytes.Buffer, listArticlesRow []db.ListArticlesRow) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var gotArticles []db.Article
+	var gotArticles listArticleResponse
 	err = json.Unmarshal(data, &gotArticles)
 	require.NoError(t, err)
-	require.Equal(t, posts, gotArticles)
+	require.Equal(t, listArticlesRow, gotArticles.Articles)
 }
 
 func requireBodyMatchArticle(t *testing.T, body *bytes.Buffer, post db.Article) {
