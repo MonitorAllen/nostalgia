@@ -4,6 +4,8 @@ import LoginUser from '@/components/LoginUser.vue'
 import EditorView from '@/views/article/EditorView.vue'
 import ArticleView from '@/views/article/ArticleView.vue'
 import RegisterUser from '@/components/RegisterUser.vue'
+import VerifyEmail from '@/views/auth/VerifyEmail.vue'
+import NotFound from '@/views/NotFound.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,7 +38,20 @@ const router = createRouter({
       name: 'articleView',
       component: ArticleView,
       props: true,
-    }
+    },
+    {
+      path: '/auth/verifyEmail/:token',
+      name: 'verifyEmail',
+      component: VerifyEmail,
+      props: true,
+      meta: { hideNavbar: true }
+    },
+    { 
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: NotFound,
+      meta: { hideNavbar: true }
+    },
   ]
 })
 

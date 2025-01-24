@@ -9,9 +9,9 @@ export interface Article {
   likes: number
   is_publish: boolean
   owner: string
-  create_at: string
-  update_at: string
-  delete_at: string
+  created_at: string
+  updated_at: string
+  deleted_at: string
   username: string
   tags: Tag[]
 }
