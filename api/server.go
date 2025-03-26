@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -13,7 +15,6 @@ import (
 	fs2 "github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
-	"net/http"
 )
 
 // Server serves HTTP requests for our banking service.
@@ -66,6 +67,7 @@ func (server *Server) setupRouter() {
 	router.POST("/api/users", server.createUser)
 	router.POST("/api/users/login", server.loginUser)
 	router.POST("/api/tokens/renew_access", server.renewAccessToken)
+	router.GET("/api/users/verify_email", server.verifyEmail)
 
 	router.GET("/api/articles/:id", server.getArticle)
 	router.GET("/api/articles", server.listArticle)

@@ -107,5 +107,16 @@ export const useUserStore = defineStore('user', {
 
       window.location.reload()
     },
+    verifyEmail(email_id:number, secret_code: string) {
+      return new Promise((resolve, reject) => {
+        userService.verifyEmail(email_id, secret_code)
+        .then((res) => {
+          resolve(res)
+        })
+        .catch((err) => {
+          reject(err)
+        })
+      })
+    },
   },
 })

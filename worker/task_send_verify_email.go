@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/google/uuid"
@@ -59,11 +60,11 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 		SecretCode: util.RandomString(32),
 	})
 
-	subject := "Welcome to Simple Bank"
-	verifyUrl := fmt.Sprintf("http://192.168.100.29:8080/v1/verify_email?email_id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode)
+	subject := "Welcome to Nostalgia"
+	verifyUrl := fmt.Sprintf("http://localhost:3000/auth/verifyEmail/%d/%s", verifyEmail.ID, verifyEmail.SecretCode)
 	content := fmt.Sprintf(`Hello %s,<br/>
 	Thank you for registering with us!<br/>
-	Please <a href="%s">click here</a> to verify your email address.<br/>`, user.FullName, verifyUrl)
+	Please <a target="blank" href="%s">click here</a> to verify your email address.<br/>`, user.FullName, verifyUrl)
 	to := []string{user.Email}
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil, nil)
 	if err != nil {

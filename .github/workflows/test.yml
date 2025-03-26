@@ -18,9 +18,10 @@ jobs:
         image: postgres:12
         # Provide the password for postgres
         env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: root
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
           POSTGRES_DB: nostalgia
+          DB_SOURCE: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@0.0.0.0:5432/nostalgia?sslmode=disable
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready

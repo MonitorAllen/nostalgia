@@ -33,8 +33,13 @@ const info = () => {
   return request.get('/auth/info')
 }
 
+const verifyEmail = (email_id: number, secreet_code: string) => {
+  return request.get(`/users/verify_email?email_id=${email_id}&secret_code=${secreet_code}`)
+}
+
 export default {
   register,
   login,
   info,
+  verifyEmail,
 }

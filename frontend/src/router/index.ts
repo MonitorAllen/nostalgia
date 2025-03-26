@@ -40,7 +40,7 @@ const router = createRouter({
       props: true,
     },
     {
-      path: '/auth/verifyEmail/:token',
+      path: '/auth/verifyEmail/:email_id/:secret_code',
       name: 'verifyEmail',
       component: VerifyEmail,
       props: true,
