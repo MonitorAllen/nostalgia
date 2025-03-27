@@ -7,8 +7,8 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
     # 指定该工作流使用的环境
     environment: development
@@ -23,7 +23,6 @@ jobs:
           POSTGRES_USER: ${{ secrets.DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
           POSTGRES_DB: nostalgia
-          DB_SOURCE: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@0.0.0.0:5432/nostalgia?sslmode=disable
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
