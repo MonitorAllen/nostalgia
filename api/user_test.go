@@ -325,12 +325,6 @@ func TestUserLoginAPI(t *testing.T) {
 	}
 }
 
-func TestVerifyEmailAPI(t *testing.T) {
-	user, _ := randomUser(t)
-
-	
-}
-
 func randomUser(t *testing.T) (db.User, string) {
 	password := util.RandomString(6)
 	hashedPassword, err := util.HashPassword(password)
