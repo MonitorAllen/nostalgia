@@ -46,9 +46,10 @@
             <span class="text-lg text-color-secondary select-none">{{ replyUserName }}</span>
             <div class=" flex flex-row gap-2 mt-1">
               <Button label="取消回复" raised size="small" class="mt-1"
-                v-if="replyCommentId !== 0"
-                @click="replyComment(replyCommentId, '', '', 0)"/>
-              <Button :label="replyCommentId === 0 ? '评论' : '回复'" raised size="small" class="mt-1" @click="createComment(0, owner)"/>
+                      v-if="replyCommentId !== 0"
+                      @click="replyComment(replyCommentId, '', '', 0)"/>
+              <Button :label="replyCommentId === 0 ? '评论' : '回复'" raised size="small" class="mt-1"
+                      @click="createComment(0, owner)"/>
             </div>
           </div>
         </div>
@@ -64,14 +65,14 @@
       </div>
       <Divider/>
       <ConfirmDialog>
-                <template #message="slotProps">
-                    <div class="flex flex-col items-center w-full gap-4 border-b">
-                        <p>{{ slotProps.message.message }}</p>
-                    </div>
-                </template>
-            </ConfirmDialog>
+        <template #message="slotProps">
+          <div class="flex flex-col items-center w-full gap-4 border-b">
+            <p>{{ slotProps.message.message }}</p>
+          </div>
+        </template>
+      </ConfirmDialog>
       <div class="flex flex-column gap-1"
-          v-if="comments !== null && comments.length > 0">
+           v-if="comments !== null && comments.length > 0">
         <div class="comment flex flex-column"
              v-for="(comment, index) in comments"
              :key="index">
@@ -80,49 +81,49 @@
             <div class="bg-green-100 border-round-sm px-1 text-sm" v-if="comment.from_user_id === owner">作者</div>
             <span class="text-sm">{{ date.format(comment.created_at, 'YYYY-MM-DD') }}</span>
             <i class="pi pi-trash cursor-pointer" style="font-size: 0.75rem"
-            v-if="userStore.userInfo && comment.from_user_id === userStore.userInfo.id"
-            @click="deleteComment(comment.id, index)"></i>
+               v-if="userStore.userInfo && comment.from_user_id === userStore.userInfo.id"
+               @click="deleteComment(comment.id, index)"></i>
           </div>
           <div class="flex flex-row gap-2 align-items-end">
             <span class="text-sm" v-html="comment.content"></span>
-            <span class="text-sm text-color-secondary cursor-pointer justify-content-between select-none" 
-              @click="replyComment(comment.id, comment.from_user_id, comment.from_user_name, comment.parent_id)">
+            <span class="text-sm text-color-secondary cursor-pointer justify-content-between select-none"
+                  @click="replyComment(comment.id, comment.from_user_id, comment.from_user_name, comment.parent_id)">
               {{ replyCommentId === comment.id ? "取消回复" : "回复" }}
             </span>
           </div>
           <div v-if="comment.child.length > 0">
             <div class="child-comment ml-2 align-items-baseline"
-               v-for="(childComment, childIndex) in comment.child"
-               :key="childIndex">
-            <div class="flex flex-row gap-2 text-color-secondary align-items-baseline">
-              <div class="flex flex-row align-items-baseline gap-1">
-                <span class="text-lg">{{ childComment.from_user_name }}</span>
-                <span class="bg-green-100 border-round-sm px-1 text-sm"
-                      v-if="childComment.from_user_id === owner">作者</span>
+                 v-for="(childComment, childIndex) in comment.child"
+                 :key="childIndex">
+              <div class="flex flex-row gap-2 text-color-secondary align-items-baseline">
+                <div class="flex flex-row align-items-baseline gap-1">
+                  <span class="text-lg">{{ childComment.from_user_name }}</span>
+                  <span class="bg-green-100 border-round-sm px-1 text-sm"
+                        v-if="childComment.from_user_id === owner">作者</span>
+                </div>
+                <div class="flex flex-row align-items-baseline gap-1"
+                     v-if="childComment.from_user_id !== childComment.to_user_id">
+                  <i class="pi pi-angle-right"></i>
+                  <span class="text-lg">{{ childComment.to_user_name }}</span>
+                  <span class="bg-green-100 border-round-sm px-1 text-sm"
+                        v-if="childComment.to_user_id === owner">作者</span>
+                </div>
+                <span class="text-sm">{{ date.format(childComment.created_at, 'YYYY-MM-DD') }}</span>
+                <i class="pi pi-trash cursor-pointer" style="font-size: 0.75rem"
+                   v-if="userStore.userInfo && childComment.from_user_id === userStore.userInfo.id"
+                   @click="deleteComment(childComment.id, childIndex)"></i>
               </div>
-              <div class="flex flex-row align-items-baseline gap-1"
-                v-if="childComment.from_user_id !== childComment.to_user_id">
-                <i class="pi pi-angle-right"></i>
-                <span class="text-lg">{{ childComment.to_user_name }}</span>
-                <span class="bg-green-100 border-round-sm px-1 text-sm"
-                      v-if="childComment.to_user_id === owner">作者</span>
-              </div>
-              <span class="text-sm">{{ date.format(childComment.created_at, 'YYYY-MM-DD') }}</span>
-              <i class="pi pi-trash cursor-pointer" style="font-size: 0.75rem"
-                  v-if="userStore.userInfo && childComment.from_user_id === userStore.userInfo.id"
-                  @click="deleteComment(childComment.id, childIndex)"></i>
-            </div>
-            <div class="flex flex-row gap-2 align-items-end">
-              <span class="text-sm" v-html="childComment.content"></span>
-              <span class="text-sm text-color-secondary cursor-pointer justify-content-between select-none" 
-                @click="replyComment(childComment.id, childComment.from_user_id, childComment.from_user_name, childComment.parent_id)">
+              <div class="flex flex-row gap-2 align-items-end">
+                <span class="text-sm" v-html="childComment.content"></span>
+                <span class="text-sm text-color-secondary cursor-pointer justify-content-between select-none"
+                      @click="replyComment(childComment.id, childComment.from_user_id, childComment.from_user_name, childComment.parent_id)">
                 {{ replyCommentId === childComment.id ? "取消回复" : "回复" }}
               </span>
+              </div>
             </div>
           </div>
-        </div>
-        <Divider/>
-          
+          <Divider/>
+
         </div>
       </div>
       <div v-else>
@@ -141,7 +142,7 @@ import Button from 'primevue/button';
 import ConfirmDialog from 'primevue/confirmdialog';
 
 import {useToast} from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import {useConfirm} from "primevue/useconfirm";
 
 import Prism from 'prismjs';
 import 'prismjs/components/prism-go.min.js';
@@ -174,7 +175,6 @@ const {id} = defineProps<{
   id: string
 }>()
 
-
 const editor = ref<ClassicEditor>()
 
 const replyCommentId = ref(0)
@@ -182,19 +182,16 @@ const replyUserName = ref('')
 const replyUserId = ref('')
 const replyCommentParentId = ref(0)
 
-
-
-
 const replyComment = (id: number, to_user_id: string, to_user_name: string, parent_id: number) => {
   //取消回复
-  if(replyCommentId.value === id) {
+  if (replyCommentId.value === id) {
     replyCommentId.value = 0
     replyUserName.value = ''
     replyUserId.value = ''
     replyCommentParentId.value = 0
   } else {
     const editor = document.getElementById('editor')
-    editor?.scrollIntoView({ behavior: 'smooth', block: 'center'})
+    editor?.scrollIntoView({behavior: 'smooth', block: 'center'})
     replyCommentId.value = id
     replyUserName.value = `@${to_user_name}`
     replyUserId.value = to_user_id
@@ -205,32 +202,32 @@ const replyComment = (id: number, to_user_id: string, to_user_name: string, pare
       replyCommentParentId.value = parent_id
     }
   }
-  
+
 }
 
 const deleteComment = (id: number, index: number) => {
   confirm.require({
-        message: '确认删除这条评论吗？',
-        rejectProps: {
-            label: '取消',
-            outlined: true,
-            size: 'small'
-        },
-        acceptProps: {
-            label: '确定',
-            size: 'small'
-        },
-        accept: () => {
-            commentStore.deleteComment(id)
-              .then((res: any) => {
-                comments.value?.splice(index, 1)
-                toast.add({ severity: 'success', summary: '成功', detail: '该评论已删除', life: 3000 });
-              })
-        },
-        reject: () => {
-            return
-        }
-    });
+    message: '确认删除这条评论吗？',
+    rejectProps: {
+      label: '取消',
+      outlined: true,
+      size: 'small'
+    },
+    acceptProps: {
+      label: '确定',
+      size: 'small'
+    },
+    accept: () => {
+      commentStore.deleteComment(id)
+          .then((res: any) => {
+            comments.value?.splice(index, 1)
+            toast.add({severity: 'success', summary: '成功', detail: '该评论已删除', life: 3000});
+          })
+    },
+    reject: () => {
+      return
+    }
+  });
 }
 
 const comments = ref<ArticleComments[]>([])
@@ -264,30 +261,30 @@ const createComment = (parent_id: number, to_user_id: string) => {
         from_user_id: userStore.userInfo.id,
         to_user_id: to_user_id
       }).then((res: any) => {
-        // 如果 parent_id 为 0，则直接将评论添加到末尾
-        if (parent_id === 0) {
-          comments.value.push(res.data.comment)
-        } else {
-          comments.value.forEach((comment, index) => {
-            if (comment.id === parent_id) {
-              comments.value[index].child.push(res.data.comment)
-            }
-          })
+    // 如果 parent_id 为 0，则直接将评论添加到末尾
+    if (parent_id === 0) {
+      comments.value.push(res.data.comment)
+    } else {
+      comments.value.forEach((comment, index) => {
+        if (comment.id === parent_id) {
+          comments.value[index].child.push(res.data.comment)
         }
-        // 回复成功后
-        toast.add({severity: 'success', summary: 'Success', detail: "评论成功", life: 2500})
+      })
+    }
+    // 回复成功后
+    toast.add({severity: 'success', summary: 'Success', detail: "评论成功", life: 2500})
 
-        // 重置编辑框内容
-        editorData.value = ''
+    // 重置编辑框内容
+    editorData.value = ''
 
-        // 重置回复相关数据
-        replyCommentId.value = 0
-        replyUserName.value = ''
-        replyUserId.value = ''
-        replyCommentParentId.value = 0
+    // 重置回复相关数据
+    replyCommentId.value = 0
+    replyUserName.value = ''
+    replyUserId.value = ''
+    replyCommentParentId.value = 0
 
-        // 确保回复内容中的代码高亮
-        Prism.highlightAll();
+    // 确保回复内容中的代码高亮
+    Prism.highlightAll();
   })
 
 }
@@ -354,7 +351,7 @@ onMounted(async () => {
     }).catch(err => console.log(err))
 
     commentStore.listComments(id).then((res: any) => {
-      comments.value = res.data
+      comments.value = res.data === null ? [] : res.data
     })
   }
 

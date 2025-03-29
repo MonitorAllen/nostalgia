@@ -323,7 +323,6 @@ func TestUserLoginAPI(t *testing.T) {
 			tc.checkResponse(t, recorder)
 		})
 	}
-
 }
 
 func randomUser(t *testing.T) (db.User, string) {

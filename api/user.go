@@ -3,6 +3,9 @@ package api
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/MonitorAllen/nostalgia/worker"
@@ -10,8 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog/log"
-	"net/http"
-	"time"
 )
 
 type createUserRequest struct {
@@ -253,6 +254,40 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 	resp := renewAccessTokenResponse{
 		AccessToken:          accessToken,
 		AccessTokenExpiresAt: accessPayload.ExpireAt,
+	}
+
+	ctx.JSON(http.StatusOK, resp)
+}
+
+type verifyEmailRequest struct {
+	EmailID    int64  `form:"email_id" binding:"required,min=1"`
+	SecretCode string `form:"secret_code" binding:"required,min=32,max=128"`
+}
+
+type verifyEmailResponse struct {
+	IsEmailVerified bool `json:"is_email_verified"`
+}
+
+func (Server *Server) verifyEmail(ctx *gin.Context) {
+	var req verifyEmailRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	arg := db.VerifyEmailTxParams{
+		EmailId:    req.EmailID,
+		SecretCode: req.SecretCode,
+	}
+
+	verifyEmailResult, err := Server.store.VerifyEmailTx(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("failed to verify email")))
+		return
+	}
+
+	resp := verifyEmailResponse{
+		IsEmailVerified: verifyEmailResult.User.IsEmailVerified,
 	}
 
 	ctx.JSON(http.StatusOK, resp)
