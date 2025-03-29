@@ -26,5 +26,4 @@ go.work.sum
 *.log
 
 # Ignore env files containing sensitive data
-app.env
 /resources/
