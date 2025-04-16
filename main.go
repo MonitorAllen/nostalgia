@@ -6,6 +6,7 @@ import (
 	"github.com/MonitorAllen/nostalgia/api"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	_ "github.com/MonitorAllen/nostalgia/doc/statik"
+	"github.com/MonitorAllen/nostalgia/internal/service"
 	"github.com/MonitorAllen/nostalgia/mail"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/MonitorAllen/nostalgia/worker"
@@ -65,10 +66,12 @@ func main() {
 
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 
+	redisService := service.NewRedisService(config)
+
 	waitGroup, ctx := errgroup.WithContext(ctx)
 
 	runTaskProcessor(ctx, waitGroup, config, redisOpt, store)
-	runGinServer(ctx, waitGroup, config, store, taskDistributor)
+	runGinServer(ctx, waitGroup, config, store, taskDistributor, redisService)
 
 	err = waitGroup.Wait()
 	if err != nil {
@@ -109,8 +112,8 @@ func runTaskProcessor(ctx context.Context, waitGroup *errgroup.Group, config uti
 	})
 }
 
-func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
-	server, err := api.NewServer(config, store, taskDistributor)
+func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) {
+	server, err := api.NewServer(config, store, taskDistributor, redisService)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server:")
 	}
@@ -134,11 +137,12 @@ func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Co
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
 		if err := server.Shutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed to shutdown HTTP server")
+			log.Error().Err(err).Msg("graceful shutdown failed")
 			return err
 		}
-		log.Info().Msg("HTTP server is stopped")
+		log.Info().Msg("All services is stopped")
 
 		return nil
 	})

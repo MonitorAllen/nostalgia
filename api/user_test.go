@@ -180,7 +180,7 @@ func TestCreateUserAPI(t *testing.T) {
 			tc.buildStubs(store, taskDistributor)
 
 			// start test server and send request
-			server := newTestServer(t, store, taskDistributor)
+			server := newTestServer(t, store, taskDistributor, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -305,7 +305,7 @@ func TestUserLoginAPI(t *testing.T) {
 			tc.buildStubs(store)
 
 			// start test server and send request
-			server := newTestServer(t, store, nil)
+			server := newTestServer(t, store, nil, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON

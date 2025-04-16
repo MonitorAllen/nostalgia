@@ -3,7 +3,9 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/MonitorAllen/nostalgia/internal/service"
 	"net/http"
+	"time"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
@@ -25,10 +27,11 @@ type Server struct {
 	tokenMaker      token.Maker
 	router          *gin.Engine
 	taskDistributor worker.TaskDistributor
+	redisService    *service.RedisService
 }
 
 // NewServer creates a new HTTPS server and setup routing
-func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) (*Server, error) {
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -38,6 +41,7 @@ func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDi
 		store:           store,
 		tokenMaker:      tokenMaker,
 		taskDistributor: taskDistributor,
+		redisService:    redisService,
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -68,6 +72,7 @@ func (server *Server) setupRouter() {
 	router.POST("/api/users/login", server.loginUser)
 	router.POST("/api/tokens/renew_access", server.renewAccessToken)
 	router.GET("/api/users/verify_email", server.verifyEmail)
+	router.GET("/api/users/contributions", server.contributions)
 
 	router.GET("/api/articles/:id", server.getArticle)
 	router.GET("/api/articles", server.listArticle)
@@ -129,7 +134,20 @@ func (server *Server) Start(address string, config util.Config) error {
 }
 
 func (server *Server) Shutdown(ctx context.Context) error {
-	return server.server.Shutdown(ctx)
+	// 先关闭 HTTP 服务器，确保不再接收新的请求
+	if err := server.server.Shutdown(ctx); err != nil {
+		log.Error().Err(err).Msg("failed to shutdown HTTP server")
+		return err
+	}
+
+	_, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := server.redisService.Close(); err != nil {
+		log.Error().Err(err).Msg("failed to shutdown redis service")
+	}
+
+	return nil
 }
 
 func errorResponse(err error) gin.H {

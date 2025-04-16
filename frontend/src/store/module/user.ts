@@ -118,5 +118,16 @@ export const useUserStore = defineStore('user', {
         })
       })
     },
+    contributions() {
+      return new Promise((resolve, reject) => {
+        userService.contributions()
+            .then((res) => {
+              resolve(res)
+            })
+            .catch((err) => {
+              reject(err)
+            })
+      })
+    }
   },
 })

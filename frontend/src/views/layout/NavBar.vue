@@ -142,15 +142,10 @@ const handleClickOutside = (event) => {
 
 const navItems = ref([
   {
-    label: '首页',
+    label: '主页',
     icon: 'pi pi-home',
     route: '/'
   },
-  {
-    label: '工具箱',
-    icon: 'pi pi-hammer',
-    route: '/about'
-  }
 ])
 
 const menu = ref()
