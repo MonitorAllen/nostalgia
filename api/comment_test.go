@@ -151,7 +151,7 @@ func TestCreateCommentAPI(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store, nil)
+			server := newTestServer(t, store, nil, nil)
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)

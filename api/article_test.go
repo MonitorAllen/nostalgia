@@ -143,7 +143,7 @@ func TestCreateArticleAPI(t *testing.T) {
 			tc.buildStubs(store)
 
 			// start test server and send request
-			server := newTestServer(t, store, nil)
+			server := newTestServer(t, store, nil, nil)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -228,7 +228,7 @@ func TestGetArticleAPI(t *testing.T) {
 			tc.buildStubs(store)
 
 			// start test server and send request
-			server := newTestServer(t, store, nil)
+			server := newTestServer(t, store, nil, nil)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/api/articles/%s", tc.postID)
@@ -355,7 +355,7 @@ func TestListArticleAPI(t *testing.T) {
 			tc.buildStubs(store)
 
 			// start test server and send request
-			server := newTestServer(t, store, nil)
+			server := newTestServer(t, store, nil, nil)
 			recorder := httptest.NewRecorder()
 
 			url := "/api/articles"

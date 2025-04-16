@@ -1,9 +1,12 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
@@ -12,8 +15,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
+
+const DATA_USER_CONTRIBUTIONS = "user:contributions"
 
 type createUserRequest struct {
 	Username string `json:"username" binding:"required,alphanum"`
@@ -268,7 +274,7 @@ type verifyEmailResponse struct {
 	IsEmailVerified bool `json:"is_email_verified"`
 }
 
-func (Server *Server) verifyEmail(ctx *gin.Context) {
+func (server *Server) verifyEmail(ctx *gin.Context) {
 	var req verifyEmailRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -280,7 +286,7 @@ func (Server *Server) verifyEmail(ctx *gin.Context) {
 		SecretCode: req.SecretCode,
 	}
 
-	verifyEmailResult, err := Server.store.VerifyEmailTx(ctx, arg)
+	verifyEmailResult, err := server.store.VerifyEmailTx(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("failed to verify email")))
 		return
@@ -291,4 +297,120 @@ func (Server *Server) verifyEmail(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, resp)
+}
+
+type githubContributions struct {
+	Years []struct {
+		Year  string `json:"year"`
+		Total int64  `json:"total"`
+		Range struct {
+			Start string `json:"start"`
+			End   string `json:"end"`
+		} `json:"range"`
+	} `json:"years"`
+	Contributions []struct {
+		Date      string `json:"date"`
+		Count     int64  `json:"count"`
+		Color     string `json:"color"`
+		Intensity string `json:"intensity"`
+	} `json:"contributions"`
+}
+
+func contributionResponse(contributions githubContributions) githubContributions {
+	currentDate := time.Now().Format(time.DateOnly)
+	var prefixPoint int
+	for i, contribution := range contributions.Contributions {
+		if contribution.Date == currentDate {
+			prefixPoint = i
+			break
+		}
+	}
+	return githubContributions{
+		Years:         contributions.Years[:1],
+		Contributions: contributions.Contributions[prefixPoint : prefixPoint+90],
+	}
+}
+
+func (server *Server) contributions(ctx *gin.Context) {
+	// 先在 redis 获取
+	contributionsJsonStr, err := server.redisService.Get(DATA_USER_CONTRIBUTIONS)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if contributionsJsonStr != "" {
+		var contributions githubContributions
+		err := json.Unmarshal([]byte(contributionsJsonStr), &contributions)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusOK, contributions)
+		return
+	}
+
+	reqUrl := "https://github-contributions.vercel.app/api/v1/MonitorAllen"
+
+	proxyUrl, err := url.Parse("http://127.0.0.1:10808")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyUrl),
+	}
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   10 * time.Second,
+	}
+
+	resp, err := client.Get(reqUrl)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("执行请求活动数据失败：%s", err.Error())))
+		return
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to close response body")
+		}
+	}(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	var contributions githubContributions
+	err = json.Unmarshal(body, &contributions)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	contributions = contributionResponse(contributions)
+
+	contributionsBytes, err := json.Marshal(contributions)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = server.redisService.Set(DATA_USER_CONTRIBUTIONS, string(contributionsBytes), 12*time.Hour)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, contributions)
 }

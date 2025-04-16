@@ -68,13 +68,18 @@
           </div>
           <div id="todo-list-content" class="flex flex-column row-gap-2 p-2">
             <div class="flex flex-row gap-2 align-items-center">
-              <Checkbox :binary="true" />
-              <label>新增文章评论功能</label>
-            </div>
-            <div class="flex flex-row gap-2 align-items-center">
-              <Checkbox :binary="true" />
+              <Checkbox binary />
               <label>完善CI/CD</label>
             </div>
+          </div>
+        </div>
+        <div class="flex flex-column border-round-md shadow-1 mb-3">
+          <div class="flex border-round-top-md justify-content-start align-items-center gap-2 left-side-menu-title">
+            <span class="pi pi-github ml-1"></span>
+            <span>近期活动</span>
+          </div>
+          <div class="p-2">
+            <GithubContributions></GithubContributions>
           </div>
         </div>
       </div>
@@ -94,6 +99,7 @@ import { ref, onMounted } from 'vue'
 
 import date from '@/util/date'
 import type { Article } from '@/types/article'
+import GithubContributions from "@/components/GithubContributions.vue";
 
 const toast = useToast()
 
