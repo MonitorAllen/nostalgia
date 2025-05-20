@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type Redis interface {
+	Get(key string) (string, error)
+	Set(key string, value string, expiration time.Duration) error
+	Del(key string) error
+	Exists(key string) bool
+	Close() error
+	Ping(ctx context.Context) error
+}
+
 type RedisService struct {
 	client *redis.Client
 }

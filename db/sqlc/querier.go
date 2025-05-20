@@ -8,11 +8,14 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	AddCommentLikes(ctx context.Context, id int64) (Comment, error)
-	CountArticles(ctx context.Context, isPublish bool) (int64, error)
+	CountAllArticles(ctx context.Context) (int64, error)
+	CountArticles(ctx context.Context, isPublish pgtype.Bool) (int64, error)
+	CreateAdmin(ctx context.Context, arg CreateAdminParams) (Admin, error)
 	CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error)
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
@@ -20,14 +23,17 @@ type Querier interface {
 	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
+	GetAdmin(ctx context.Context, username string) (Admin, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (Article, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Article, error)
 	GetComment(ctx context.Context, id int64) (Comment, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error)
 	ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
+	ListInitSysMenus(ctx context.Context, roleID int64) ([]ListInitSysMenusRow, error)
 	UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)

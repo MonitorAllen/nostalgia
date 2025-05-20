@@ -12,7 +12,7 @@ dropdb:
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
-migrate up1:
+migrateup1:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up 1
 
 migratedown:
@@ -30,6 +30,9 @@ db_docs:
 db_schema:
 	dbml2sql --postgres -o doc/schema.sql doc/db.dbml
 
+db_dbml:
+	dbdocs db2dbml postgres "$(DB_URL)" -o doc/db.dbml
+
 sqlc:
 	sqlc generate
 
@@ -42,11 +45,19 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/MonitorAllen/nostalgia/db/sqlc Store
 	mockgen -package mockwk -destination worker/mock/distributor.go github.com/MonitorAllen/nostalgia/worker TaskDistributor
+	mockgen -package mockservice -destination internal/service/mock/redis_service.go github.com/MonitorAllen/nostalgia/internal/service Redis
 
 swag:
 	rm -f doc/swagger/*.swagger.json
 	swag init -o ./doc/swagger --instanceName nostalgia
 	statik -src=./doc/swagger -dest=./doc
+
+proto:
+	rm -f pb/*.go
+	protoc --proto_path=proto --go_out=pb --go_opt=paths=source_relative \
+        --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+        --grpc-gateway_out=pb --grpc-gateway_opt=paths=source_relative \
+        proto/*.proto
 
 evans:
 	evans --host localhost --port 9090 -r repl
@@ -59,4 +70,4 @@ server_docker_up:
 	docker start redis
 	go run main.go
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis db_dbml

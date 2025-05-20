@@ -6,21 +6,23 @@ Project Nostalgia {
 }
 
 Table users as U {
-  id uuid [pk]
-  username varchar [unique, not null]
+  Note: '用户表'
+  id uuid [pk, note: '主键ID']
+  username varchar [unique, not null, note: '用户名']
   hashed_password varchar [not null]
-  full_name varchar [not null]
-  email varchar [unique, not null]
-  is_email_verified boolean [not null, default: false]
+  full_name varchar [not null, note: '全名']
+  email varchar [unique, not null, note: '邮箱']
+  is_email_verified boolean [not null, default: false, note: '邮箱是否验证']
   about varchar [not null, default: '', note: '介绍']
   role varchar [not null, default: 'visitor']
-  created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
-  deleted_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
+  deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '删除时间']
 }
 
 Table articles as A {
-  id uuid [pk]
+  Note: '文章表'
+  id uuid [pk, note: '主键ID']
   title varchar [not null, note: '标题']
   summary varchar [not null, default: '', note: '摘要']
   content text [not null, note: '内容']
@@ -29,51 +31,112 @@ Table articles as A {
   is_publish boolean [not null, default: false, note: '是否发布']
   owner uuid [ref: > U.id, not null, note: '拥有者']
   created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
-  deleted_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
+  deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '删除时间']
 
   indexes {
     (is_publish, created_at)
-    //(owner, ext) [unique]
   }
 }
 
 Table comments as C {
-  id bigserial [pk]
+  Note: '文章评论表'
+  id bigserial [pk, note: '主键ID']
   content varchar [not null, note: '评论内容']
-  article_id uuid [ref: > A.id, not null, note: '文章ID']
+  article_id uuid [not null, note: '文章ID']
   parent_id int [not null, default: 0, note: '父评论ID']
   from_user_id uuid [not null, note: '评论人ID']
   to_user_id uuid [not null, note: '被评论人ID']
   created_at timestamptz [not null, default: `now()`]
-  deleted_at timestamptz [not null, default: `0001-01-01 00:00:00Z`]
+  deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z']
 }
 
-Table tag as T {
-  id bigserial [pk]
+// 删除文章时，自动删除评论
+Ref: C.article_id > A.id [delete: cascade]
+
+Table tags as T {
+  Note: '标签表'
+  id bigserial [pk, note: '主键ID']
   name varchar [not null, note: '名称']
-  article_id uuid [ref: > A.id, not null, note: '文章ID']
-  created_at timestamptz [not null, default: `now()`]
+  article_id uuid [not null, note: '文章ID']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
 }
 
+// 删除文章时，自动删除文章标签
+Ref: T.article_id > A.id [delete: cascade]
 
 Table sessions {
-  id uuid [pk]
-  username varchar [ref: > U.id, not null]
-  refresh_token varchar [not null]
-  user_agent varchar [not null]
-  client_ip varchar [not null]
-  is_blocked boolean [not null, default: false]
-  expires_at timestamptz [not null]
-  created_at timestamptz [not null, default: `now()`]
+  Note: '用户会话表'
+  id uuid [pk, note: '主键ID']
+  username varchar [ref: > U.id, not null, note: '用户名']
+  refresh_token varchar [not null, note: '刷新token']
+  user_agent varchar [not null, note: '用户浏览器']
+  client_ip varchar [not null, note: '用户IP']
+  is_blocked boolean [not null, default: false, note: '是否阻止登陆']
+  expires_at timestamptz [not null, note: '到期时间']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
 }
 
 TABLE verify_emails {
-    id          bigserial [pk]
-    user_id     varchar     [ref: > U.id, not null]
-    email       varchar     [not null]
-    secret_code varchar     [not null]
-    is_used     bool        [not null, default: false]
-    created_at   timestamptz [not null, default: `now()`]
-    expired_at  timestamptz [not null, default: `now() + interval '15 minutes'`]
+  Note: '邮箱验证表'
+  id          bigserial [pk, note: '主键ID']
+  user_id     varchar     [ref: > U.id, not null, note: '用户ID']
+  email       varchar     [not null, note: '用户邮箱']
+  secret_code varchar     [not null, note: '验证密钥']
+  is_used     bool        [not null, default: false, note: '是否使用']
+  created_at   timestamptz [not null, default: `now()`, note: '创建时间']
+  expired_at  timestamptz [not null, default: `now() + interval '15 minutes'`, note: '到期时间']
+}
+
+Table roles as R {
+  Note: '角色表'
+  id bigserial [pk, note: '主键ID']
+  role_name varchar [unique, not null, note: '角色名称']
+  description varchar [not null, default: '', note: '角色描述']
+  is_system bool [not null, default: false, note: '是否为系统角色']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
+}
+
+Table admins as AD {
+  Note: '管理员账号表'
+  id bigserial [pk, note: '主键ID']
+  username varchar [unique, not null, note: '管理员名称']
+  hashed_password varchar [not null, note: '密码']
+  is_active bool [not null, default: false, note: '是否激活，默认：否']
+  role_id bigint [ref: > R.id, not null, default: 2, note: '角色ID，默认：2']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
+}
+
+Table sys_menus as SM {
+  Note: '后台系统菜单表'
+  id bigserial [pk, note: '主键ID']
+  name varchar [not null, note: '菜单名称']
+  path varchar [not null, default: '', note: '菜单路径']
+  icon varchar [not null, default: '', note: '菜单图标']
+  is_active bool [not null, default: false, note: '是否激活，默认：否']
+  type int [not null, default: 2, note: '1：目录；2：菜单；3：按钮（事件）']
+  sort int [not null, default: 0, note: '排序编号']
+  parent_id bigint [ref: > id, default: null, note: '父菜单ID']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z']
+
+  indexes {
+    // 同一父ID下菜单名唯一
+    (name, parent_id) [unique]
+  }
+}
+
+Table role_permissions as RP {
+  Note: '角色权限表'
+  id bigserial [pk, note: '主键ID']
+  role_id bigint [ref: > R.id, not null, note: '角色ID']
+  menu_id bigint [ref: > SM.id, not null, note: '菜单ID']
+  created_by bigint [ref: > AD.id, not null, note: '创建人ID']
+  created_at timestamptz [not null, default: `now()`, note: '创建时间']
+
+  indexes {
+    (role_id, menu_id) [unique]
+  }
 }

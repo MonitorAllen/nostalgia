@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+import "admin.proto";
+
+option go_package = "github.com/MonitorAllen/nostalgia/pb";
+
+message LoginAdminRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginAdminResponse {
+  Admin admin = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+  google.protobuf.Timestamp access_token_expires_at = 4;
+  google.protobuf.Timestamp refresh_token_expires_at = 5;
+}

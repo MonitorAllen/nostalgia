@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = 'github.com/MonitorAllen/nostalgia/pb';
+
+message Admin {
+  int64 ID = 1;
+  string username = 2;
+  string hashed_password = 3;;
+  int64 role_id = 4;;
+  bool is_active = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pb;
+
+import "sys_menu.proto";
+
+option go_package = 'github.com/MonitorAllen/nostalgia/pb';
+
+message InitSysMenuRequest {}
+
+message InitSysMenuResponse {
+  repeated InitSysMenu init_sys_menu = 1;
+}

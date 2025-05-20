@@ -13,13 +13,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAllArticles = `-- name: CountAllArticles :one
+SELECT count(*)
+FROM articles
+`
+
+func (q *Queries) CountAllArticles(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllArticles)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countArticles = `-- name: CountArticles :one
 SELECT count(*)
 FROM articles
 where is_publish = $1
 `
 
-func (q *Queries) CountArticles(ctx context.Context, isPublish bool) (int64, error) {
+func (q *Queries) CountArticles(ctx context.Context, isPublish pgtype.Bool) (int64, error) {
 	row := q.db.QueryRow(ctx, countArticles, isPublish)
 	var count int64
 	err := row.Scan(&count)
@@ -121,6 +133,62 @@ func (q *Queries) GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Articl
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const listAllArticles = `-- name: ListAllArticles :many
+SELECT id, title, summary, views, likes, is_publish, owner, created_at, updated_at, deleted_at
+FROM articles
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListAllArticlesParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+type ListAllArticlesRow struct {
+	ID        uuid.UUID `json:"id"`
+	Title     string    `json:"title"`
+	Summary   string    `json:"summary"`
+	Views     int32     `json:"views"`
+	Likes     int32     `json:"likes"`
+	IsPublish bool      `json:"is_publish"`
+	Owner     uuid.UUID `json:"owner"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at"`
+}
+
+func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error) {
+	rows, err := q.db.Query(ctx, listAllArticles, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAllArticlesRow{}
+	for rows.Next() {
+		var i ListAllArticlesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Summary,
+			&i.Views,
+			&i.Likes,
+			&i.IsPublish,
+			&i.Owner,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listArticles = `-- name: ListArticles :many

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = 'github.com/MonitorAllen/nostalgia/pb';
+
+message InitSysMenu {
+  int64 id = 1;
+  string name =2;
+  optional string path = 3;
+  string icon = 4;
+  bool is_active = 5;
+  int32 type = 6;
+  int32 sort = 7;
+  optional int64 parent_id = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+  repeated InitSysMenu children = 11;
+}

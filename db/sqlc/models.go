@@ -8,7 +8,26 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+// 管理员账号表
+type Admin struct {
+	// 主键ID
+	ID int64 `json:"id"`
+	// 管理员名称
+	Username string `json:"username"`
+	// 密码
+	HashedPassword string `json:"hashed_password"`
+	// 是否激活，默认：否
+	IsActive bool `json:"is_active"`
+	// 角色ID，默认：2
+	RoleID int64 `json:"role_id"`
+	// 创建时间
+	CreatedAt time.Time `json:"created_at"`
+	// 更新时间
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 type Article struct {
 	ID uuid.UUID `json:"id"`
@@ -48,6 +67,34 @@ type Comment struct {
 	DeletedAt time.Time `json:"deleted_at"`
 }
 
+// 角色表
+type Role struct {
+	// 主键ID
+	ID int64 `json:"id"`
+	// 角色名称
+	RoleName string `json:"role_name"`
+	// 角色描述
+	Description string `json:"description"`
+	// 是否为系统角色
+	IsSystem bool `json:"is_system"`
+	// 创建时间
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// 角色权限表
+type RolePermission struct {
+	// 主键ID
+	ID int64 `json:"id"`
+	// 角色ID
+	RoleID int64 `json:"role_id"`
+	// 菜单ID
+	MenuID int64 `json:"menu_id"`
+	// 创建人ID
+	CreatedBy int64 `json:"created_by"`
+	// 创建时间
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	UserID       uuid.UUID `json:"user_id"`
@@ -57,6 +104,29 @@ type Session struct {
 	IsBlocked    bool      `json:"is_blocked"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+// 后台系统菜单表
+type SysMenu struct {
+	// 主键ID
+	ID int64 `json:"id"`
+	// 菜单名称
+	Name string `json:"name"`
+	// 菜单路径
+	Path string `json:"path"`
+	// 菜单图标
+	Icon string `json:"icon"`
+	// 是否激活，默认：否
+	IsActive bool `json:"is_active"`
+	// 1：目录；2：菜单；3：按钮（事件）
+	Type int32 `json:"type"`
+	// 排序编号
+	Sort int32 `json:"sort"`
+	// 父菜单ID
+	ParentID pgtype.Int8 `json:"parent_id"`
+	// 创建时间
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Tag struct {

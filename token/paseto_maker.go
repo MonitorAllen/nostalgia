@@ -55,3 +55,30 @@ func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
 
 	return payload, nil
 }
+
+func (maker *PasetoMaker) CreateAdminToken(userID int64, username string, roleId int64, duration time.Duration) (string, *AdminPayload, error) {
+	payload, err := NewAdminPayload(userID, username, roleId, duration)
+	if err != nil {
+		return "", payload, err
+	}
+
+	token, err := maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
+
+	return token, payload, err
+}
+
+func (maker *PasetoMaker) VerifyAdminToken(token string) (*AdminPayload, error) {
+	payload := &AdminPayload{}
+
+	err := maker.paseto.Decrypt(token, maker.symmetricKey, payload, nil)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	err = payload.Valid()
+	if err != nil {
+		return nil, err
+	}
+
+	return payload, nil
+}

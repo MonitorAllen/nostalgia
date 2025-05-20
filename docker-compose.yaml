@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - data-volume:/var/lib/postgresql/nostalgia/data
+      - data-volume:/var/lib/postgresql/data
   redis:
     image: redis:7-alpine
     ports:
@@ -36,3 +36,5 @@ services:
       - "80:80"
     depends_on:
       - api
+volumes:
+  data-volume:

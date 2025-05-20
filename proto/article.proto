@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = 'github.com/MonitorAllen/nostalgia/pb';
+
+message Article {
+  string id = 1;
+  string title = 2;
+  optional string summary = 3;
+  optional bool is_publish = 4;
+  optional int32 views = 5;
+  optional int32 likes = 6;
+  string owner = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  google.protobuf.Timestamp deleted_at = 10;
+}

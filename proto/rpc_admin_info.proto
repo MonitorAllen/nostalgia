@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pb;
+
+import "admin.proto";
+
+option go_package = 'github.com/MonitorAllen/nostalgia/pb';
+
+message AdminInfoRequest {
+
+}
+
+message AdminInfoResponse {
+  Admin admin = 1;
+}

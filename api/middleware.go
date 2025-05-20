@@ -56,7 +56,7 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 
 func uploadFileMiddleware(config util.Config) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		log.Logger.Info().Msg("uploadFileMiddleware")
+		log.Info().Msg("uploadFileMiddleware")
 		file, err := ctx.FormFile("file")
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": "上传文件失败"}})

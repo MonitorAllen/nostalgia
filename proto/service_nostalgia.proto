@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "rpc_create_admin.proto";
+import "rpc_login_admin.proto";
+import "rpc_logout_admin.proto";
+import "rpc_admin_info.proto";
+import "rpc_init_sys_menu.proto";
+import "rpc_list_articles.proto";
+import "rpc_get_article.proto";
+import "rpc_update_article.proto";
+import "rpc_renew_access_token.proto";
+
+option go_package = 'github.com/MonitorAllen/nostalgia/pb';
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Nostalgia API";
+    version: "1.0";
+    contact: {
+      name: "MonitorAllen Backend Master";
+      url: "https://github.com/MonitorAllen";
+      email: "monitorallen.pro@gmail.com";
+    };
+  };
+};
+
+service Nostalgia {
+  rpc LoginAdmin (LoginAdminRequest) returns (LoginAdminResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/login"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to login backend";
+      summary: "login backend";
+      tags: "Auth";
+    };
+  }
+  rpc LogoutAdmin (LogoutAdminRequest) returns (LogoutAdminResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/logout"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to logout backend";
+      summary: "logout backend";
+      tags: "Auth";
+    };
+  }
+  rpc RenewAccessToken (RenewAccessTokenRequest) returns (RenewAccessTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/renew_access"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to renew a access token";
+      summary: "renew access token";
+      tags: "Auth";
+    };
+  }
+  rpc InitSysMenu (InitSysMenuRequest) returns (InitSysMenuResponse) {
+    option (google.api.http) = {
+      get: "/v1/menu/init"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to init system menu";
+      summary: "init system menu";
+      tags: "Menu";
+    };
+  }
+  rpc CreateAdmin (CreateAdminRequest) returns (CreateAdminResponse) {
+    option (google.api.http) = {
+      post: "/v1/create_admin"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to create a new admin";
+      summary: "Create new admin";
+      tags: "Admin";
+    };
+  }
+  rpc AdminInfo (AdminInfoRequest) returns (AdminInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/admin/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to get admin info";
+      summary: "get admin info";
+      tags: "Admin";
+    };
+  }
+  rpc ListArticles (ListArticlesRequest) returns (ListArticlesResponse) {
+    option (google.api.http) = {
+      get: "/v1/articles"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to get article list";
+      summary: "list articles";
+      tags: "Article";
+    };
+  }
+  rpc GetArticle (GetArticleRequest) returns (GetArticleResponse) {
+    option (google.api.http) = {
+      get: "/v1/articles/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to get article info";
+      summary: "get article info";
+      tags: "Article";
+    };
+  }
+  rpc UpdateArticle (UpdateArticleRequest) returns (UpdateArticleResponse) {
+    option (google.api.http) = {
+      patch: "/v1/articles"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update article info";
+      summary: "update article info";
+      tags: "Article";
+    };
+  }
+}

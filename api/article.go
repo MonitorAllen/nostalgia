@@ -180,7 +180,7 @@ func (server *Server) listArticle(ctx *gin.Context) {
 		}
 	}
 
-	countArticles, err := server.store.CountArticles(ctx, true)
+	countArticles, err := server.store.CountArticles(ctx, pgtype.Bool{Bool: true, Valid: true})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
