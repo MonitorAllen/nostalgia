@@ -34,7 +34,7 @@ LIMIT $1 OFFSET $2;
 -- name: CountArticles :one
 SELECT count(*)
 FROM articles
-where is_publish = $1;
+where is_publish = sqlc.narg(is_publish);
 
 -- name: UpdateArticle :one
 UPDATE articles
@@ -46,3 +46,13 @@ SET
     updated_at = COALESCE(sqlc.narg(updated_at), updated_at)
 WHERE id = sqlc.arg(id)
 RETURNING *;;
+
+-- name: ListAllArticles :many
+SELECT id, title, summary, views, likes, is_publish, owner, created_at, updated_at, deleted_at
+FROM articles
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountAllArticles :one
+SELECT count(*)
+FROM articles;

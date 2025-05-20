@@ -27,7 +27,7 @@ type Server struct {
 	tokenMaker      token.Maker
 	router          *gin.Engine
 	taskDistributor worker.TaskDistributor
-	redisService    *service.RedisService
+	redisService    service.Redis
 }
 
 // NewServer creates a new HTTPS server and setup routing

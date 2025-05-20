@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package pb;
+
+import "article.proto";
+
+option go_package = "github.com/MonitorAllen/nostalgia/pb";
+
+message ListArticlesRequest {
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+message ListArticlesResponse {
+  repeated Article articles = 1;
+  optional int64 count = 2;
+}

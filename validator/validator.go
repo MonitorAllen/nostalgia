@@ -29,8 +29,8 @@ func ValidateUsername(value string) error {
 	return nil
 }
 
-func ValidatePassword(value string) error {
-	return ValidateString(value, 6, 100)
+func ValidatePassword(value string, min int) error {
+	return ValidateString(value, min, 100)
 }
 
 func ValidateEmail(value string) error {

@@ -11,6 +11,7 @@ import (
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
+	pgtype "github.com/jackc/pgx/v5/pgtype"
 )
 
 // MockStore is a mock of Store interface.
@@ -51,8 +52,23 @@ func (mr *MockStoreMockRecorder) AddCommentLikes(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommentLikes", reflect.TypeOf((*MockStore)(nil).AddCommentLikes), arg0, arg1)
 }
 
+// CountAllArticles mocks base method.
+func (m *MockStore) CountAllArticles(arg0 context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountAllArticles", arg0)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountAllArticles indicates an expected call of CountAllArticles.
+func (mr *MockStoreMockRecorder) CountAllArticles(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAllArticles", reflect.TypeOf((*MockStore)(nil).CountAllArticles), arg0)
+}
+
 // CountArticles mocks base method.
-func (m *MockStore) CountArticles(arg0 context.Context, arg1 bool) (int64, error) {
+func (m *MockStore) CountArticles(arg0 context.Context, arg1 pgtype.Bool) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CountArticles", arg0, arg1)
 	ret0, _ := ret[0].(int64)
@@ -64,6 +80,21 @@ func (m *MockStore) CountArticles(arg0 context.Context, arg1 bool) (int64, error
 func (mr *MockStoreMockRecorder) CountArticles(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountArticles", reflect.TypeOf((*MockStore)(nil).CountArticles), arg0, arg1)
+}
+
+// CreateAdmin mocks base method.
+func (m *MockStore) CreateAdmin(arg0 context.Context, arg1 db.CreateAdminParams) (db.Admin, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAdmin", arg0, arg1)
+	ret0, _ := ret[0].(db.Admin)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAdmin indicates an expected call of CreateAdmin.
+func (mr *MockStoreMockRecorder) CreateAdmin(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAdmin", reflect.TypeOf((*MockStore)(nil).CreateAdmin), arg0, arg1)
 }
 
 // CreateArticle mocks base method.
@@ -184,6 +215,21 @@ func (mr *MockStoreMockRecorder) DeleteComment(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteComment", reflect.TypeOf((*MockStore)(nil).DeleteComment), arg0, arg1)
 }
 
+// GetAdmin mocks base method.
+func (m *MockStore) GetAdmin(arg0 context.Context, arg1 string) (db.Admin, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAdmin", arg0, arg1)
+	ret0, _ := ret[0].(db.Admin)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAdmin indicates an expected call of GetAdmin.
+func (mr *MockStoreMockRecorder) GetAdmin(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdmin", reflect.TypeOf((*MockStore)(nil).GetAdmin), arg0, arg1)
+}
+
 // GetArticle mocks base method.
 func (m *MockStore) GetArticle(arg0 context.Context, arg1 uuid.UUID) (db.Article, error) {
 	m.ctrl.T.Helper()
@@ -274,6 +320,21 @@ func (mr *MockStoreMockRecorder) GetUserByUsername(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByUsername", reflect.TypeOf((*MockStore)(nil).GetUserByUsername), arg0, arg1)
 }
 
+// ListAllArticles mocks base method.
+func (m *MockStore) ListAllArticles(arg0 context.Context, arg1 db.ListAllArticlesParams) ([]db.ListAllArticlesRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllArticles", arg0, arg1)
+	ret0, _ := ret[0].([]db.ListAllArticlesRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAllArticles indicates an expected call of ListAllArticles.
+func (mr *MockStoreMockRecorder) ListAllArticles(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllArticles", reflect.TypeOf((*MockStore)(nil).ListAllArticles), arg0, arg1)
+}
+
 // ListArticles mocks base method.
 func (m *MockStore) ListArticles(arg0 context.Context, arg1 db.ListArticlesParams) ([]db.ListArticlesRow, error) {
 	m.ctrl.T.Helper()
@@ -302,6 +363,21 @@ func (m *MockStore) ListCommentsByArticleID(arg0 context.Context, arg1 uuid.UUID
 func (mr *MockStoreMockRecorder) ListCommentsByArticleID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).ListCommentsByArticleID), arg0, arg1)
+}
+
+// ListInitSysMenus mocks base method.
+func (m *MockStore) ListInitSysMenus(arg0 context.Context, arg1 int64) ([]db.ListInitSysMenusRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListInitSysMenus", arg0, arg1)
+	ret0, _ := ret[0].([]db.ListInitSysMenusRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListInitSysMenus indicates an expected call of ListInitSysMenus.
+func (mr *MockStoreMockRecorder) ListInitSysMenus(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInitSysMenus", reflect.TypeOf((*MockStore)(nil).ListInitSysMenus), arg0, arg1)
 }
 
 // UpdateArticle mocks base method.
