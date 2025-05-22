@@ -24,6 +24,7 @@ go.work.sum
 .idea
 .vscode
 *.log
+app.env
 
 # Ignore env files containing sensitive data
 /resources/

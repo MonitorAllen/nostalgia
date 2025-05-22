@@ -70,4 +70,10 @@ server_docker_up:
 	docker start redis
 	go run main.go
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis db_dbml
+decrypt_env:
+	gpg --batch --yes --passphrase "${ENV_PASSPHRASE}" --output app.env --decrypt app.$(env).env.enc
+
+encrypt_env:
+	gpg --batch --yes --symmetric --cipher-algo AES256 --output app.$(env).env.enc app.env
+
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis db_dbml decrypt_env encrypt_env
