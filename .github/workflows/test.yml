@@ -10,8 +10,10 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    # 指定该工作流使用的环境
-    environment: development
+
+    env:
+      ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+
     # Service containers to run with `container-job`
     services:
       # Label used to access the service container
@@ -41,6 +43,10 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
+
+      - name: Decrypt ENV
+        run: |
+          make decrypt_env env=dev
 
       - name: Install golang-migrate
         run: |
