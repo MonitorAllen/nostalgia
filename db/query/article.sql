@@ -56,3 +56,6 @@ LIMIT $1 OFFSET $2;
 -- name: CountAllArticles :one
 SELECT count(*)
 FROM articles;
+
+-- name: DeleteArticle :exec
+DELETE FROM articles WHERE id = $1;

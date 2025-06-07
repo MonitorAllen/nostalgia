@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/MonitorAllen/nostalgia/pb";
+
+message DeleteArticleRequest {
+  string id = 1;
+}
+
+message DeleteArticleResponse {}

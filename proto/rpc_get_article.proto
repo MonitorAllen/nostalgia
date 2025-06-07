@@ -8,6 +8,7 @@ option go_package = "github.com/MonitorAllen/nostalgia/pb";
 
 message GetArticleRequest {
   string id = 1;
+  bool need_content = 2;
 }
 
 message GetArticleResponse {

@@ -1,10 +1,9 @@
-version: "3.9"
 services:
   postgres:
     image: postgres:12-alpine
     environment:
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=nostalgia
     ports:
       - "5432:5432"
@@ -20,20 +19,26 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+      - "9090:9090"
+      - "9091:9091"
+    volumes:
+      - ./resources:/app/resources
     environment:
-      - DB_SOURCE=postgresql://root:root@postgres:5432/nostalgia?sslmode=disable
+      - DB_SOURCE=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/nostalgia?sslmode=disable
       - REDIS_ADDRESS=redis:6379
     depends_on:
       - postgres
       - redis
     entrypoint: ["/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh"]
     command: ["/app/main"]
-  frontend:
+  web:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: web/Dockerfile
     ports:
       - "80:80"
+    volumes:
+      - ./resources:/usr/share/nginx/resources
     depends_on:
       - api
 volumes:

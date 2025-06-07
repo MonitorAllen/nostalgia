@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"strconv"
-	"time"
 )
 
 func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessTokenRequest) (*pb.RenewAccessTokenResponse, error) {
@@ -23,7 +24,7 @@ func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessT
 	session, err := server.redisService.Get(adminSessionKey + strconv.FormatInt(refreshPayload.AdminID, 10))
 	if err != nil {
 		if errors.Is(redis.Nil, err) {
-			return nil, status.Error(codes.Unauthenticated, "access token not found")
+			return nil, status.Error(codes.Unauthenticated, "session has expired")
 		}
 		return nil, status.Error(codes.Internal, "cannot fetch session")
 	}
@@ -68,7 +69,7 @@ func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessT
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = server.redisService.Set(adminSessionKey+strconv.FormatInt(accessPayload.AdminID, 10), string(sessionBytes), server.config.AccessTokenDuration)
+	err = server.redisService.Set(adminSessionKey+strconv.FormatInt(accessPayload.AdminID, 10), string(sessionBytes), server.config.RefreshTokenDuration)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

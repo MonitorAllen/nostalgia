@@ -38,14 +38,13 @@
                 class="user-menu list-none m-0 p-0 absolute w-12rem surface-overlay border-none shadow-2"
               >
                 <li>
-                  <a 
-                    href="#" 
+                  <router-link
+                    :to="{name: 'update-admin'}"
                     class="flex align-items-center gap-2 px-3 py-2 hover:surface-200 cursor-pointer text-color"
-                    @click.prevent="handleProfile"
                   >
-                    <i class="pi pi-user"></i>
-                    <span>个人信息</span>
-                  </a>
+                    <i class="pi pi-user-edit"></i>
+                    <span>修改密码</span>
+                  </router-link>
                 </li>
                 <li class="border-top-1 surface-border"></li>
                 <li>
@@ -180,11 +179,6 @@ const toggleSidebar = () => {
 const toggleUserMenu = (event: Event) => {
   event.stopPropagation()
   isUserMenuVisible.value = !isUserMenuVisible.value
-}
-
-const handleProfile = () => {
-  // 处理个人信息点击事件
-  isUserMenuVisible.value = false
 }
 
 const handleLogout = () => {

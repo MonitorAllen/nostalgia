@@ -5,14 +5,18 @@ package pb;
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "rpc_create_admin.proto";
+import "rpc_update_admin.proto";
 import "rpc_login_admin.proto";
 import "rpc_logout_admin.proto";
 import "rpc_admin_info.proto";
 import "rpc_init_sys_menu.proto";
+import "rpc_create_article.proto";
+import "rpc_delete_article.proto";
 import "rpc_list_articles.proto";
 import "rpc_get_article.proto";
 import "rpc_update_article.proto";
 import "rpc_renew_access_token.proto";
+import "rpc_upload_file.proto";
 
 option go_package = 'github.com/MonitorAllen/nostalgia/pb';
 
@@ -74,7 +78,18 @@ service Nostalgia {
   }
   rpc CreateAdmin (CreateAdminRequest) returns (CreateAdminResponse) {
     option (google.api.http) = {
-      post: "/v1/create_admin"
+      post: "/v1/admin"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to create a new admin";
+      summary: "Create new admin";
+      tags: "Admin";
+    };
+  }
+  rpc UpdateAdmin (UpdateAdminRequest) returns (UpdateAdminResponse) {
+    option (google.api.http) = {
+      patch: "/v1/admin"
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -93,6 +108,27 @@ service Nostalgia {
       tags: "Admin";
     };
   }
+  rpc CreateArticle (CreateArticleRequest) returns (CreateArticleResponse) {
+    option (google.api.http) = {
+      post: "/v1/articles"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update create a new article";
+      summary: "create an new article";
+      tags: "Article";
+    };
+  }
+  rpc DeleteArticle (DeleteArticleRequest) returns (DeleteArticleResponse) {
+    option (google.api.http) = {
+      delete: "/v1/articles/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to delete article";
+      summary: "delete an article";
+      tags: "Article";
+    };
+  }
   rpc ListArticles (ListArticlesRequest) returns (ListArticlesResponse) {
     option (google.api.http) = {
       get: "/v1/articles"
@@ -105,7 +141,7 @@ service Nostalgia {
   }
   rpc GetArticle (GetArticleRequest) returns (GetArticleResponse) {
     option (google.api.http) = {
-      get: "/v1/articles/{id}"
+      get: "/v1/articles/{id}/{need_content}"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       description: "Use this API to get article info";
@@ -122,6 +158,17 @@ service Nostalgia {
       description: "Use this API to update article info";
       summary: "update article info";
       tags: "Article";
+    };
+  }
+  rpc UploadFile (UploadFileRequest) returns (UploadFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/util/upload_file"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API uload file";
+      summary: "uplaod file";
+      tags: "Util";
     };
   }
 }

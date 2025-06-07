@@ -8,6 +8,7 @@ import (
 
 func convertAdmin(admin db.Admin) *pb.Admin {
 	return &pb.Admin{
+		ID: admin.ID,
 		Username:  admin.Username,
 		IsActive:  admin.IsActive,
 		CreatedAt: timestamppb.New(admin.CreatedAt),
@@ -55,8 +56,8 @@ func convertArticleList(articles []db.ListAllArticlesRow) []*pb.Article {
 	return articlesList
 }
 
-func convertOnlyArticle(article db.Article) *pb.Article {
-	return &pb.Article{
+func convertOnlyArticle(article db.Article, needContent bool) *pb.Article {
+	pbArticle := &pb.Article{
 		Id:        article.ID.String(),
 		Title:     article.Title,
 		Summary:   &article.Summary,
@@ -68,4 +69,8 @@ func convertOnlyArticle(article db.Article) *pb.Article {
 		DeletedAt: timestamppb.New(article.DeletedAt),
 		Owner:     article.Owner.String(),
 	}
+	if needContent {
+		pbArticle.Content = &article.Content
+	}
+	return pbArticle
 }

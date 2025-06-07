@@ -28,3 +28,6 @@ DELETE FROM comments WHERE id = $1;
 
 -- name: DeleteChildComments :exec
 DELETE FROM comments WHERE parent_id = $1;
+
+-- name: DeleteCommentsByArticleID :exec
+DELETE FROM comments WHERE article_id = $1;

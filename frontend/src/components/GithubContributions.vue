@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import {useUserStore} from "@/store/module/user";
 
+// @ts-ignore
 import CalHeatmap from "cal-heatmap";
+// @ts-ignore
 import LegendLite from 'cal-heatmap/plugins/LegendLite';
+// @ts-ignore
 import Tooltip from 'cal-heatmap/plugins/Tooltip';
+// @ts-ignore
 import CalendarLabel from 'cal-heatmap/plugins/CalendarLabel';
 
 import 'cal-heatmap/cal-heatmap.css'
@@ -72,7 +76,8 @@ userStore.contributions()
               {
                 width: 30,
                 textAlign: 'start',
-                text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 == 0 ? '' : d)),
+                // @ts-ignore
+                text: () => dayjs.weekdaysShort().map((d: any, i: any) => (i % 2 == 0 ? '' : d)),
                 padding: [25, 0, 0, 0],
               },
             ],

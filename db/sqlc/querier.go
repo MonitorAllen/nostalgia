@@ -21,8 +21,10 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
+	DeleteArticle(ctx context.Context, id uuid.UUID) error
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
+	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
 	GetAdmin(ctx context.Context, username string) (Admin, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (Article, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Article, error)
@@ -34,6 +36,7 @@ type Querier interface {
 	ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
 	ListInitSysMenus(ctx context.Context, roleID int64) ([]ListInitSysMenusRow, error)
+	UpdateAdmin(ctx context.Context, arg UpdateAdminParams) (Admin, error)
 	UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)

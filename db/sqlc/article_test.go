@@ -2,12 +2,13 @@ package db
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 func createRandomArticle(t *testing.T) Article {
@@ -235,4 +236,15 @@ func TestUpdateArticleAllFields(t *testing.T) {
 	require.NotEqual(t, oldArticle.IsPublish, updatedArticle.IsPublish)
 	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
 	require.NotZero(t, updatedArticle.UpdatedAt)
+}
+
+func TestDeleteArticle(t *testing.T) {
+	article := createRandomArticle(t)
+
+	err := testStore.DeleteArticle(context.Background(), article.ID)
+	require.NoError(t, err)
+
+	getArticle, err := testStore.GetArticle(context.Background(), article.ID)
+	require.Equal(t, err, ErrRecordNotFound)
+	require.Empty(t, getArticle)
 }

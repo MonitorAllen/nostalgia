@@ -96,6 +96,9 @@ const handleRegister = () => {
 
         <Button label="Register" :disabled="isRegisterDisabled" @click="handleRegister" />
       </div>
+      <div class="flex flex-row mt-2">
+        <span>已经有账号了？</span><router-link :to="{name: 'login'}" class="pointer">去登陆</router-link>
+      </div>
     </Panel>
   </div>
 </template>

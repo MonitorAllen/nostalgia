@@ -65,7 +65,7 @@ const handleLogin = () => {
           </InputGroupAddon>
           <FloatLabel>
             <InputText id="username" v-model="user.username" />
-            <label for="username">Username</label>
+            <label for="username">用户名</label>
           </FloatLabel>
 
         </InputGroup>
@@ -76,11 +76,14 @@ const handleLogin = () => {
           </InputGroupAddon>
           <FloatLabel>
             <InputText id="password" type="password" v-model="user.password" :feedback="false" />
-            <label for="password">Password</label>
+            <label for="password">密码</label>
           </FloatLabel>
         </InputGroup>
 
         <Button label="Login" :disabled="isLoginDisabled" @click="handleLogin" />
+      </div>
+      <div class="flex flex-row mt-2">
+        <span>还有没有账号？</span><router-link :to="{name: 'register'}" class="pointer">去注册</router-link>
       </div>
     </Panel>
   </div>

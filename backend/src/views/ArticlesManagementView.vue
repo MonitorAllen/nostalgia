@@ -2,43 +2,50 @@
     <div class="surface-card h-full shadow-2 border-round p-3">
       <div class="flex justify-content-between align-items-center mb-4">
         <h1 class="text-xl font-medium m-0">文章管理</h1>
-        <Button label="新建文章" icon="pi pi-plus" severity="primary" />
+        <router-link :to="{name: 'editor'}" target="_blank">
+          <Button label="新建文章" icon="pi pi-plus" severity="primary"/>
+        </router-link>
       </div>
-      <DataTable
-        :value="articles"
-        scrollable
-        scrollHeight="580px"
-        showGridlines
-        stripedRows
-        responsiveLayout="scroll"
-        class="p-datatable-sm mb-4"
-      >
-        <Column field="title" header="标题"></Column>
-        <Column field="summary" header="摘要"></Column>
-        <Column field="likes" header="点赞" style="min-width: 50px;"></Column>
-        <Column field="views" header="浏览量" style="min-width: 65px;"></Column>
-        <Column field="is_publish" header="是否发布" style="min-width: 80px;">
-          <template #body="slotProps">
-            <Tag :value="slotProps.data.is_publish ? '已发布' : '未发布'" :severity="getStatusSeverity(slotProps.data.is_publish)" />
-          </template>
-        </Column>
-        <Column field="created_at" header="创建时间" style="min-width: 170px;">
-          <template #body="slotProps">
-            {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm:ss') }}
-          </template>
-        </Column>
-        <Column field="updated_at" header="更新时间" style="min-width: 170px;">
-          <template #body="slotProps">
-            {{ format(slotProps.data.updated_at, 'YYYY-MM-DD HH:mm:ss') }}
-          </template>
-        </Column>
-        <Column header="操作" :exportable="false" style="min-width:8rem">
-          <template #body="slotProps">
-            <Button label="编辑" size="small" severity="info" class="mr-2" @click="editArticle(slotProps.index, slotProps.data.id)"/>
-            <Button label="删除" size="small" severity="danger" />
-          </template>
-        </Column>
-      </DataTable>
+      <div style="height: 580px;">
+        <DataTable
+          :value="articles"
+          scrollable
+          scrollHeight="580px"
+          showGridlines
+          stripedRows
+          responsiveLayout="scroll"
+          class="p-datatable-sm mb-4"
+        >
+          <Column field="title" header="标题" style="min-width: 140px;"></Column>
+          <Column field="summary" header="摘要" style="min-width: 120px;"></Column>
+          <Column field="likes" header="点赞" style="width: 50px; min-width: 50px;"></Column>
+          <Column field="views" header="浏览量" style="width: 65px; min-width: 65px;"></Column>
+          <Column field="is_publish" header="是否发布" style="width: 80px; min-width: 80px;">
+            <template #body="slotProps">
+              <Tag :value="slotProps.data.is_publish ? '已发布' : '未发布'" :severity="getStatusSeverity(slotProps.data.is_publish)" />
+            </template>
+          </Column>
+          <Column field="created_at" header="创建时间" style="width: 172px; min-width: 172px">
+            <template #body="slotProps">
+              {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm:ss') }}
+            </template>
+          </Column>
+          <Column field="updated_at" header="更新时间" style="width: 172px; min-width: 172px;">
+            <template #body="slotProps">
+              {{ format(slotProps.data.updated_at, 'YYYY-MM-DD HH:mm:ss') }}
+            </template>
+          </Column>
+          <Column header="操作" :exportable="false" style="width: 15rem; min-width:15rem">
+            <template #body="slotProps">
+              <Button label="编辑信息" size="small" severity="info" class="mr-2" @click="editArticle(slotProps.index, slotProps.data.id)"/>
+              <router-link :to="{name: 'editor', params: { id: slotProps.data.id }}" target="_blank" class="mr-2">
+                <Button label="编辑内容" size="small" severity="info" />
+              </router-link>
+              <Button label="删除" size="small" severity="danger" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
       <Paginator
         :rows="limit"
         :totalRecords="count"
@@ -104,6 +111,7 @@ onMounted(async () => {
         articles.value = articleStore.articles
         count.value = articleStore.count
     } catch (error) {
+        console.log(error)
         toast.add({ severity: 'error', summary: '错误', detail: '获取文章列表失败', life: 2500})
     }
 })
@@ -152,17 +160,17 @@ const edittingIndex = ref(-1)
 
 const editArticle = async (index: number, id: string) => {
   try {
-    const res = await fetchArticleById(id)
+    const res = await fetchArticleById(id, false)
     Object.assign(article, res)
     visible.value = true
     edittingIndex.value = index
   } catch (error: any) {
+    console.log(error)
     toast.add({severity: 'error', summary: '错误', detail: '获取文章信息失败: ' + error.response?.data?.message, life: 2500})
   }
 }
 
 const onUpdateArticle = async (e: any) => {
-  console.log(e.values)
   try {
     const res = await updateArticle(e.values as UpdateArticleParams)
     if (edittingIndex.value != -1) {

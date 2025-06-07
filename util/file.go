@@ -2,8 +2,12 @@ package util
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
+	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // DownloadFile 从 URL 下载文件并保存到本地
@@ -45,4 +49,58 @@ func DownloadFiles(urls []string, dstDir string) error {
 		}
 	}
 	return nil
+}
+
+func ListFiles(dirPath string) ([]string, error) {
+	// 读取目录中的所有文件和子目录
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+
+	var fileNames []string
+	for _, entry := range entries {
+		if !entry.IsDir() { // 判断是否为文件
+			fileNames = append(fileNames, entry.Name())
+		}
+	}
+
+	return fileNames, nil
+}
+
+func ExtractFileNames(content string) []string {
+	// 定义一个正则表达式，匹配 URL 的基本结构
+	urlRegex := `https?://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]`
+	re := regexp.MustCompile(urlRegex)
+
+	// 找出文章中的所有 URL
+	matches := re.FindAllString(content, -1)
+
+	var fileNames []string
+	for _, url := range matches {
+		// 从 URL 中提取文件名
+		segments := strings.Split(url, "/")
+		fileName := segments[len(segments)-1]
+
+		// 排除没有文件名的情况（例如 URL 以 / 结尾）
+		if fileName != "" {
+			fileNames = append(fileNames, fileName)
+		}
+	}
+
+	return fileNames
+}
+
+func dirExists(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil // 不存在
+		}
+		return false, err // 其他错误
+	}
+	return info.IsDir(), nil // 存在且是目录
 }

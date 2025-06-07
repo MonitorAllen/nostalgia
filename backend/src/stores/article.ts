@@ -6,6 +6,7 @@ export interface Article {
     id: string
     title: string
     summary: string
+    content?: string
     likes: number
     views: number
     is_publish: boolean
@@ -39,6 +40,14 @@ export const useArticleStore = defineStore('article', () => {
 
         } catch (error) {
             throw error
+        }
+    }
+
+    const createArticle = () => {
+        try {
+            const res = axiosInstance.get
+        } catch (error) {
+            
         }
     }
 
