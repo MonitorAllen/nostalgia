@@ -3,14 +3,18 @@ package gapi
 import (
 	"context"
 	"fmt"
+	"os"
+	"slices"
+	"time"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
+	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRequest) (*pb.UpdateArticleResponse, error) {
@@ -29,33 +33,67 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	arg := db.UpdateArticleParams{
-		Title: pgtype.Text{
-			String: req.GetTitle(),
-			Valid:  req.Title != nil,
+	arg := db.UpdateArticleTxParams{
+		UpdateArticleParams: db.UpdateArticleParams{
+			ID: articleId,
+			Title: pgtype.Text{
+				String: req.GetTitle(),
+				Valid:  req.Title != nil,
+			},
+			Summary: pgtype.Text{
+				String: req.GetSummary(),
+				Valid:  req.Summary != nil,
+			},
+			Content: pgtype.Text{
+				String: req.GetContent(),
+				Valid:  req.Content != nil,
+			},
+			IsPublish: pgtype.Bool{
+				Bool:  req.GetIsPublish(),
+				Valid: req.IsPublish != nil,
+			},
+			UpdatedAt: pgtype.Timestamptz{
+				Time:  time.Now(),
+				Valid: true,
+			},
 		},
-		Summary: pgtype.Text{
-			String: req.GetSummary(),
-			Valid:  req.Summary != nil,
+		AfterUpdate: func(article db.Article) error {
+			// 同步文章的文件列表，确保不会存在冗余文件
+			contentFileNames := util.ExtractFileNames(article.Content)
+
+			resourcePath := fmt.Sprintf("%s/%s/%s", server.config.ResourcePath, "articles", article.ID.String())
+			folderFiles, err := util.ListFiles(resourcePath)
+			if err != nil {
+				return err
+			}
+
+			for _, fileName := range folderFiles {
+				if !slices.Contains(contentFileNames, fileName) {
+					err := os.Remove(fmt.Sprintf("%s/%s", resourcePath, fileName))
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			return nil
 		},
-		IsPublish: pgtype.Bool{
-			Bool:  req.GetIsPublish(),
-			Valid: req.IsPublish != nil,
-		},
-		UpdatedAt: pgtype.Timestamptz{
-			Time:  time.Now(),
-			Valid: true,
-		},
-		ID: articleId,
 	}
 
-	article, err := server.store.UpdateArticle(ctx, arg)
+	result, err := server.store.UpdateArticleTx(ctx, arg)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "can't update article: %v", err)
+		code, _ := db.ErrorCode(err)
+		errCode := code
+		switch errCode {
+		case db.ForeignKeyViolation, db.UniqueViolation:
+			return nil, status.Errorf(codes.AlreadyExists, "failed to update article: %v", err)
+		}
+
+		return nil, status.Errorf(codes.Internal, "failed to update article: %v", err)
 	}
 
 	resp := &pb.UpdateArticleResponse{
-		Article: convertOnlyArticle(article),
+		Article: convertOnlyArticle(result.Article, false),
 	}
 
 	return resp, nil

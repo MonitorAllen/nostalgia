@@ -2,6 +2,7 @@ package gapi
 
 import (
 	"context"
+
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -18,6 +19,7 @@ func (server *Server) GetArticle(ctx context.Context, req *pb.GetArticleRequest)
 	if id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id required")
 	}
+
 	articleId, err := uuid.Parse(id)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid id")
@@ -29,6 +31,6 @@ func (server *Server) GetArticle(ctx context.Context, req *pb.GetArticleRequest)
 	}
 
 	return &pb.GetArticleResponse{
-		Article: convertOnlyArticle(getArticle),
+		Article: convertOnlyArticle(getArticle, req.GetNeedContent()),
 	}, nil
 }

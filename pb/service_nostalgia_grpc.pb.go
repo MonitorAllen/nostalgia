@@ -24,10 +24,14 @@ const (
 	Nostalgia_RenewAccessToken_FullMethodName = "/pb.Nostalgia/RenewAccessToken"
 	Nostalgia_InitSysMenu_FullMethodName      = "/pb.Nostalgia/InitSysMenu"
 	Nostalgia_CreateAdmin_FullMethodName      = "/pb.Nostalgia/CreateAdmin"
+	Nostalgia_UpdateAdmin_FullMethodName      = "/pb.Nostalgia/UpdateAdmin"
 	Nostalgia_AdminInfo_FullMethodName        = "/pb.Nostalgia/AdminInfo"
+	Nostalgia_CreateArticle_FullMethodName    = "/pb.Nostalgia/CreateArticle"
+	Nostalgia_DeleteArticle_FullMethodName    = "/pb.Nostalgia/DeleteArticle"
 	Nostalgia_ListArticles_FullMethodName     = "/pb.Nostalgia/ListArticles"
 	Nostalgia_GetArticle_FullMethodName       = "/pb.Nostalgia/GetArticle"
 	Nostalgia_UpdateArticle_FullMethodName    = "/pb.Nostalgia/UpdateArticle"
+	Nostalgia_UploadFile_FullMethodName       = "/pb.Nostalgia/UploadFile"
 )
 
 // NostalgiaClient is the client API for Nostalgia service.
@@ -39,10 +43,14 @@ type NostalgiaClient interface {
 	RenewAccessToken(ctx context.Context, in *RenewAccessTokenRequest, opts ...grpc.CallOption) (*RenewAccessTokenResponse, error)
 	InitSysMenu(ctx context.Context, in *InitSysMenuRequest, opts ...grpc.CallOption) (*InitSysMenuResponse, error)
 	CreateAdmin(ctx context.Context, in *CreateAdminRequest, opts ...grpc.CallOption) (*CreateAdminResponse, error)
+	UpdateAdmin(ctx context.Context, in *UpdateAdminRequest, opts ...grpc.CallOption) (*UpdateAdminResponse, error)
 	AdminInfo(ctx context.Context, in *AdminInfoRequest, opts ...grpc.CallOption) (*AdminInfoResponse, error)
+	CreateArticle(ctx context.Context, in *CreateArticleRequest, opts ...grpc.CallOption) (*CreateArticleResponse, error)
+	DeleteArticle(ctx context.Context, in *DeleteArticleRequest, opts ...grpc.CallOption) (*DeleteArticleResponse, error)
 	ListArticles(ctx context.Context, in *ListArticlesRequest, opts ...grpc.CallOption) (*ListArticlesResponse, error)
 	GetArticle(ctx context.Context, in *GetArticleRequest, opts ...grpc.CallOption) (*GetArticleResponse, error)
 	UpdateArticle(ctx context.Context, in *UpdateArticleRequest, opts ...grpc.CallOption) (*UpdateArticleResponse, error)
+	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error)
 }
 
 type nostalgiaClient struct {
@@ -103,10 +111,40 @@ func (c *nostalgiaClient) CreateAdmin(ctx context.Context, in *CreateAdminReques
 	return out, nil
 }
 
+func (c *nostalgiaClient) UpdateAdmin(ctx context.Context, in *UpdateAdminRequest, opts ...grpc.CallOption) (*UpdateAdminResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAdminResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_UpdateAdmin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *nostalgiaClient) AdminInfo(ctx context.Context, in *AdminInfoRequest, opts ...grpc.CallOption) (*AdminInfoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminInfoResponse)
 	err := c.cc.Invoke(ctx, Nostalgia_AdminInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) CreateArticle(ctx context.Context, in *CreateArticleRequest, opts ...grpc.CallOption) (*CreateArticleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateArticleResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_CreateArticle_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) DeleteArticle(ctx context.Context, in *DeleteArticleRequest, opts ...grpc.CallOption) (*DeleteArticleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteArticleResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_DeleteArticle_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +181,16 @@ func (c *nostalgiaClient) UpdateArticle(ctx context.Context, in *UpdateArticleRe
 	return out, nil
 }
 
+func (c *nostalgiaClient) UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadFileResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_UploadFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NostalgiaServer is the server API for Nostalgia service.
 // All implementations must embed UnimplementedNostalgiaServer
 // for forward compatibility.
@@ -152,10 +200,14 @@ type NostalgiaServer interface {
 	RenewAccessToken(context.Context, *RenewAccessTokenRequest) (*RenewAccessTokenResponse, error)
 	InitSysMenu(context.Context, *InitSysMenuRequest) (*InitSysMenuResponse, error)
 	CreateAdmin(context.Context, *CreateAdminRequest) (*CreateAdminResponse, error)
+	UpdateAdmin(context.Context, *UpdateAdminRequest) (*UpdateAdminResponse, error)
 	AdminInfo(context.Context, *AdminInfoRequest) (*AdminInfoResponse, error)
+	CreateArticle(context.Context, *CreateArticleRequest) (*CreateArticleResponse, error)
+	DeleteArticle(context.Context, *DeleteArticleRequest) (*DeleteArticleResponse, error)
 	ListArticles(context.Context, *ListArticlesRequest) (*ListArticlesResponse, error)
 	GetArticle(context.Context, *GetArticleRequest) (*GetArticleResponse, error)
 	UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error)
+	UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error)
 	mustEmbedUnimplementedNostalgiaServer()
 }
 
@@ -181,8 +233,17 @@ func (UnimplementedNostalgiaServer) InitSysMenu(context.Context, *InitSysMenuReq
 func (UnimplementedNostalgiaServer) CreateAdmin(context.Context, *CreateAdminRequest) (*CreateAdminResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAdmin not implemented")
 }
+func (UnimplementedNostalgiaServer) UpdateAdmin(context.Context, *UpdateAdminRequest) (*UpdateAdminResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAdmin not implemented")
+}
 func (UnimplementedNostalgiaServer) AdminInfo(context.Context, *AdminInfoRequest) (*AdminInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AdminInfo not implemented")
+}
+func (UnimplementedNostalgiaServer) CreateArticle(context.Context, *CreateArticleRequest) (*CreateArticleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateArticle not implemented")
+}
+func (UnimplementedNostalgiaServer) DeleteArticle(context.Context, *DeleteArticleRequest) (*DeleteArticleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteArticle not implemented")
 }
 func (UnimplementedNostalgiaServer) ListArticles(context.Context, *ListArticlesRequest) (*ListArticlesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListArticles not implemented")
@@ -192,6 +253,9 @@ func (UnimplementedNostalgiaServer) GetArticle(context.Context, *GetArticleReque
 }
 func (UnimplementedNostalgiaServer) UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateArticle not implemented")
+}
+func (UnimplementedNostalgiaServer) UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
 }
 func (UnimplementedNostalgiaServer) mustEmbedUnimplementedNostalgiaServer() {}
 func (UnimplementedNostalgiaServer) testEmbeddedByValue()                   {}
@@ -304,6 +368,24 @@ func _Nostalgia_CreateAdmin_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Nostalgia_UpdateAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).UpdateAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_UpdateAdmin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).UpdateAdmin(ctx, req.(*UpdateAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Nostalgia_AdminInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AdminInfoRequest)
 	if err := dec(in); err != nil {
@@ -318,6 +400,42 @@ func _Nostalgia_AdminInfo_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(NostalgiaServer).AdminInfo(ctx, req.(*AdminInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_CreateArticle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateArticleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).CreateArticle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_CreateArticle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).CreateArticle(ctx, req.(*CreateArticleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_DeleteArticle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteArticleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).DeleteArticle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_DeleteArticle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).DeleteArticle(ctx, req.(*DeleteArticleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -376,6 +494,24 @@ func _Nostalgia_UpdateArticle_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Nostalgia_UploadFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).UploadFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_UploadFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).UploadFile(ctx, req.(*UploadFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Nostalgia_ServiceDesc is the grpc.ServiceDesc for Nostalgia service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -404,8 +540,20 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Nostalgia_CreateAdmin_Handler,
 		},
 		{
+			MethodName: "UpdateAdmin",
+			Handler:    _Nostalgia_UpdateAdmin_Handler,
+		},
+		{
 			MethodName: "AdminInfo",
 			Handler:    _Nostalgia_AdminInfo_Handler,
+		},
+		{
+			MethodName: "CreateArticle",
+			Handler:    _Nostalgia_CreateArticle_Handler,
+		},
+		{
+			MethodName: "DeleteArticle",
+			Handler:    _Nostalgia_DeleteArticle_Handler,
 		},
 		{
 			MethodName: "ListArticles",
@@ -418,6 +566,10 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateArticle",
 			Handler:    _Nostalgia_UpdateArticle_Handler,
+		},
+		{
+			MethodName: "UploadFile",
+			Handler:    _Nostalgia_UploadFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

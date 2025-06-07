@@ -48,18 +48,6 @@ func newUserResponse(user db.User) userResponse {
 	}
 }
 
-// createUser
-// @Summary		create a new user
-// @Description	create a new user
-// @Tags			user
-// @Accept			json
-// @Produce		json
-// @Param			username	body		string	true	"用户名"
-// @Success		200			{object}	userResponse
-// @Failure		400			{json}		{"error": ""}
-// @Failure		404			{json}		{"error": ""}
-// @Failure		500			{json}		{"error": ""}
-// @Router		/users [post]
 func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -352,7 +340,7 @@ func (server *Server) contributions(ctx *gin.Context) {
 
 	reqUrl := "https://github-contributions.vercel.app/api/v1/MonitorAllen"
 
-	proxyUrl, err := url.Parse("http://127.0.0.1:10808")
+	proxyUrl, err := url.Parse(server.config.HTTPProxyAddr)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

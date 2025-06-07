@@ -147,7 +147,7 @@ onMounted(async () => {
   if (id === '') {
     post.value.title = '新建文章'
     post.value.is_publish = false
-    await articleStore.createArticle(post.value).then((res) => {
+    await articleStore.createArticle(post.value).then((res: any) => {
       id = res.data.id
       router.replace(`/article/edit/${id}`)
       // toast.add({ severity: 'error', summary: 'Error', detail: res.data.error, life: 2500})

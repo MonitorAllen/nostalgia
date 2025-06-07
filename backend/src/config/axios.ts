@@ -92,8 +92,8 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // 如果是未认证错误（gRPC 状态码 16）且不是刷新 token 的请求
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh_token')) {
+    // 如果是未认证错误且不是刷新 token 的请求
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/admin/renew_access')) {
       if (isRefreshing) {
         // 如果正在刷新，将请求添加到队列
         try {

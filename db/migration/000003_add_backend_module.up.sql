@@ -45,20 +45,12 @@ CREATE TABLE "sys_menus" (
                              "updated_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
 );
 
-INSERT INTO sys_menus (name, path, icon, is_active, type, sort)
-VALUES ('系统管理', '', 'pi pi-cog', true, 1, 1);
-
-INSERT INTO sys_menus (name, path, icon, is_active, type, parent_id, sort)
-VALUES ('仪表盘', '/dashboard', 'pi pi-home', true, 2, 1, 2);
 
 INSERT INTO sys_menus (name, path, icon, is_active, type, sort)
-VALUES ('基本管理', '', 'pi pi-sliders-h', true, 1, 3);
+VALUES ('基本管理', '', 'pi pi-sliders-h', true, 1, 1);
 
 INSERT INTO sys_menus (name, path, icon, is_active, type, parent_id, sort)
-VALUES ('用户管理', '/manage/users', 'pi pi-user', true, 2, 3, 4);
-
-INSERT INTO sys_menus (name, path, icon, is_active, type, parent_id, sort)
-VALUES ('文章管理', '/manage/articles', 'pi pi-book', true, 2, 3, 5);
+VALUES ('文章管理', '/manage/articles', 'pi pi-book', true, 2, 1, 2);
 
 CREATE TABLE "role_permissions" (
                                     "id" bigserial PRIMARY KEY,
@@ -73,15 +65,6 @@ VALUES (1, 1, 1);
 
 INSERT INTO role_permissions (role_id, menu_id, created_by)
 VALUES (1, 2, 1);
-
-INSERT INTO role_permissions (role_id, menu_id, created_by)
-VALUES (1, 3, 1);
-
-INSERT INTO role_permissions (role_id, menu_id, created_by)
-VALUES (1, 4, 1);
-
-INSERT INTO role_permissions (role_id, menu_id, created_by)
-VALUES (1, 5, 1);
 
 CREATE UNIQUE INDEX ON "sys_menus" ("name", "parent_id");
 

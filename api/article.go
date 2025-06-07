@@ -2,16 +2,16 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"slices"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
+	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"net/http"
-	"os"
-	"regexp"
-	"slices"
-	"strings"
 )
 
 type createArticleRequest struct {
@@ -241,10 +241,10 @@ func (server *Server) updateArticle(ctx *gin.Context) {
 		},
 		AfterUpdate: func(article db.Article) error {
 			// 同步文章的文件列表，确保不会存在冗余文件
-			contentFileNames := extractFileNames(article.Content)
+			contentFileNames := util.ExtractFileNames(article.Content)
 
 			resourcePath := fmt.Sprintf("./resources/%s", article.ID.String())
-			folderFiles, err := listFiles(resourcePath)
+			folderFiles, err := util.ListFiles(resourcePath)
 			if err != nil {
 				return err
 			}
@@ -277,44 +277,4 @@ func (server *Server) updateArticle(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, article)
-}
-
-func listFiles(dirPath string) ([]string, error) {
-	// 读取目录中的所有文件和子目录
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var fileNames []string
-	for _, entry := range entries {
-		if !entry.IsDir() { // 判断是否为文件
-			fileNames = append(fileNames, entry.Name())
-		}
-	}
-
-	return fileNames, nil
-}
-
-func extractFileNames(content string) []string {
-	// 定义一个正则表达式，匹配 URL 的基本结构
-	urlRegex := `https?://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]`
-	re := regexp.MustCompile(urlRegex)
-
-	// 找出文章中的所有 URL
-	matches := re.FindAllString(content, -1)
-
-	var fileNames []string
-	for _, url := range matches {
-		// 从 URL 中提取文件名
-		segments := strings.Split(url, "/")
-		fileName := segments[len(segments)-1]
-
-		// 排除没有文件名的情况（例如 URL 以 / 结尾）
-		if fileName != "" {
-			fileNames = append(fileNames, fileName)
-		}
-	}
-
-	return fileNames
 }

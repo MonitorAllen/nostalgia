@@ -1,7 +1,7 @@
-DB_URL=postgresql://root:root@localhost:5432/nostalgia?sslmode=disable
+DB_URL=postgresql://root:secret@localhost:5432/nostalgia?sslmode=disable
 
 postgres:
-	docker run --name postgres --network nostalgia-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=root -d postgres:12-alpine
+	docker run --name postgres --network nostalgia-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
 
 createdb:
 	docker exec -it postgres createdb --username=root --owner=root nostalgia
@@ -66,14 +66,14 @@ redis:
 	docker run --name redis -p 6379:6379 -d redis:7-alpine
 
 server_docker_up:
-	docker start postgres12
+	docker start postgres
 	docker start redis
 	go run main.go
 
 decrypt_env:
-	gpg --batch --yes --passphrase "${ENV_PASSPHRASE}" --output app.env --decrypt app.$(env).env.enc
+	gpg --batch --yes --passphrase "${ENV_PASSPHRASE}" --output .env --decrypt .env.$(env).enc
 
 encrypt_env:
-	gpg --batch --yes --symmetric --cipher-algo AES256 --output app.$(env).env.enc app.env
+	gpg --batch --yes --symmetric --cipher-algo AES256 --output .env.$(env).enc .env
 
 .PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis db_dbml decrypt_env encrypt_env

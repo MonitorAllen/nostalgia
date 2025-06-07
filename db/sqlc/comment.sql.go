@@ -94,6 +94,15 @@ func (q *Queries) DeleteComment(ctx context.Context, id int64) error {
 	return err
 }
 
+const deleteCommentsByArticleID = `-- name: DeleteCommentsByArticleID :exec
+DELETE FROM comments WHERE article_id = $1
+`
+
+func (q *Queries) DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteCommentsByArticleID, articleID)
+	return err
+}
+
 const getComment = `-- name: GetComment :one
 SELECT id, content, article_id, parent_id, likes, from_user_id, to_user_id, created_at, deleted_at FROM comments
 WHERE id = $1 LIMIT 1

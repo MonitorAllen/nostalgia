@@ -22,13 +22,15 @@
       </div>
       <Divider/>
       <div class="article-summary">
-        <h3>简介</h3>
+        <h3>摘要</h3>
       </div>
       <div>
         {{ summary }}
       </div>
       <Divider/>
-      <div class="" v-html="content"></div>
+      <div class="flex flex-row">
+        <div class="ck-content" v-html="content"></div>
+      </div>
     </div>
     <div class="comment-box flex flex-column m-auto p-2 mb-3">
       <div class="flex flex-column" v-if="userStore.userInfo">

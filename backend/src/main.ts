@@ -12,6 +12,7 @@ import 'primeflex/primeflex.css'
 
 import App from './App.vue'
 import router from './router'
+import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -24,6 +25,7 @@ app.use(PrimeVue, {
   }
 })
 app.use(ToastService)
+app.use(CkeditorPlugin)
 app.component('Toast', Toast)
 
 app.mount('#app')

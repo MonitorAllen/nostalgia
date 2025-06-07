@@ -7,6 +7,8 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAdmin = `-- name: CreateAdmin :one
@@ -54,6 +56,49 @@ WHERE username = $1 LIMIT 1
 
 func (q *Queries) GetAdmin(ctx context.Context, username string) (Admin, error) {
 	row := q.db.QueryRow(ctx, getAdmin, username)
+	var i Admin
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.IsActive,
+		&i.RoleID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateAdmin = `-- name: UpdateAdmin :one
+UPDATE admins
+SET
+    username = COALESCE($1, username),
+    hashed_password = COALESCE($2, hashed_password),
+    is_active = COALESCE($3, is_active),
+    role_id = COALESCE($4, role_id),
+    updated_at = COALESCE($5, updated_at)
+WHERE id = $6
+RETURNING id, username, hashed_password, is_active, role_id, created_at, updated_at
+`
+
+type UpdateAdminParams struct {
+	Username       pgtype.Text        `json:"username"`
+	HashedPassword pgtype.Text        `json:"hashed_password"`
+	IsActive       pgtype.Bool        `json:"is_active"`
+	RoleID         pgtype.Int8        `json:"role_id"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	ID             int64              `json:"id"`
+}
+
+func (q *Queries) UpdateAdmin(ctx context.Context, arg UpdateAdminParams) (Admin, error) {
+	row := q.db.QueryRow(ctx, updateAdmin,
+		arg.Username,
+		arg.HashedPassword,
+		arg.IsActive,
+		arg.RoleID,
+		arg.UpdatedAt,
+		arg.ID,
+	)
 	var i Admin
 	err := row.Scan(
 		&i.ID,

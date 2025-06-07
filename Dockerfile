@@ -8,7 +8,7 @@ RUN go env -w GO111MODULE=on && go env -w GOPROXY=https://goproxy.cn,direct && g
 FROM alpine:3.21
 WORKDIR /app
 COPY --from=builder /app/main .
-COPY app.env .
+COPY .env .
 COPY start.sh .
 RUN chmod +x /app/start.sh
 COPY wait-for.sh .

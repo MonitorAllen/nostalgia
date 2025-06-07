@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pb;
+
+import "article.proto";
+
+option go_package = "github.com/MonitorAllen/nostalgia/pb";
+
+message CreateArticleRequest {
+  optional string title = 1;
+  optional string summary = 2;
+  optional string content = 3;
+  optional bool is_publish = 4;
+}
+
+message CreateArticleResponse {
+  Article article = 1;
+}

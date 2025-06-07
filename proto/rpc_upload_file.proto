@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/MonitorAllen/nostalgia/pb";
+
+message UploadFileRequest {
+    optional string article_id = 1;
+    bytes content = 2;
+}
+
+message UploadFileResponse {
+    string url = 1;
+    string filename = 2;
+}
