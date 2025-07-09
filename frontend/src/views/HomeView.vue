@@ -17,13 +17,15 @@
               </div>
               <div class="flex flex-column w-9 justify-content-between">
                 <div class="flex flex-column justify-content-start">
-                  <div class="flex text-lg font-medium text-2xl text-primary">
+                  <div class="flex text-base font-medium text-2xl text-primary">
                     <a class="text-green-300" :href="`/article/${item.id}`" target="_blank">{{ item.title }}
                     </a>
                   </div>
-                  <p class="flex font-medium text-sm mt-2">
-                    {{ item.summary }}
-                  </p>
+                  <div class="mt-2 text-sm">
+                    <p>
+                      {{ item.summary.length > 100 ? item.summary.substring(0, 100) + "……": item.summary }}
+                    </p>
+                  </div>
                 </div>
                 <div class="flex flex-row gap-3 justify-content-between min-w-min">
                   <div class="flex flex-row gap-3">
@@ -140,9 +142,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.main {
+  min-width: 330px;
+}
 
 .center {
-
   .article-box {
     background-color: #fbfbfb;
     .article-cover {
@@ -193,5 +197,4 @@ onMounted(() => {
     max-width: 1140px;
   }
 }
-
 </style>

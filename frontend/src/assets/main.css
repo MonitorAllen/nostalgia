@@ -61,8 +61,6 @@ table {
   width: 100%; /* 表格宽度占满父元素 */
 }
 
-
-
 blockquote {
   margin: 0;
   padding-left: 1rem;
@@ -99,7 +97,6 @@ button {
   border-radius: 0.25rem;
   transition: background-color 0.2s ease;
 }
-
 
 textarea {
   resize: vertical; /* 限制 textarea 只在垂直方向可调整大小 */
@@ -151,6 +148,3 @@ html {
     font-size: 12px;
   }
 }
-
-
-
