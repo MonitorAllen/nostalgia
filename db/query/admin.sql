@@ -22,3 +22,7 @@ SET
     updated_at = COALESCE(sqlc.narg(updated_at), updated_at)
 WHERE id = sqlc.arg(id)
 RETURNING *;;
+
+-- name: GetAdminById :one
+SELECT * FROM admins
+WHERE id = $1 LIMIT 1;

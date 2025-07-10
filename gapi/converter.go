@@ -8,7 +8,7 @@ import (
 
 func convertAdmin(admin db.Admin) *pb.Admin {
 	return &pb.Admin{
-		ID: admin.ID,
+		Id: admin.ID,
 		Username:  admin.Username,
 		IsActive:  admin.IsActive,
 		CreatedAt: timestamppb.New(admin.CreatedAt),

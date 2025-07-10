@@ -123,6 +123,10 @@ const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToast()
 
+if (authStore.isAuthenticated) {
+  router.replace('/')
+}
+
 const form = ref({
   username: '',
   password: ''
@@ -149,12 +153,12 @@ const handleLogin = async () => {
       life: 3000
     })
     router.push('/')
-  } catch (error) {
+  } catch (error: any) {
     console.error('登录失败:', error)
     toast.add({
       severity: 'error',
       summary: '登录失败',
-      detail: '用户名或密码错误',
+      detail: error.response?.data.message || '用户名或密码错误',
       life: 3000
     })
   } finally {

@@ -26,6 +26,7 @@ type Querier interface {
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
 	GetAdmin(ctx context.Context, username string) (Admin, error)
+	GetAdminById(ctx context.Context, id int64) (Admin, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (Article, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Article, error)
 	GetComment(ctx context.Context, id int64) (Comment, error)
