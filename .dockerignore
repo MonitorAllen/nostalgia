@@ -1,0 +1,9 @@
+node_modules
+frontend/
+backend/
+*.log
+.git
+.idea
+.github
+.vscode
+.dockerignore

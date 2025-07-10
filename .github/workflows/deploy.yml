@@ -11,21 +11,22 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Login to Alibaba Cloud ACR
-        uses: aliyun/acr-login@v1
-        with:
-          login-server: https://registry.cn-shenzhen.aliyuncs.com
-          username: "${{ secrets.ACR_USERNAME }}"
-          password: "${{ secrets.ACR_PASSWORD }}"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push image to Alibaba ACR
+      - name: Login to Tencent Cloud TCR
+        run: |
+          echo "${{ secrets.TCR_PASSWORD }}" | docker login -u ${{ secrets.TCR_USERNAME }} --password-stdin ${{ secrets.TCR_REGISTRY }}
+
+      - name: Build and push image to Tencent ACR
         env:
-          ACR_REGISTRY: registry.cn-shenzhen.aliyuncs.com
-          ACR_NAMESPACE: monitorallen
-          ACR_REPOSITORY: nostalgia
+          TCR_REGISTRY: ${{ secrets.TCR_REGISTRY }}
+          TCR_NAMESPACE: ${{ secrets.TCR_NAMESPACE }}
+          TCR_REPOSITORY: ${{ secrets.TCR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ACR_REGISTRY/$ACR_NAMESPACE/$ACR_REPOSITORY:$IMAGE_TAG .
-          docker push $ACR_REGISTRY/$ACR_NAMESPACE/$ACR_REPOSITORY:$IMAGE_TAG
+          IMAGE=$TCR_REGISTRY/$TCR_NAMESPACE/$TCR_REPOSITORY:$IMAGE_TAG
+          docker build -t $IMAGE .
+          docker push $IMAGE
