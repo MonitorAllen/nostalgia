@@ -12,6 +12,7 @@ message UpdateAdminRequest {
   optional string password = 3;
   optional bool is_active = 4;
   optional int64 role_id = 5;
+  optional string old_password = 6;
 }
 
 message UpdateAdminResponse {

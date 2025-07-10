@@ -43,6 +43,24 @@ func (server *Server) UpdateAdmin(ctx context.Context, req *pb.UpdateAdminReques
 	}
 
 	if req.Password != nil {
+		if req.OldPassword == nil {
+			return nil, status.Error(codes.InvalidArgument, "miss old password")
+		}
+
+		getAdmin, err := server.store.GetAdminById(ctx, req.GetId())
+		if err != nil {
+			if err == db.ErrRecordNotFound {
+				return nil, status.Errorf(codes.NotFound, "failed to fetch admin: %v", err)
+			}
+
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		err = util.CheckPassword(req.GetOldPassword(), getAdmin.HashedPassword)
+		if err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, "incorrect old password")
+		}
+
 		hashedPassword, err := util.HashPassword(req.GetPassword())
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to hash password: %v", err)

@@ -7,7 +7,7 @@ interface LoginForm {
   password: string
 }
 
-interface Admin {
+export interface Admin {
   id: number
   username: string
   email: string
