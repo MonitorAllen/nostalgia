@@ -1,4 +1,23 @@
 services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs:ro
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    environment:
+      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/etc/nginx/certs
+    depends_on:
+      - nginx-proxy
   postgres:
     image: postgres:12-alpine
     environment:
@@ -35,8 +54,10 @@ services:
     build:
       context: .
       dockerfile: web/Dockerfile
-    ports:
-      - "80:80"
+    environment:
+      - VIRTUAL_HOST=www.3catz.icu
+      - LETSENCRYPT_HOST=www.3catz.icu
+      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
     volumes:
       - ./resources:/usr/share/nginx/resources
     depends_on:
