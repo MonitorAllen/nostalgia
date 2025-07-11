@@ -1,26 +1,18 @@
 services:
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy
-    container_name: nginx-proxy
+  caddy:
+    image: caddy:2
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - ./certs:/etc/nginx/certs:ro
-      - /usr/share/nginx/html:/usr/share/nginx/html
-  acme-companion:
-    image: nginxproxy/acme-companion
-    container_name: nginx-proxy-acme
-    environment:
-      - NGINX_PROXY_CONTAINER=nginx-proxy
-      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /usr/share/nginx/html:/usr/share/nginx/html
-      - /etc/nginx/certs:/etc/nginx/certs:rw
+    networks:
+      - nostalgia
     depends_on:
-      - nginx-proxy
+      - web
+      - api
   postgres:
     image: postgres:12-alpine
     environment:
@@ -29,12 +21,16 @@ services:
       - POSTGRES_DB=nostalgia
     ports:
       - "5432:5432"
+    networks:
+      - nostalgia
     volumes:
       - data-volume:/var/lib/postgresql/data
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    networks:
+      - nostalgia
   api:
     build:
       context: .
@@ -43,6 +39,8 @@ services:
       - "8080:8080"
       - "9090:9090"
       - "9091:9091"
+    networks:
+      - nostalgia
     volumes:
       - ./resources:/app/resources
     environment:
@@ -57,13 +55,17 @@ services:
     build:
       context: .
       dockerfile: web/Dockerfile
-    environment:
-      - VIRTUAL_HOST=www.3catz.icu
-      - LETSENCRYPT_HOST=www.3catz.icu
-      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
     volumes:
       - ./resources:/usr/share/nginx/resources
+    networks:
+      - nostalgia
     depends_on:
       - api
 volumes:
   data-volume:
+  caddy_data:
+  caddy_config:
+
+networks:
+  nostalgia:
+    driver: bridge
