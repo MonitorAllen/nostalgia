@@ -19,7 +19,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /usr/share/nginx/html:/usr/share/nginx/html
       - /etc/nginx/certs:/etc/nginx/certs:rw
-      - acme:/etc/acme.sh
     depends_on:
       - nginx-proxy
   postgres:
