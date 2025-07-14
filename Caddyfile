@@ -1,36 +1,18 @@
 www.3catz.icu {
-    encode gzip
-	log {
-		output stdout
-		format single_field common_log
-	}
+  encode gzip
 
-	# 前台博客首页
-	reverse_proxy / {
-		to web:80
-	}
+  log {
+	output stdout
+	format json
+  }
 
-	reverse_proxy /backend/* {
-		to web:80
-	}
+  # API 请求，优先级高
+  reverse_proxy /api/* api:8080
+  reverse_proxy /v1/* api:9091
 
-	# 静态资源
-	reverse_proxy /resources/* {
-		to web:80
-	}
+  # 后台管理页面代理
+  reverse_proxy /backend/* web:80
 
-	# API 接口反向代理
-	reverse_proxy /api/* {
-		to api:8080
-		header_up HOST {host}
-		header_up X-Real_IP {remote_host}
-		header_up Authorization {http.request.header.Authorization}
-	}
-
-	reverse_proxy /v1/* {
-        to api:9091
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up Authorization {http.request.header.Authorization}
-    }
+  # 前台博客页面代理
+  reverse_proxy web:80
 }
