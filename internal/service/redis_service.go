@@ -14,6 +14,7 @@ type Redis interface {
 	Exists(key string) bool
 	Close() error
 	Ping(ctx context.Context) error
+	SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (bool, error)
 }
 
 type RedisService struct {
@@ -50,4 +51,8 @@ func (r *RedisService) Close() error {
 
 func (r *RedisService) Ping(ctx context.Context) error {
 	return r.client.Ping(ctx).Err()
+}
+
+func (r *RedisService) SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (bool, error) {
+	return r.client.SetNX(ctx, key, value, expiration).Result()
 }

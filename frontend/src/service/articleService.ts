@@ -8,8 +8,8 @@ const getArticle = (id: string) => request.get(`articles/${id}`, {
     skipAuth: true, // 自定义配置，用于标记该请求不需要经过拦截器
 })
 
-const listArticle = (page: number, limit: number) => {
-    return request.get(`/articles?page=${page}&limit=${limit}`, {
+const listArticle = (category_id: number, page: number, limit: number) => {
+    return request.get(`/articles?category_id=${category_id}&page=${page}&limit=${limit}`, {
         // 设置不使用拦截器
         headers: {},
         skipAuth: true, // 自定义配置，用于标记该请求不需要经过拦截器

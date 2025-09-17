@@ -25,10 +25,10 @@ export const useArticleStore = defineStore('article', {
           })
       })
     },
-    listArticle(page: number, limit: number) {
+    listArticle(category_id: number, page: number, limit: number) {
       return new Promise((resolve, reject) => {
         articleService
-          .listArticle(page, limit)
+          .listArticle(category_id, page, limit)
           .then((res) => {
             resolve(res)
           })

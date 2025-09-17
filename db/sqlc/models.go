@@ -44,10 +44,22 @@ type Article struct {
 	// 是否发布
 	IsPublish bool `json:"is_publish"`
 	// 拥有者
-	Owner     uuid.UUID `json:"owner"`
+	Owner      uuid.UUID `json:"owner"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	DeletedAt  time.Time `json:"deleted_at"`
+	CategoryID int64     `json:"category_id"`
+}
+
+// 文章分类表
+type Category struct {
+	ID int64 `json:"id"`
+	// 分类名称
+	Name string `json:"name"`
+	// 是否为系统分类
+	IsSystem  bool      `json:"is_system"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
 }
 
 type Comment struct {

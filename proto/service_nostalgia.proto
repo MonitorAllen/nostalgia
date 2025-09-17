@@ -17,6 +17,7 @@ import "rpc_get_article.proto";
 import "rpc_update_article.proto";
 import "rpc_renew_access_token.proto";
 import "rpc_upload_file.proto";
+import "category.proto";
 
 option go_package = 'github.com/MonitorAllen/nostalgia/pb';
 
@@ -166,9 +167,51 @@ service Nostalgia {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API uload file";
-      summary: "uplaod file";
+      description: "Use this API upload file";
+      summary: "upload file";
       tags: "Util";
+    };
+  }
+  rpc CreateCategory (CreateCategoryRequest) returns (CreateCategoryResponse) {
+    option (google.api.http) = {
+      post: "/v1/category"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to create category";
+      summary: "create category";
+      tags: "Category";
+    };
+  }
+  rpc DeleteCategory (DeleteCategoryRequest) returns (DeleteCategoryResponse) {
+    option (google.api.http) = {
+      delete: "/v1/category/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to delete category by id";
+      summary: "delete category by id";
+      tags: "Category";
+    };
+  }
+  rpc UpdateCategory (UpdateCategoryRequest) returns (UpdateCategoryResponse) {
+    option (google.api.http) = {
+      put: "/v1/category"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update category";
+      summary: "update category";
+      tags: "Category";
+    };
+  }
+  rpc ListCategories (ListCategoriesRequest) returns (ListCategoriesResponse) {
+    option (google.api.http) = {
+      get: "/v1/category"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update category";
+      summary: "update category";
+      tags: "Category";
     };
   }
 }

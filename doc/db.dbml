@@ -30,13 +30,24 @@ Table articles as A {
   likes int [not null, default: 0, note: '点赞数']
   is_publish boolean [not null, default: false, note: '是否发布']
   owner uuid [ref: > U.id, not null, note: '拥有者']
+  category_id bigint [ref: > CG.id, not null, note: '分类ID']
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
   deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '删除时间']
 
   indexes {
     (is_publish, created_at)
+    (category_id, is_publish, created_at)
   }
+}
+
+Table categories as CG {
+  Note: '文章分类表'
+  id bigserial [pk]
+  name varchar [unique, not null, default: '', note: '分类名称']
+  is_system bool [not null, default: false, note: '是否为系统分类']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 }
 
 Table comments as C {

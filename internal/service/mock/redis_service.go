@@ -119,3 +119,18 @@ func (mr *MockRedisMockRecorder) Set(arg0, arg1, arg2 interface{}) *gomock.Call 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockRedis)(nil).Set), arg0, arg1, arg2)
 }
+
+// SetNX mocks base method.
+func (m *MockRedis) SetNX(arg0 context.Context, arg1 string, arg2 interface{}, arg3 time.Duration) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNX", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetNX indicates an expected call of SetNX.
+func (mr *MockRedisMockRecorder) SetNX(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNX", reflect.TypeOf((*MockRedis)(nil).SetNX), arg0, arg1, arg2, arg3)
+}

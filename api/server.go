@@ -68,27 +68,36 @@ func (server *Server) setupRouter() {
 	router.Static("/temp/upload", "./temp/upload")
 	router.Static("/resources/", "./resources")
 
-	router.POST("/api/users", server.createUser)
-	router.POST("/api/users/login", server.loginUser)
-	router.POST("/api/tokens/renew_access", server.renewAccessToken)
-	router.GET("/api/users/verify_email", server.verifyEmail)
-	router.GET("/api/users/contributions", server.contributions)
+	public := router.Group("/api")
+	{
+		public.POST("/users", server.createUser)
+		public.POST("/users/login", server.loginUser)
+		public.POST("/tokens/renew_access", server.renewAccessToken)
+		public.GET("/users/verify_email", server.verifyEmail)
+		public.GET("/users/contributions", server.contributions)
 
-	router.GET("/api/articles/:id", server.getArticle)
-	router.GET("/api/articles", server.listArticle)
+		public.GET("/articles/:id", server.getArticle)
+		public.GET("/articles", server.listArticle)
+		public.PATCH("/articles/increment_likes", server.incrementArticleLikes)
+		public.PATCH("/articles/increment_views", server.incrementArticleViews)
 
-	router.GET("/api/comments/:article_id", server.listCommentsByArticleID)
+		public.GET("/comments/:article_id", server.listCommentsByArticleID)
 
-	authRoutes := router.Group("/api/").Use(authMiddleware(server.tokenMaker))
+		public.GET("/categories", server.listCategories)
+		public.GET("/categories/:id", server.getCategory)
+	}
 
-	authRoutes.POST("/articles", server.createArticle)
-	authRoutes.PUT("/articles", server.updateArticle)
+	authRoutes := router.Group("/api").Use(authMiddleware(server.tokenMaker))
+	{
+		authRoutes.POST("/articles", server.createArticle)
+		authRoutes.PUT("/articles", server.updateArticle)
 
-	authRoutes.POST("/comments", server.createComment)
-	authRoutes.DELETE("/comments/:id", server.deleteComment)
+		authRoutes.POST("/comments", server.createComment)
+		authRoutes.DELETE("/comments/:id", server.deleteComment)
 
-	authRoutes.POST("/upload/:id", server.uploadFile).Use(uploadFileMiddleware(server.config))
-
+		authRoutes.POST("/upload/:id", server.uploadFile).Use(uploadFileMiddleware(server.config))
+	}
+	
 	server.router = router
 }
 

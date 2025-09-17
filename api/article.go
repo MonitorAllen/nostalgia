@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"time"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
@@ -67,6 +68,10 @@ type getArticleRequest struct {
 	ID string `uri:"id" binding:"required,uuid"`
 }
 
+type getArticleResponse struct {
+	Article db.GetArticleRow `json:"article"`
+}
+
 func (server *Server) getArticle(ctx *gin.Context) {
 	var req getArticleRequest
 
@@ -95,7 +100,7 @@ func (server *Server) getArticle(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, article)
+	ctx.JSON(http.StatusOK, getArticleResponse{Article: article})
 }
 
 type getArticleForUpdateRequest struct {
@@ -142,8 +147,9 @@ func (server *Server) getArticleForUpdate(ctx *gin.Context) {
 }
 
 type listArticleRequest struct {
-	Page  int32 `form:"page" binding:"required,min=1"`
-	Limit int32 `form:"limit" binding:"required,min=1,max=20"`
+	CategoryID int64 `form:"category_id" binding:"omitempty"`
+	Page       int32 `form:"page" binding:"required,min=1"`
+	Limit      int32 `form:"limit" binding:"required,min=1,max=20"`
 }
 
 type listArticleResponse struct {
@@ -168,19 +174,29 @@ func (server *Server) listArticle(ctx *gin.Context) {
 		},
 	}
 
+	countArg := db.CountArticlesParams{
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+
+	arg.CategoryID = pgtype.Int8{
+		Int64: req.CategoryID,
+		Valid: req.CategoryID != 0,
+	}
+	countArg.CategoryID = pgtype.Int8{
+		Int64: req.CategoryID,
+		Valid: req.CategoryID != 0,
+	}
+
 	articles, err := server.store.ListArticles(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	for i := range articles {
-		if articles[i].Tags[0] == "" {
-			articles[i].Tags = []string{}
-		}
-	}
-
-	countArticles, err := server.store.CountArticles(ctx, pgtype.Bool{Bool: true, Valid: true})
+	countArticles, err := server.store.CountArticles(ctx, countArg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -277,4 +293,95 @@ func (server *Server) updateArticle(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, article)
+}
+
+type incrementArticleLikesRequest struct {
+	ID uuid.UUID `json:"id" binding:"required,uuid"`
+}
+
+func (server *Server) incrementArticleLikes(ctx *gin.Context) {
+	var req incrementArticleLikesRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// 验证唯一标识（已登陆用 userID，为登陆用 IP+UA）
+	var userKey string
+	authPayload, exists := ctx.Get(authorizationPayloadKey)
+	if exists {
+		user := authPayload.(*token.Payload)
+		userKey = fmt.Sprintf("uid:%s", user.UserID.String())
+	} else {
+		ip := ctx.ClientIP()
+		ua := ctx.Request.UserAgent()
+		userKey = fmt.Sprintf("guest:%s:%s", ip, ua)
+	}
+
+	redisKey := fmt.Sprintf("articles:likes:%s:%s", req.ID, userKey)
+
+	set, err := server.redisService.SetNX(ctx, redisKey, 1, time.Hour*12)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if set {
+		err = server.store.IncrementArticleLikes(ctx, req.ID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	} else {
+		// 如果已经处理过则告知请求冲突，不需要+1
+		ctx.JSON(http.StatusConflict, nil)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{})
+}
+
+type incrementArticleViewsRequest struct {
+	ID uuid.UUID `json:"id" binding:"required,uuid"`
+}
+
+func (server *Server) incrementArticleViews(ctx *gin.Context) {
+	var req incrementArticleViewsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// 验证唯一标识（已登陆用 userID，为登陆用 IP+UA）
+	var userKey string
+	authPayload, exists := ctx.Get(authorizationPayloadKey)
+	if exists {
+		user := authPayload.(*token.Payload)
+		userKey = fmt.Sprintf("uid:%s", user.UserID.String())
+	} else {
+		ip := ctx.ClientIP()
+		ua := ctx.Request.UserAgent()
+		userKey = fmt.Sprintf("guest:%s:%s", ip, ua)
+	}
+
+	redisKey := fmt.Sprintf("articles:views:%s:%s", req.ID, userKey)
+
+	set, err := server.redisService.SetNX(ctx, redisKey, 1, time.Hour*12)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if set {
+		err = server.store.IncrementArticleViews(ctx, req.ID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	} else {
+		ctx.JSON(http.StatusConflict, nil)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{})
 }

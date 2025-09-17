@@ -63,3 +63,20 @@ func ValidateEmailId(value int64) error {
 func ValidateSecretCode(value string) error {
 	return ValidateString(value, 32, 128)
 }
+
+func ValidatePage(page int32) error {
+	if page <= 0 {
+		return fmt.Errorf("page must be greater than 0")
+	}
+	return nil
+}
+
+func ValidateLimit(limit, maxLimit int32) error {
+	if limit <= 0 {
+		return fmt.Errorf("limit must be greater than 0")
+	}
+	if maxLimit > 0 && limit > maxLimit {
+		return fmt.Errorf("limit must be less than or equal to %d", maxLimit)
+	}
+	return nil
+}
