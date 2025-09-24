@@ -76,7 +76,7 @@ func (server *Server) createComment(ctx *gin.Context) {
 		DeletedAt:    comment.DeletedAt,
 		FromUserName: authPayload.Username,
 		ToUserName:   toUser.Username,
-		Child:        []Comment{},
+		Child:        []*Comment{},
 	}}
 
 	ctx.JSON(http.StatusOK, resp)
@@ -87,22 +87,22 @@ type listCommentsByArticleIDRequest struct {
 }
 
 type Comment struct {
-	ID           int64     `json:"id"`
-	Content      string    `json:"content"`
-	ArticleID    uuid.UUID `json:"article_id"`
-	ParentID     int64     `json:"parent_id"`
-	Likes        int32     `json:"likes"`
-	FromUserID   uuid.UUID `json:"from_user_id"`
-	ToUserID     uuid.UUID `json:"to_user_id"`
-	CreatedAt    time.Time `json:"created_at"`
-	DeletedAt    time.Time `json:"deleted_at"`
-	FromUserName string    `json:"from_user_name"`
-	ToUserName   string    `json:"to_user_name"`
-	Child        []Comment `json:"child"`
+	ID           int64      `json:"id"`
+	Content      string     `json:"content"`
+	ArticleID    uuid.UUID  `json:"article_id"`
+	ParentID     int64      `json:"parent_id"`
+	Likes        int32      `json:"likes"`
+	FromUserID   uuid.UUID  `json:"from_user_id"`
+	ToUserID     uuid.UUID  `json:"to_user_id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	DeletedAt    time.Time  `json:"deleted_at"`
+	FromUserName string     `json:"from_user_name"`
+	ToUserName   string     `json:"to_user_name"`
+	Child        []*Comment `json:"child"`
 }
 
 type listCommentsByArticleIDResponse struct {
-	Comments []Comment `json:"comments"`
+	Comments []*Comment `json:"comments"`
 }
 
 func (server *Server) listCommentsByArticleID(ctx *gin.Context) {
@@ -129,14 +129,14 @@ func (server *Server) listCommentsByArticleID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, listCommentsByArticleIDResponse{Comments: commentTree})
 }
 
-func buildCommentTree(rows []db.ListCommentsByArticleIDRow) []Comment {
+func buildCommentTree(rows []db.ListCommentsByArticleIDRow) []*Comment {
 	// 用来存储 id -> Comment 的映射
-	commentMap := make(map[int64]Comment)
+	commentMap := make(map[int64]*Comment)
 
 	// 初始化映射
 	// 转换原始行数据为 Comment 结构
 	for _, row := range rows {
-		commentMap[row.ID] = Comment{
+		commentMap[row.ID] = &Comment{
 			ID:           row.ID,
 			Content:      row.Content,
 			ArticleID:    row.ArticleID,
@@ -148,20 +148,21 @@ func buildCommentTree(rows []db.ListCommentsByArticleIDRow) []Comment {
 			DeletedAt:    row.DeletedAt,
 			FromUserName: row.FromUserName.String,
 			ToUserName:   row.ToUserName.String,
-			Child:        []Comment{},
+			Child:        []*Comment{},
 		}
 	}
 
 	// 2. 构造树形结构
-	var rootComments []Comment
-	for i := range rows {
-		comment := rows[i]
+	var rootComments []*Comment
+	for _, comment := range rows {
 		if comment.ParentID == 0 {
 			// 根评论
 			rootComments = append(rootComments, commentMap[comment.ID])
-		} else if parent, exists := commentMap[int64(comment.ParentID)]; exists {
-			// 如果父评论存在，将当前评论添加到父评论的 Child 列表中
-			parent.Child = append(parent.Child, commentMap[comment.ID])
+		} else {
+			if parent, exists := commentMap[comment.ParentID]; exists {
+				// 如果父评论存在，将当前评论添加到父评论的 Child 列表中
+				parent.Child = append(parent.Child, commentMap[comment.ID])
+			}
 		}
 	}
 

@@ -32,16 +32,17 @@ func convertInitSysMenu(sysMenus []db.ListInitSysMenusRow) []*pb.InitSysMenu {
 
 func convertArticle(article db.ListAllArticlesRow) *pb.Article {
 	return &pb.Article{
-		Id:        article.ID.String(),
-		Title:     article.Title,
-		Summary:   &article.Summary,
-		IsPublish: &article.IsPublish,
-		Views:     &article.Views,
-		Likes:     &article.Likes,
-		CreatedAt: timestamppb.New(article.CreatedAt),
-		UpdatedAt: timestamppb.New(article.UpdatedAt),
-		DeletedAt: timestamppb.New(article.DeletedAt),
-		Owner:     article.Owner.String(),
+		Id:           article.ID.String(),
+		Title:        article.Title,
+		Summary:      &article.Summary,
+		IsPublish:    &article.IsPublish,
+		Views:        &article.Views,
+		Likes:        &article.Likes,
+		CreatedAt:    timestamppb.New(article.CreatedAt),
+		UpdatedAt:    timestamppb.New(article.UpdatedAt),
+		DeletedAt:    timestamppb.New(article.DeletedAt),
+		Owner:        article.Owner.String(),
+		CategoryName: article.CategoryName.String,
 	}
 }
 
@@ -58,16 +59,17 @@ func convertArticleList(articles []db.ListAllArticlesRow) []*pb.Article {
 
 func convertOnlyArticle(article db.Article, needContent bool) *pb.Article {
 	pbArticle := &pb.Article{
-		Id:        article.ID.String(),
-		Title:     article.Title,
-		Summary:   &article.Summary,
-		IsPublish: &article.IsPublish,
-		Views:     &article.Views,
-		Likes:     &article.Likes,
-		CreatedAt: timestamppb.New(article.CreatedAt),
-		UpdatedAt: timestamppb.New(article.UpdatedAt),
-		DeletedAt: timestamppb.New(article.DeletedAt),
-		Owner:     article.Owner.String(),
+		Id:         article.ID.String(),
+		Title:      article.Title,
+		Summary:    &article.Summary,
+		IsPublish:  &article.IsPublish,
+		Views:      &article.Views,
+		Likes:      &article.Likes,
+		CreatedAt:  timestamppb.New(article.CreatedAt),
+		UpdatedAt:  timestamppb.New(article.UpdatedAt),
+		DeletedAt:  timestamppb.New(article.DeletedAt),
+		Owner:      article.Owner.String(),
+		CategoryId: article.CategoryID,
 	}
 	if needContent {
 		pbArticle.Content = &article.Content
@@ -87,6 +89,7 @@ func convertArticleWithCategory(article db.GetArticleRow, needContent bool) *pb.
 		UpdatedAt:    timestamppb.New(article.UpdatedAt),
 		DeletedAt:    timestamppb.New(article.DeletedAt),
 		Owner:        article.Owner.String(),
+		CategoryId:   article.CategoryID,
 		CategoryName: article.CategoryName.String,
 	}
 	if needContent {
@@ -97,7 +100,7 @@ func convertArticleWithCategory(article db.GetArticleRow, needContent bool) *pb.
 
 func convertCategory(category db.Category) *pb.Category {
 	return &pb.Category{
-		ID:        category.ID,
+		Id:        category.ID,
 		Name:      category.Name,
 		IsSystem:  category.IsSystem,
 		CreatedAt: timestamppb.New(category.CreatedAt),
@@ -117,7 +120,7 @@ func convertCategories(categories []db.Category) []*pb.Category {
 
 func convertCategoryCountArticleRow(category db.ListCategoriesCountArticlesRow) *pb.Category {
 	return &pb.Category{
-		ID:           category.ID,
+		Id:           category.ID,
 		Name:         category.Name,
 		IsSystem:     category.IsSystem,
 		ArticleCount: &category.ArticleCount,

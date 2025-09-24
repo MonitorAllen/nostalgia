@@ -24,7 +24,7 @@ const (
 
 type Category struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            int64                  `protobuf:"varint,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	ArticleCount  *int64                 `protobuf:"varint,3,opt,name=article_count,json=articleCount,proto3,oneof" json:"article_count,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
@@ -64,9 +64,9 @@ func (*Category) Descriptor() ([]byte, []int) {
 	return file_category_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Category) GetID() int64 {
+func (x *Category) GetId() int64 {
 	if x != nil {
-		return x.ID
+		return x.Id
 	}
 	return 0
 }
@@ -474,6 +474,86 @@ func (x *ListCategoriesResponse) GetCount() int64 {
 	return 0
 }
 
+type ListAllCategoriesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAllCategoriesRequest) Reset() {
+	*x = ListAllCategoriesRequest{}
+	mi := &file_category_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAllCategoriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAllCategoriesRequest) ProtoMessage() {}
+
+func (x *ListAllCategoriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_category_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAllCategoriesRequest.ProtoReflect.Descriptor instead.
+func (*ListAllCategoriesRequest) Descriptor() ([]byte, []int) {
+	return file_category_proto_rawDescGZIP(), []int{9}
+}
+
+type ListAllCategoriesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Categories    []*Category            `protobuf:"bytes,1,rep,name=categories,proto3" json:"categories,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAllCategoriesResponse) Reset() {
+	*x = ListAllCategoriesResponse{}
+	mi := &file_category_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAllCategoriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAllCategoriesResponse) ProtoMessage() {}
+
+func (x *ListAllCategoriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_category_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAllCategoriesResponse.ProtoReflect.Descriptor instead.
+func (*ListAllCategoriesResponse) Descriptor() ([]byte, []int) {
+	return file_category_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListAllCategoriesResponse) GetCategories() []*Category {
+	if x != nil {
+		return x.Categories
+	}
+	return nil
+}
+
 var File_category_proto protoreflect.FileDescriptor
 
 var file_category_proto_rawDesc = string([]byte{
@@ -481,8 +561,8 @@ var file_category_proto_rawDesc = string([]byte{
 	0x12, 0x02, 0x70, 0x62, 0x1a, 0x1f, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xfd, 0x01, 0x0a, 0x08, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f,
-	0x72, 0x79, 0x12, 0x0e, 0x0a, 0x02, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02,
-	0x49, 0x44, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x72, 0x79, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02,
+	0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x28, 0x0a, 0x0d, 0x61, 0x72, 0x74, 0x69, 0x63, 0x6c,
 	0x65, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x48, 0x00, 0x52,
 	0x0c, 0x61, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x88, 0x01, 0x01,
@@ -525,10 +605,17 @@ var file_category_proto_rawDesc = string([]byte{
 	0x6f, 0x72, 0x69, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x70, 0x62,
 	0x2e, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x79, 0x52, 0x0a, 0x63, 0x61, 0x74, 0x65, 0x67,
 	0x6f, 0x72, 0x69, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x42, 0x26, 0x5a, 0x24, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x4d, 0x6f, 0x6e, 0x69, 0x74, 0x6f,
-	0x72, 0x41, 0x6c, 0x6c, 0x65, 0x6e, 0x2f, 0x6e, 0x6f, 0x73, 0x74, 0x61, 0x6c, 0x67, 0x69, 0x61,
-	0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x22, 0x1a, 0x0a, 0x18, 0x4c,
+	0x69, 0x73, 0x74, 0x41, 0x6c, 0x6c, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x69, 0x65, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x49, 0x0a, 0x19, 0x4c, 0x69, 0x73, 0x74, 0x41,
+	0x6c, 0x6c, 0x43, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2c, 0x0a, 0x0a, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x69,
+	0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x70, 0x62, 0x2e, 0x43, 0x61,
+	0x74, 0x65, 0x67, 0x6f, 0x72, 0x79, 0x52, 0x0a, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x69,
+	0x65, 0x73, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
+	0x2f, 0x4d, 0x6f, 0x6e, 0x69, 0x74, 0x6f, 0x72, 0x41, 0x6c, 0x6c, 0x65, 0x6e, 0x2f, 0x6e, 0x6f,
+	0x73, 0x74, 0x61, 0x6c, 0x67, 0x69, 0x61, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 })
 
 var (
@@ -543,30 +630,33 @@ func file_category_proto_rawDescGZIP() []byte {
 	return file_category_proto_rawDescData
 }
 
-var file_category_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_category_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_category_proto_goTypes = []any{
-	(*Category)(nil),               // 0: pb.Category
-	(*CreateCategoryRequest)(nil),  // 1: pb.CreateCategoryRequest
-	(*CreateCategoryResponse)(nil), // 2: pb.CreateCategoryResponse
-	(*DeleteCategoryRequest)(nil),  // 3: pb.DeleteCategoryRequest
-	(*DeleteCategoryResponse)(nil), // 4: pb.DeleteCategoryResponse
-	(*UpdateCategoryRequest)(nil),  // 5: pb.UpdateCategoryRequest
-	(*UpdateCategoryResponse)(nil), // 6: pb.UpdateCategoryResponse
-	(*ListCategoriesRequest)(nil),  // 7: pb.ListCategoriesRequest
-	(*ListCategoriesResponse)(nil), // 8: pb.ListCategoriesResponse
-	(*timestamppb.Timestamp)(nil),  // 9: google.protobuf.Timestamp
+	(*Category)(nil),                  // 0: pb.Category
+	(*CreateCategoryRequest)(nil),     // 1: pb.CreateCategoryRequest
+	(*CreateCategoryResponse)(nil),    // 2: pb.CreateCategoryResponse
+	(*DeleteCategoryRequest)(nil),     // 3: pb.DeleteCategoryRequest
+	(*DeleteCategoryResponse)(nil),    // 4: pb.DeleteCategoryResponse
+	(*UpdateCategoryRequest)(nil),     // 5: pb.UpdateCategoryRequest
+	(*UpdateCategoryResponse)(nil),    // 6: pb.UpdateCategoryResponse
+	(*ListCategoriesRequest)(nil),     // 7: pb.ListCategoriesRequest
+	(*ListCategoriesResponse)(nil),    // 8: pb.ListCategoriesResponse
+	(*ListAllCategoriesRequest)(nil),  // 9: pb.ListAllCategoriesRequest
+	(*ListAllCategoriesResponse)(nil), // 10: pb.ListAllCategoriesResponse
+	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
 }
 var file_category_proto_depIdxs = []int32{
-	9, // 0: pb.Category.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: pb.Category.updated_at:type_name -> google.protobuf.Timestamp
-	0, // 2: pb.CreateCategoryResponse.category:type_name -> pb.Category
-	0, // 3: pb.UpdateCategoryResponse.category:type_name -> pb.Category
-	0, // 4: pb.ListCategoriesResponse.categories:type_name -> pb.Category
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	11, // 0: pb.Category.created_at:type_name -> google.protobuf.Timestamp
+	11, // 1: pb.Category.updated_at:type_name -> google.protobuf.Timestamp
+	0,  // 2: pb.CreateCategoryResponse.category:type_name -> pb.Category
+	0,  // 3: pb.UpdateCategoryResponse.category:type_name -> pb.Category
+	0,  // 4: pb.ListCategoriesResponse.categories:type_name -> pb.Category
+	0,  // 5: pb.ListAllCategoriesResponse.categories:type_name -> pb.Category
+	6,  // [6:6] is the sub-list for method output_type
+	6,  // [6:6] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_category_proto_init() }
@@ -581,7 +671,7 @@ func file_category_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_category_proto_rawDesc), len(file_category_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

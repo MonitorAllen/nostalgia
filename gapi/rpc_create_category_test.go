@@ -46,7 +46,7 @@ func TestCreateCategory(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, res)
 				createCategory := res.GetCategory()
-				require.NotEmpty(t, createCategory.ID)
+				require.NotEmpty(t, createCategory.Id)
 				require.Equal(t, category.Name, createCategory.Name)
 			},
 		},

@@ -1,21 +1,24 @@
-// utils/http.ts - 简化版本
+// noinspection DuplicatedCode
+
 import axios, {type AxiosResponse, type InternalAxiosRequestConfig} from 'axios'
-import {useAuthStore} from '@/store/module/auth'
+import {useAuthStore} from '@/stores/auth'
 import {useToast} from 'primevue/usetoast'
+import {API_BASE_URL} from "@/config";
 
 // 扩展请求配置
 declare module 'axios' {
     interface AxiosRequestConfig {
         skipAuth?: boolean
         skipErrorHandler?: boolean
+        _isRetry?: boolean // 标记是否为重试请求
     }
 }
 
 class HttpClient {
     private instance = axios.create({
-        baseURL: import.meta.env.VITE_APP_BASE_URL,
+        baseURL: API_BASE_URL,
         timeout: 10000,
-        skipAuth: true,
+        skipAuth: false,
         skipErrorHandler: true
     })
 
@@ -66,13 +69,15 @@ class HttpClient {
         const { config, response } = error
 
         // 401 错误且不是刷新 token 的请求
-        if (response?.status === 401 && !config.skipAuth) {
+        if (response?.status === 401 && !config.skipAuth && !config._isRetry) {
             try {
                 const token = await this.refreshToken()
                 // 重试原请求
                 config.headers.Authorization = `Bearer ${token}`
                 return this.instance.request(config)
-            } catch {
+            } catch (error) {
+                // 刷新 token 失败，执行退出登录
+                console.error('Token refresh failed:', error)
                 this.handleLogout()
                 return Promise.reject(error)
             }
@@ -89,24 +94,35 @@ class HttpClient {
     private async getValidToken(): Promise<string | null> {
         const authStore = useAuthStore()
 
-        // 检查 token 是否需要刷新
-        if (this.shouldRefreshToken()) {
-            return await this.refreshToken()
+        // 如果没有 token，直接返回
+        if (!authStore.accessToken) {
+          return null
         }
 
-        return authStore.token
+        // 检查 token 是否需要刷新
+        if (this.shouldRefreshToken()) {
+          try {
+            return await this.refreshToken()
+          } catch (error) {
+            console.error('Token refresh failed in getValidToken:', error)
+            // 刷新失败，返回当前 token，让后续请求去处理 401
+            return authStore.accessToken
+          }
+        }
+
+        return authStore.accessToken
     }
 
     // 是否需要刷新 token
     private shouldRefreshToken(): boolean {
         const authStore = useAuthStore()
-        const expiresAt = authStore.tokenExpiresAt
+        const expiresAt = authStore.accessTokenExpiresAt
 
-        if (!expiresAt) return false
+        if (!expiresAt || !authStore.accessToken) return false
 
         // 提前 2 分钟刷新
-        const fiveMinutesFromNow = Date.now() + 2 * 60 * 1000
-        return new Date(expiresAt).getTime() < fiveMinutesFromNow
+        const twoMinutesFromNow = Date.now() + 2 * 60 * 1000
+        return new Date(expiresAt).getTime() < twoMinutesFromNow
     }
 
     private async refreshToken(): Promise<string> {
@@ -119,6 +135,8 @@ class HttpClient {
 
         try {
             return await this.refreshPromise
+        } catch (error) {
+          throw error
         } finally {
             this.refreshPromise = null
         }
@@ -127,12 +145,54 @@ class HttpClient {
     private async performTokenRefresh(): Promise<string> {
         const authStore = useAuthStore()
 
-        return await authStore.refreshAccessToken()
+        try {
+          await authStore.refreshAccessToken()
+          if (!authStore.accessToken) {
+            throw new Error('No access token after refresh')
+          }
+          return authStore.accessToken
+        } catch (error) {
+          console.error('Failed to refresh token:', error)
+          // 刷新失败，清除本地认证状态
+          authStore.clearAuth() // 假设你有这个方法
+          throw error
+        }
+
+
     }
 
     private handleError(error: any) {
         const toast = useToast()
-        const message = error.response?.data?.error || '请求失败'
+        let message = error.response?.data?.error || '请求失败'
+
+      // 根据不同的错误状态码提供更友好的提示
+      if (error.response) {
+        const status = error.response.status
+        switch (status) {
+          case 400:
+            message = error.response.data?.error || '请求参数错误'
+            break
+          case 401:
+            message = '未授权访问'
+            break
+          case 403:
+            message = '没有权限访问此资源'
+            break
+          case 404:
+            message = '请求的资源不存在'
+            break
+          case 422:
+            message = error.response.data?.error || '数据验证失败'
+            break
+          case 500:
+            message = '服务器内部错误'
+            break
+          default:
+            message = error.response.data?.error || `请求失败 (${status})`
+        }
+      } else if (error.request) {
+        message = '网络请求失败，请检查网络连接'
+      }
 
         toast.add({
             severity: 'error',

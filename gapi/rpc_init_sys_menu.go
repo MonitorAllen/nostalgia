@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"strconv"
+	"time"
 )
 
 const adminInitMenuKey = "admin:menus:"
@@ -51,7 +52,7 @@ func (server *Server) InitSysMenu(ctx context.Context, _ *pb.InitSysMenuRequest)
 		return nil, status.Errorf(codes.Internal, "can not marshal init system menu: %v", err)
 	}
 
-	err = server.redisService.Set(adminInitMenuKey+strconv.FormatInt(accessPayload.RoleID, 10), string(menuBytes), 0)
+	err = server.redisService.Set(adminInitMenuKey+strconv.FormatInt(accessPayload.RoleID, 10), string(menuBytes), time.Hour*12)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "can not cache init system menu: %v", err)
 	}

@@ -1,13 +1,13 @@
 <template>
   <div class="min-h-screen flex flex-column">
     <!-- 只在 showNav 为 true 时显示导航栏 -->
-    <template v-if="showNav">
+    <template v-if="props.showNav">
       <header>
         <!-- 顶部导航栏 -->
         <nav class="layout-topbar">
           <div class="flex align-items-center px-3">
-            <a 
-              href="#" 
+            <a
+              href="#"
               class="flex align-items-center justify-content-center p-2 hover:surface-200 border-round mr-2 cursor-pointer"
               @click.prevent="toggleSidebar"
             >
@@ -17,24 +17,24 @@
           </div>
           <ul class="flex list-none m-0 p-0 gap-2 align-items-center px-3">
             <li>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 class="flex align-items-center gap-2 px-3 py-2 hover:surface-200 border-round cursor-pointer"
                 @click.prevent="toggleUserMenu"
                 aria-haspopup="true"
                 aria-controls="user-menu"
               >
-                <Avatar 
-                  :label="authStore.admin?.username?.[0]?.toUpperCase() || '?'" 
+                <Avatar
+                  :label="authStore.admin?.username?.[0]?.toUpperCase() || '?'"
                   shape="circle"
                   class="mr-1"
                 />
                 <span class="text-lg">{{ authStore.admin?.username || '用户' }}</span>
                 <i class="pi pi-angle-down"></i>
               </a>
-              <ul 
+              <ul
                 v-show="isUserMenuVisible"
-                id="user-menu" 
+                id="user-menu"
                 class="user-menu list-none m-0 p-0 absolute w-12rem surface-overlay border-none shadow-2"
               >
                 <li>
@@ -48,8 +48,8 @@
                 </li>
                 <li class="border-top-1 surface-border"></li>
                 <li>
-                  <a 
-                    href="#" 
+                  <a
+                    href="#"
                     class="flex align-items-center gap-2 px-3 py-2 hover:surface-200 cursor-pointer text-color"
                     @click.prevent="handleLogout"
                   >
@@ -63,15 +63,15 @@
         </nav>
       </header>
 
-      <div class="flex flex-grow-1 relative">
+      <div class="flex flex-grow-1">
         <!-- 侧边栏 -->
         <aside class="layout-sidebar" :class="{ 'layout-sidebar-collapsed': isSidebarCollapsed }">
           <nav class="h-full overflow-y-auto">
-            <ul class="list-none pl-0">
+            <ul class="list-none pl-0 my-0">
               <li v-for="(item, index) in sysMenu" :key="index" class="mb-2">
                 <template v-if="item.children?.length">
-                  <a 
-                    href="#" 
+                  <a
+                    href="#"
                     class="flex align-items-center justify-content-between px-2 py-3 hover:surface-200 cursor-pointer text-color"
                     @click.prevent="toggleSubmenu(index)"
                   >
@@ -79,7 +79,7 @@
                       <i :class="[item.icon || 'pi pi-folder', 'text-xl']"></i>
                       <span v-show="!isSidebarCollapsed">{{ item.name }}</span>
                     </div>
-                    <i 
+                    <i
                       :class="[
                         'pi pi-angle-down transition-transform transition-duration-200',
                         { 'rotate-180': openSubmenus.includes(index) }
@@ -87,15 +87,15 @@
                       v-show="!isSidebarCollapsed"
                     ></i>
                   </a>
-                  <ul 
+                  <ul
                     class="list-none pl-0 m-0 overflow-hidden transition-all transition-duration-200"
-                    :class="{ 
+                    :class="{
                       'max-h-0': !openSubmenus.includes(index),
                       'max-h-20rem': openSubmenus.includes(index)
                     }"
                   >
                     <li v-for="(subItem, subIndex) in item.children" :key="subIndex">
-                      <router-link 
+                      <router-link
                         :to="subItem.path || ''"
                         class="flex align-items-center gap-2 p-3 pl-5 hover:surface-200 cursor-pointer text-color no-underline"
                       >
@@ -105,8 +105,8 @@
                     </li>
                   </ul>
                 </template>
-                <router-link 
-                  v-else 
+                <router-link
+                  v-else
                   :to="item.path || ''"
                   class="flex align-items-center gap-2 p-3 hover:surface-200 border-round cursor-pointer text-color no-underline"
                 >
@@ -124,7 +124,7 @@
         </main>
       </div>
     </template>
-    
+
     <!-- 当 showNav 为 false 时，直接显示内容 -->
     <template v-else>
       <main class="layout-main-full">
@@ -192,9 +192,9 @@ const handleClickOutside = (event: MouseEvent) => {
   const userMenu = document.getElementById('user-menu')
   const userMenuTrigger = event.target as HTMLElement
   if (
-    isUserMenuVisible.value && 
-    userMenu && 
-    !userMenu.contains(userMenuTrigger) && 
+    isUserMenuVisible.value &&
+    userMenu &&
+    !userMenu.contains(userMenuTrigger) &&
     !userMenuTrigger.closest('.user-menu-trigger')
   ) {
     isUserMenuVisible.value = false
@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
 :deep(.router-link-active) {
   background-color: #f1f5f9;
   color: var(--primary-color);
-  
+
   .pi {
     color: var(--primary-color);
   }
@@ -292,4 +292,4 @@ onBeforeUnmount(() => {
   border: 1px solid var(--surface-border);
   box-shadow: var(--card-shadow);
 }
-</style> 
+</style>

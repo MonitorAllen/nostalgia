@@ -25,6 +25,7 @@ import {useUserStore} from "@/store/module/user";
 import {useCommentStore} from "@/store/module/comment";
 import {getArticle, incrementArticleLikes, incrementArticleViews} from "@/api/article";
 import {listComments} from "@/api/comment";
+import CommentItem from "@/components/article/CommentItem.vue";
 
 const userStore = useUserStore()
 const commentStore = useCommentStore()
@@ -47,6 +48,7 @@ const replyCommentParentId = ref(0)
 
 const replyComment = (id: number, to_user_id: string, to_user_name: string, parent_id: number) => {
   //取消回复
+  console.log('id: ' + id, 'to user id: ' + to_user_id, 'to user name: ' + to_user_name, 'parent id: ' + parent_id)
   if (replyCommentId.value === id) {
     replyCommentId.value = 0
     replyUserName.value = ''
@@ -65,7 +67,6 @@ const replyComment = (id: number, to_user_id: string, to_user_name: string, pare
       replyCommentParentId.value = parent_id
     }
   }
-
 }
 
 const deleteComment = (id: number, index: number) => {
@@ -190,7 +191,6 @@ const editorData = ref('')
 const isLayoutReady = ref(false)
 
 const article = ref<Article | null>(null)
-const owner = ref<string>('')
 
 let timer: NodeJS.Timeout
 const viewed = ref(false)
@@ -283,8 +283,8 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
 </script>
 
 <template>
-  <div class="flex flex-column row-gap-3 justify-content-center w-full md:w-10 lg:w-11 md:mx-auto">
-    <div class="article-container w-full flex flex-column m-auto p-2 mt-3">
+  <div class="flex flex-column row-gap-3 justify-content-center w-11 md:w-10 lg:w-8 mx-auto">
+    <div class="article-container surface-0 w-full flex flex-column m-auto p-2 mt-3">
       <div class="flex flex-column align-items-center">
         <div>
           <h2 class="article-title text-green-600">{{ article?.title }}</h2>
@@ -363,7 +363,7 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
                       v-if="replyCommentId !== 0"
                       @click="replyComment(replyCommentId, '', '', 0)"/>
               <Button :label="replyCommentId === 0 ? '评论' : '回复'" raised size="small" class="mt-1"
-                      @click="createComment(0, owner)"/>
+                      @click="createComment(0, article!.owner)"/>
             </div>
           </div>
         </div>
@@ -385,59 +385,16 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
           </div>
         </template>
       </ConfirmDialog>
-      <div class="flex flex-column gap-1"
-           v-if="comments !== null && comments.length > 0">
-        <div class="comment flex flex-column"
-             v-for="(comment, index) in comments"
-             :key="index">
-          <div class="flex flex-row gap-2 text-color-secondary align-items-baseline select-none">
-            <span class="text-lg">{{ comment.from_user_name }}</span>
-            <div class="bg-green-100 border-round-sm px-1 text-sm" v-if="comment.from_user_id === owner">作者</div>
-            <span class="text-sm">{{ date.format(comment.created_at, 'YYYY-MM-DD') }}</span>
-            <i class="pi pi-trash cursor-pointer" style="font-size: 0.75rem"
-               v-if="userStore.userInfo && comment.from_user_id === userStore.userInfo.id"
-               @click="deleteComment(comment.id, index)"></i>
-          </div>
-          <div class="flex flex-row gap-2 align-items-end">
-            <span class="text-sm" v-html="comment.content"></span>
-            <span class="text-sm text-color-secondary cursor-pointer justify-content-between select-none"
-                  @click="replyComment(comment.id, comment.from_user_id, comment.from_user_name, comment.parent_id)">
-              {{ replyCommentId === comment.id ? "取消回复" : "回复" }}
-            </span>
-          </div>
-          <div v-if="comment.child.length > 0">
-            <div class="child-comment ml-2 align-items-baseline"
-                 v-for="(childComment, childIndex) in comment.child"
-                 :key="childIndex">
-              <div class="flex flex-row gap-2 text-color-secondary align-items-baseline">
-                <div class="flex flex-row align-items-baseline gap-1">
-                  <span class="text-lg">{{ childComment.from_user_name }}</span>
-                  <span class="bg-green-100 border-round-sm px-1 text-sm"
-                        v-if="childComment.from_user_id === owner">作者</span>
-                </div>
-                <div class="flex flex-row align-items-baseline gap-1"
-                     v-if="childComment.from_user_id !== childComment.to_user_id">
-                  <i class="pi pi-angle-right"></i>
-                  <span class="text-lg">{{ childComment.to_user_name }}</span>
-                  <span class="bg-green-100 border-round-sm px-1 text-sm"
-                        v-if="childComment.to_user_id === owner">作者</span>
-                </div>
-                <span class="text-sm">{{ date.format(childComment.created_at, 'YYYY-MM-DD') }}</span>
-                <i class="pi pi-trash cursor-pointer" style="font-size: 0.75rem"
-                   v-if="userStore.userInfo && childComment.from_user_id === userStore.userInfo.id"
-                   @click="deleteComment(childComment.id, childIndex)"></i>
-              </div>
-              <div class="flex flex-row gap-2 align-items-end">
-                <span class="text-sm" v-html="childComment.content"></span>
-                <span class="text-sm text-color-secondary cursor-pointer justify-content-between select-none"
-                      @click="replyComment(childComment.id, childComment.from_user_id, childComment.from_user_name, childComment.parent_id)">
-                {{ replyCommentId === childComment.id ? "取消回复" : "回复" }}
-              </span>
-              </div>
-            </div>
-          </div>
-          <Divider/>
-        </div>
+      <div id="comment-list" class="" v-if="comments !== null && comments.length > 0">
+        <CommentItem
+            v-for="comment in comments"
+            :key="comment.id"
+            :comment="comment"
+            :article-owner-id="article!.owner"
+            :reply-comment-id="replyCommentId"
+            @delete="deleteComment"
+            @reply="replyComment"
+        />
       </div>
       <div v-else>
         <span class="text-color-secondary">暂无评论</span>
@@ -449,7 +406,6 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
 <style scoped>
 .article-container {
   border: .1rem solid #ebebeb;
-  background-color: rgb(239 239 239 / 0.3);
 
   .article-title {
     margin: 2px 0;
@@ -473,11 +429,22 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
   background-color: rgb(239 239 239 / 0.3);
 }
 
+:deep(.comment-item) code {
+  background-color: #fdf6e3;
+}
+
+:deep(.ck-content) code {
+  background-color: #fdf6e3;
+}
+
+:deep(.ck-content) blockquote {
+  border-left: solid 5px #20c997;
+  background-color: #f7f7f7;
+}
+
 .editor-container_classic-editor .editor-container__editor .ck-editor__editable_inline {
   min-height: 100px !important;
 }
 
-pre {
-  margin: 0 !important;
-}
+
 </style>

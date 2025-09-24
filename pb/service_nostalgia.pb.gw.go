@@ -506,6 +506,25 @@ func local_request_Nostalgia_ListCategories_0(ctx context.Context, marshaler run
 	return msg, metadata, err
 }
 
+func request_Nostalgia_ListAllCategories_0(ctx context.Context, marshaler runtime.Marshaler, client NostalgiaClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListAllCategoriesRequest
+		metadata runtime.ServerMetadata
+	)
+	io.Copy(io.Discard, req.Body)
+	msg, err := client.ListAllCategories(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_Nostalgia_ListAllCategories_0(ctx context.Context, marshaler runtime.Marshaler, server NostalgiaServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListAllCategoriesRequest
+		metadata runtime.ServerMetadata
+	)
+	msg, err := server.ListAllCategories(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 // RegisterNostalgiaHandlerServer registers the http handlers for service Nostalgia to "mux".
 // UnaryRPC     :call NostalgiaServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -852,6 +871,26 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Nostalgia_ListCategories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_Nostalgia_ListAllCategories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/ListAllCategories", runtime.WithHTTPPathPattern("/v1/category/all"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Nostalgia_ListAllCategories_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Nostalgia_ListAllCategories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 
 	return nil
 }
@@ -1181,45 +1220,64 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Nostalgia_ListCategories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_Nostalgia_ListAllCategories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/ListAllCategories", runtime.WithHTTPPathPattern("/v1/category/all"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Nostalgia_ListAllCategories_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Nostalgia_ListAllCategories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	return nil
 }
 
 var (
-	pattern_Nostalgia_LoginAdmin_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "login"}, ""))
-	pattern_Nostalgia_LogoutAdmin_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "logout"}, ""))
-	pattern_Nostalgia_RenewAccessToken_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "renew_access"}, ""))
-	pattern_Nostalgia_InitSysMenu_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "menu", "init"}, ""))
-	pattern_Nostalgia_CreateAdmin_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "admin"}, ""))
-	pattern_Nostalgia_UpdateAdmin_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "admin"}, ""))
-	pattern_Nostalgia_AdminInfo_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "info"}, ""))
-	pattern_Nostalgia_CreateArticle_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
-	pattern_Nostalgia_DeleteArticle_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "articles", "id"}, ""))
-	pattern_Nostalgia_ListArticles_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
-	pattern_Nostalgia_GetArticle_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "articles", "id", "need_content"}, ""))
-	pattern_Nostalgia_UpdateArticle_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
-	pattern_Nostalgia_UploadFile_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "util", "upload_file"}, ""))
-	pattern_Nostalgia_CreateCategory_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
-	pattern_Nostalgia_DeleteCategory_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "category", "id"}, ""))
-	pattern_Nostalgia_UpdateCategory_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
-	pattern_Nostalgia_ListCategories_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
+	pattern_Nostalgia_LoginAdmin_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "login"}, ""))
+	pattern_Nostalgia_LogoutAdmin_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "logout"}, ""))
+	pattern_Nostalgia_RenewAccessToken_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "renew_access"}, ""))
+	pattern_Nostalgia_InitSysMenu_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "menu", "init"}, ""))
+	pattern_Nostalgia_CreateAdmin_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "admin"}, ""))
+	pattern_Nostalgia_UpdateAdmin_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "admin"}, ""))
+	pattern_Nostalgia_AdminInfo_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "admin", "info"}, ""))
+	pattern_Nostalgia_CreateArticle_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
+	pattern_Nostalgia_DeleteArticle_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "articles", "id"}, ""))
+	pattern_Nostalgia_ListArticles_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
+	pattern_Nostalgia_GetArticle_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "articles", "id", "need_content"}, ""))
+	pattern_Nostalgia_UpdateArticle_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
+	pattern_Nostalgia_UploadFile_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "util", "upload_file"}, ""))
+	pattern_Nostalgia_CreateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
+	pattern_Nostalgia_DeleteCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "category", "id"}, ""))
+	pattern_Nostalgia_UpdateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
+	pattern_Nostalgia_ListCategories_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
+	pattern_Nostalgia_ListAllCategories_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "category", "all"}, ""))
 )
 
 var (
-	forward_Nostalgia_LoginAdmin_0       = runtime.ForwardResponseMessage
-	forward_Nostalgia_LogoutAdmin_0      = runtime.ForwardResponseMessage
-	forward_Nostalgia_RenewAccessToken_0 = runtime.ForwardResponseMessage
-	forward_Nostalgia_InitSysMenu_0      = runtime.ForwardResponseMessage
-	forward_Nostalgia_CreateAdmin_0      = runtime.ForwardResponseMessage
-	forward_Nostalgia_UpdateAdmin_0      = runtime.ForwardResponseMessage
-	forward_Nostalgia_AdminInfo_0        = runtime.ForwardResponseMessage
-	forward_Nostalgia_CreateArticle_0    = runtime.ForwardResponseMessage
-	forward_Nostalgia_DeleteArticle_0    = runtime.ForwardResponseMessage
-	forward_Nostalgia_ListArticles_0     = runtime.ForwardResponseMessage
-	forward_Nostalgia_GetArticle_0       = runtime.ForwardResponseMessage
-	forward_Nostalgia_UpdateArticle_0    = runtime.ForwardResponseMessage
-	forward_Nostalgia_UploadFile_0       = runtime.ForwardResponseMessage
-	forward_Nostalgia_CreateCategory_0   = runtime.ForwardResponseMessage
-	forward_Nostalgia_DeleteCategory_0   = runtime.ForwardResponseMessage
-	forward_Nostalgia_UpdateCategory_0   = runtime.ForwardResponseMessage
-	forward_Nostalgia_ListCategories_0   = runtime.ForwardResponseMessage
+	forward_Nostalgia_LoginAdmin_0        = runtime.ForwardResponseMessage
+	forward_Nostalgia_LogoutAdmin_0       = runtime.ForwardResponseMessage
+	forward_Nostalgia_RenewAccessToken_0  = runtime.ForwardResponseMessage
+	forward_Nostalgia_InitSysMenu_0       = runtime.ForwardResponseMessage
+	forward_Nostalgia_CreateAdmin_0       = runtime.ForwardResponseMessage
+	forward_Nostalgia_UpdateAdmin_0       = runtime.ForwardResponseMessage
+	forward_Nostalgia_AdminInfo_0         = runtime.ForwardResponseMessage
+	forward_Nostalgia_CreateArticle_0     = runtime.ForwardResponseMessage
+	forward_Nostalgia_DeleteArticle_0     = runtime.ForwardResponseMessage
+	forward_Nostalgia_ListArticles_0      = runtime.ForwardResponseMessage
+	forward_Nostalgia_GetArticle_0        = runtime.ForwardResponseMessage
+	forward_Nostalgia_UpdateArticle_0     = runtime.ForwardResponseMessage
+	forward_Nostalgia_UploadFile_0        = runtime.ForwardResponseMessage
+	forward_Nostalgia_CreateCategory_0    = runtime.ForwardResponseMessage
+	forward_Nostalgia_DeleteCategory_0    = runtime.ForwardResponseMessage
+	forward_Nostalgia_UpdateCategory_0    = runtime.ForwardResponseMessage
+	forward_Nostalgia_ListCategories_0    = runtime.ForwardResponseMessage
+	forward_Nostalgia_ListAllCategories_0 = runtime.ForwardResponseMessage
 )

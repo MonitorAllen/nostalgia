@@ -17,15 +17,20 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-column border-solid border-1 border-round-sm pl-4 pr-4 pt-5 pb-5 row-gap-5"
+        <div class="flex flex-column border-solid border-1 border-round-sm px-4 py-5 row-gap-5"
             style="border-color: #e2e8f0">
           <FloatLabel>
-            <InputText id="title" v-model="article.title" class="w-full"></InputText>
+            <InputText id="title" v-model="article!.title" class="w-full"></InputText>
             <label for="title">标题</label>
           </FloatLabel>
           <FloatLabel>
-            <Textarea id="summary" class="w-full" rows="3" v-model="article.summary" autoResize />
+            <Textarea id="summary" class="w-full" rows="3" v-model="article!.summary" autoResize />
             <label for="summary">简介</label>
+          </FloatLabel>
+          <FloatLabel>
+            <Select id="category" name="category_id" v-model="article.category_id" :options="categories" optionLabel="name" optionValue="id"
+            class="w-full"/>
+            <label for="category" class="font-semibold w-24">分类</label>
           </FloatLabel>
           <div class="flex flex-column gap-3">
             <label style="position: relative; left: 0.75rem; line-height: 1px; font-size: 12px; color: #64748b; margin-top: -1rem;"
@@ -68,75 +73,79 @@ import 'ckeditor5/ckeditor5.css'
 import MyUploadAdapter from '@/util/uploadAdapter'
 
 import { ref, onMounted, type Ref } from 'vue'
-import { fetchArticleById, createArticle, updateArticle, type UpdateArticleParams } from '@/api/articles'
+import {
+  fetchArticleById,
+  createArticle,
+  updateArticle,
+  type UpdateArticleRequest
+} from '@/api/articles'
 import { useToast } from 'primevue/usetoast';
 import router from '@/router'
 import type { Article } from '@/stores/article'
-import { useAuthStore } from '@/stores/auth'
+import {listAllCategories} from "@/api/category.ts";
+import type {Category} from "@/types/category.ts";
+import Select from "primevue/select";
 
 const editor = ref<ClassicEditor|null>(null)
 const config: Ref<EditorConfig>= ref({})
 const editorData = ref('')
 const isLayoutReady = ref(false)
 
-let { id } = defineProps<{
-  id?: string
-}>()
-
-const authStore = useAuthStore()
+const props = defineProps({
+  id: {
+    type: String,
+    default: ''
+  }
+})
 
 const article = ref<Article>({
   id: '',
   title: '',
   summary: '',
   content: '',
-  views: 0,
   likes: 0,
+  views: 0,
   is_publish: false,
-  owner: '',
   created_at: '',
   updated_at: '',
+  owner: '',
+  category_id: '',
+  category_name: '',
 })
-let isPublish = ref(false)
+const isPublish = ref(false)
+
+const categories = ref<Category[]>([])
 
 const toast = useToast();
 
 // 当编辑器准备好时的回调
 const onEditorReady = async (editorInstance: ClassicEditor) => {
   editor.value = editorInstance
-  if (id !== '') {
-    try {
-      const res = await fetchArticleById(id as string, true)
-      article.value = res
-      editorData.value = article.value.content as string
-      isPublish.value = article.value.is_publish
-    } catch (error: any) {
-      toast.add({ severity: 'error', summary: 'Error', detail: '获取文章信息失败: ' + error.response?.data?.message, life: 2500})
-    }
-  }
 }
 
 const editorComponent = ref(null)
 
-const save = () => {
-  if (id != "") {
+const save = async () => {
+  if (article.value && props.id != '') {
     article.value.content = editorData.value
     article.value.is_publish = isPublish.value
 
-    let updateParams: UpdateArticleParams = {
+    const updateArticleRequest: UpdateArticleRequest = {
       id: article.value.id,
       title: article.value.title,
       summary: article.value.summary,
       content: article.value.content,
-      is_publish: article.value.is_publish
+      is_publish: article.value.is_publish,
+      category_id: parseInt(article.value.category_id)
     }
-    
-    updateArticle(updateParams).then((res) => {
-      article.value = res
+
+    try {
+      const resp = await updateArticle(updateArticleRequest)
+      article.value = resp.data.article
       toast.add({ severity: 'success', summary: 'Success', detail: "保存成功", life: 2500 })
-    }).catch((err) => {
-      toast.add({ severity: 'error', summary: 'Error', detail: err.response.data.error, life: 2500})
-    })
+    } catch(error: any) {
+      toast.add({ severity: 'error', summary: 'Error', detail: '保存失败：' + error.response.data.error, life: 2500})
+    }
   } else {
     toast.add({ severity: 'error', summary: 'Error', detail: "文章ID不存在", life: 2500})
   }
@@ -144,22 +153,36 @@ const save = () => {
 
 function CustomUploadAdapterPlugin(editor: any) {
     editor.plugins.get('FileRepository').createUploadAdapter = (loader: any) => {
-    return new MyUploadAdapter(loader, id as string)
+    return new MyUploadAdapter(loader, props.id!)
   }
 }
 
 onMounted(async () => {
-  console.log("id: " + id)
-  if (id === '') {
-    createArticle({title: '新建文章', "summary": '', 'is_publish': false}).then((res) => {
-      article.value = res
-      router.replace(`/article/edit/${res.id}`)
-    }).catch((err) => {
-      toast.add({ severity: 'error', summary: 'Error', detail: err.response.data.error, life: 2500})
-    })
+  if (props.id === '') {
+    try {
+      const resp = await createArticle({title: '新建文章', "summary": '', 'is_publish': false})
+      article.value = resp.data.article
+      await router.replace(`/article/edit/${resp.data.article.id}`)
+    } catch(error: any)  {
+      toast.add({ severity: 'error', summary: 'Error', detail: '创建文章失败：' + error.response.data.error, life: 3000})
+    }
+  } else {
+    try {
+      const resp = await fetchArticleById({id: props.id, needContent: true})
+      article.value = resp.data.article
+      editorData.value = article.value.content as string
+      isPublish.value = article.value.is_publish
+    } catch (error: any) {
+      toast.add({ severity: 'error', summary: 'Error', detail: '获取文章信息失败: ' + error.response?.data?.message, life: 3000})
+    }
   }
-  
-  const baseUrl = import.meta.env.VITE_APP_BASE_URL
+
+  try {
+    const resp = await listAllCategories()
+    categories.value = resp.data.categories
+  } catch (error: any) {
+    toast.add({ severity: 'error', summary: 'Error', detail: '获取分类失败：' + error.response.data.error, life: 3000})
+  }
 
   config.value = {
     toolbar: {
@@ -386,14 +409,9 @@ onMounted(async () => {
 
 .main-container {
   width: 1000px !important;
-  font-family: 'Lato';
 }
 
-.ck-content {
-  font-family: 'Lato';
-  line-height: 1.6;
-  word-break: break-word;
-}
+
 
 .editor-container_classic-editor .editor-container__editor .ck-editor__editable_inline{
   min-height: 450px !important;
@@ -401,8 +419,4 @@ onMounted(async () => {
   max-width: none !important;
 }
 
-.ck.ck-toolbar {
-  width: auto !important;
-  max-width: none !important;
-}
 </style>

@@ -2,7 +2,6 @@ package gapi
 
 import (
 	"context"
-	"errors"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"google.golang.org/grpc/codes"
@@ -18,15 +17,15 @@ func (server *Server) CreateCategory(ctx context.Context, res *pb.CreateCategory
 
 	category, err := server.store.CreateCategory(ctx, res.GetName())
 	if err != nil {
-		if errors.Is(err, db.ErrUniqueViolation) {
+		if db.ErrorCode(err) == db.UniqueViolation {
 			return nil, status.Errorf(codes.AlreadyExists, "Duplicate category name.")
 		}
-		return nil, status.Errorf(codes.Internal, "Could not create category: %v", err)
+		return nil, status.Errorf(codes.Internal, "Failed to create category: %v", "please try again later or contact support")
 	}
 
 	resp := &pb.CreateCategoryResponse{
 		Category: &pb.Category{
-			ID:        category.ID,
+			Id:        category.ID,
 			Name:      category.Name,
 			CreatedAt: timestamppb.New(category.CreatedAt),
 			UpdatedAt: timestamppb.New(category.UpdatedAt),

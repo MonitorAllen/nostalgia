@@ -33,7 +33,7 @@ const fetchCategories = async (page: number, limit: number) => {
 fetchCategories(currentPage.value, limit.value)
 
 const onPageChange = (page: PageState) => {
-  first.value = 0
+  first.value = page.first
   currentPage.value = page.page
   fetchCategories(page.page + 1, limit.value)
 }
@@ -55,7 +55,7 @@ const onPageChange = (page: PageState) => {
         </div>
       </template>
     </DataView>
-    <Paginator class="p-0" :rows="limit" :totalRecords="totalRecords" @page="onPageChange" template="PrevPageLink  NextPageLink"></Paginator>
+    <Paginator class="p-0" :first="first" :rows="limit" :totalRecords="totalRecords" @page="onPageChange" template="PrevPageLink  NextPageLink"></Paginator>
   </div>
 </template>
 

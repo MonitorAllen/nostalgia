@@ -209,8 +209,18 @@ service Nostalgia {
       get: "/v1/category"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to update category";
-      summary: "update category";
+      description: "Use this API to list category with pagination";
+      summary: "list category";
+      tags: "Category";
+    };
+  }
+  rpc ListAllCategories (ListAllCategoriesRequest) returns (ListAllCategoriesResponse) {
+    option (google.api.http) = {
+      get: "/v1/category/all"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to list all category";
+      summary: "list all category";
       tags: "Category";
     };
   }

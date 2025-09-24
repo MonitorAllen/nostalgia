@@ -33,7 +33,7 @@ func (server *Server) UpdateCategory(ctx context.Context, res *pb.UpdateCategory
 
 	resp := &pb.UpdateCategoryResponse{
 		Category: &pb.Category{
-			ID:        category.ID,
+			Id:        category.ID,
 			Name:      category.Name,
 			CreatedAt: timestamppb.New(category.CreatedAt),
 			UpdatedAt: timestamppb.New(category.UpdatedAt),

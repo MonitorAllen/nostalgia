@@ -5,7 +5,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import EditorView from '@/views/EditorView.vue'
 
 const router = createRouter({
-  history: createWebHistory('/backend/'),
+  history: createWebHistory('/backend'),
   routes: [
     {
       path: '/login',
@@ -40,7 +40,13 @@ const router = createRouter({
           name: 'update-admin',
           component: () => import('@/views/UpdateAdminView.vue'),
           meta: { requiresAuth: true }
-        }
+        },
+        {
+          path: 'manage/categories',
+          name: 'categories-management',
+          component: () => import('@/views/CategoryManagementView.vue'),
+          meta: { requiresAuth: true }
+        },
       ]
     }
   ]

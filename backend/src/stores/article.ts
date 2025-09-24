@@ -13,18 +13,19 @@ export interface Article {
     created_at: string
     updated_at: string
     owner: string
+    category_id: string
+    category_name: string
 }
 
 export const useArticleStore = defineStore('article', () => {
     const articles = ref<Article[]>([])
     const count = ref(0)
-    
+
     const listAllArticles = async (page: number, limit: number) => {
         try {
             const res = await axiosInstance.get('/articles', {
                 params: {
-                    page,
-                        limit
+                    page, limit
                     }
                 })
                 articles.value = res.data.articles
@@ -34,26 +35,9 @@ export const useArticleStore = defineStore('article', () => {
         }
     }
 
-    const getArticle = (id: string) => {
-        try {
-            const res = axiosInstance.get(`/articles/${id}`)
-
-        } catch (error) {
-            throw error
-        }
-    }
-
-    const createArticle = () => {
-        try {
-            const res = axiosInstance.get
-        } catch (error) {
-            
-        }
-    }
-
     return {
         articles,
-        count,  
+        count,
         listAllArticles
     }
 })

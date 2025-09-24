@@ -1,6 +1,9 @@
+// noinspection DuplicatedCode
+
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import {computed, readonly, ref} from 'vue'
 import axiosInstance from '../config/axios'
+import http from "@/util/http.ts";
 
 interface LoginForm {
   username: string
@@ -15,30 +18,45 @@ export interface Admin {
   avatar?: string
 }
 
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'nostalgia_backend_access_token',
+  ACCESS_TOKEN_EXPIRES_AT: 'nostalgia_backend_token_expires_at',
+  REFRESH_TOKEN: 'nostalgia_backend_refresh_token',
+  REFRESH_TOKEN_EXPIRES_AT: 'nostalgia_backend_refresh_token_expires_at',
+} as const
+
 export const useAuthStore = defineStore('auth', () => {
   const admin = ref<Admin | null>(null)
-  const access_token = ref<string | null>(null)
-  const refresh_token = ref<string | null>(null)
+  const accessToken = ref(localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || '')
+  const accessTokenExpiresAt = ref(localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || '')
+  const refreshToken = ref(localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) || '')
+  const refreshTokenExpiresAt = ref(localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRES_AT) || '')
   const isAuthenticated = ref(false)
+
+  const isRefreshTokenValid = computed(() => {
+    if (!refreshTokenExpiresAt.value) return false
+    const expiresAt = new Date(refreshTokenExpiresAt.value)
+    return new Date() < expiresAt
+  })
 
   // 初始化认证状态
   const initAuth = () => {
-    const storedAccessToken = localStorage.getItem('access_token')
-    const storedAccessTokenExpiresAt = localStorage.getItem('access_token_expires_at')
-    
+    const storedAccessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+    const storedAccessTokenExpiresAt = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN_EXPIRES_AT)
+
     if (storedAccessToken && storedAccessTokenExpiresAt) {
       // 检查 token 是否过期
       const expiresAt = new Date(storedAccessTokenExpiresAt).getTime()
       const now = new Date().getTime()
-      
+
       if (now < expiresAt) {
         // token 未过期，恢复认证状态
-        access_token.value = storedAccessToken
-        refresh_token.value = localStorage.getItem('refresh_token')
+        accessToken.value = storedAccessToken
+        refreshToken.value = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) || ''
         isAuthenticated.value = true
         // 设置 axios 默认请求头
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${storedAccessToken}`
-        
+
         // 获取用户信息
         fetchAdminInfo()
       } else {
@@ -51,9 +69,9 @@ export const useAuthStore = defineStore('auth', () => {
   // 获取管理员信息
   const fetchAdminInfo = async () => {
     try {
-      const response = await axiosInstance.get('/admin/info')
+      const response = await http.get('/admin/info')
       admin.value = response.data.admin
-    } catch (error) {
+    } catch (error: any) {
       clearAuth()
     }
   }
@@ -61,29 +79,33 @@ export const useAuthStore = defineStore('auth', () => {
   // 清除认证信息
   const clearAuth = () => {
     admin.value = null
-    access_token.value = null
-    refresh_token.value = null
+    accessToken.value = ""
+    accessTokenExpiresAt.value = ''
+    refreshToken.value = ""
+    refreshTokenExpiresAt.value = ''
     isAuthenticated.value = false
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('access_token_expires_at')
-    localStorage.removeItem('refresh_token_expires_at')
+    // 清除 localStorage
+    Object.values(STORAGE_KEYS).forEach(key => {
+      localStorage.removeItem(key)
+    })
     delete axiosInstance.defaults.headers.common['Authorization']
   }
 
-  const login = async (form: LoginForm) => { 
+  const login = async (form: LoginForm) => {
     try {
-      const response = await axiosInstance.post('/admin/login', form)
+      const response = await http.post('/admin/login', form, {skipAuth: true})
       const { data } = response
-      access_token.value = data.access_token
-      refresh_token.value = data.refresh_token
+      accessToken.value = data.access_token
+      accessTokenExpiresAt.value = data.access_token_expires_at
+      refreshToken.value = data.refresh_token
+      refreshTokenExpiresAt.value = data.refresh_token_expires_at
       admin.value = data.admin
       isAuthenticated.value = true
       // 保存token到localStorage
-      localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('refresh_token', data.refresh_token)
-      localStorage.setItem('access_token_expires_at', data.access_token_expires_at)
-      localStorage.setItem('refresh_token_expires_at', data.refresh_token_expires_at)
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.access_token)
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refresh_token)
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN_EXPIRES_AT, data.access_token_expires_at)
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRES_AT, data.refresh_token_expires_at)
       // 设置axios默认请求头
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`
     } catch (error) {
@@ -93,21 +115,55 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = () => {
     try {
-      axiosInstance.post('/admin/logout')
+      http.post('/admin/logout')
       clearAuth()
     } catch (error) {
       throw error
     }
   }
 
+  const refreshAccessToken = async () => {
+    if (!refreshToken.value && isRefreshTokenValid) {
+      throw new Error('No refresh token available')
+    }
+
+    try {
+      const response = await http.post('/admin/renew_access', {
+        refresh_token: refreshToken.value
+      }, {skipAuth: true})
+
+      const { access_token, access_token_expires_at } = response.data
+      updateAccessToken(access_token, access_token_expires_at)
+
+      return access_token
+
+    } catch (error) {
+      // 刷新失败，清除所有认证信息
+      logout()
+      throw error
+    }
+  }
+
+  const updateAccessToken = (newAccessToken: string, newExpiresAt: string) => {
+    accessToken.value = newAccessToken
+    accessTokenExpiresAt.value = newExpiresAt
+
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken)
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN_EXPIRES_AT, newExpiresAt)
+  }
+
   // 初始化认证状态
   initAuth()
 
   return {
-    admin,
-    access_token,
-    isAuthenticated,
+    admin: readonly(admin),
+    accessToken: readonly(accessToken),
+    accessTokenExpiresAt: readonly(accessTokenExpiresAt),
+    isAuthenticated: readonly(isAuthenticated),
     login,
     logout,
+    clearAuth,
+    refreshAccessToken,
+    updateAccessToken,
   }
-}) 
+})

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -49,14 +50,6 @@ func (server *Server) createArticle(ctx *gin.Context) {
 
 	article, err := server.store.CreateArticle(ctx, arg)
 	if err != nil {
-		code, _ := db.ErrorCode(err)
-		errCode := code
-		switch errCode {
-		case db.ForeignKeyViolation, db.UniqueViolation:
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
-			return
-		}
-
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -88,11 +81,8 @@ func (server *Server) getArticle(ctx *gin.Context) {
 
 	article, err := server.store.GetArticle(ctx, articleID)
 	if err != nil {
-		code, _ := db.ErrorCode(err)
-		errCode := code
-		switch errCode {
-		case db.ForeignKeyViolation, db.UniqueViolation:
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
@@ -131,11 +121,8 @@ func (server *Server) getArticleForUpdate(ctx *gin.Context) {
 
 	article, err := server.store.GetArticleForUpdate(ctx, req.ID)
 	if err != nil {
-		code, _ := db.ErrorCode(err)
-		errCode := code
-		switch errCode {
-		case db.ForeignKeyViolation, db.UniqueViolation:
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
@@ -280,11 +267,8 @@ func (server *Server) updateArticle(ctx *gin.Context) {
 
 	article, err := server.store.UpdateArticleTx(ctx, arg)
 	if err != nil {
-		code, _ := db.ErrorCode(err)
-		errCode := code
-		switch errCode {
-		case db.ForeignKeyViolation, db.UniqueViolation:
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
@@ -329,6 +313,11 @@ func (server *Server) incrementArticleLikes(ctx *gin.Context) {
 	if set {
 		err = server.store.IncrementArticleLikes(ctx, req.ID)
 		if err != nil {
+			if errors.Is(err, db.ErrRecordNotFound) {
+				ctx.JSON(http.StatusNotFound, errorResponse(err))
+				return
+			}
+
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}
@@ -375,6 +364,11 @@ func (server *Server) incrementArticleViews(ctx *gin.Context) {
 	if set {
 		err = server.store.IncrementArticleViews(ctx, req.ID)
 		if err != nil {
+			if errors.Is(err, db.ErrRecordNotFound) {
+				ctx.JSON(http.StatusNotFound, errorResponse(err))
+				return
+			}
+
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return
 		}

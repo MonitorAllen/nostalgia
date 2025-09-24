@@ -49,9 +49,7 @@ const fetchArticles = async (categoryId: number, page: number, limit: number) =>
 
 // 监听 categoryId 变化
 watch(() => props.categoryId, (newId: number, oldId) => {
-  console.log("new ID: " + newId)
   if (newId) {
-    console.log("category id: " + newId, oldId)
     first.value = 0
     currentPage.value = 1
     fetchArticles(newId, currentPage.value, limit.value)
@@ -59,8 +57,8 @@ watch(() => props.categoryId, (newId: number, oldId) => {
 })
 
 const onPageChange = (page: PageState) => {
-  first.value = 0
-  currentPage.value = page.page
+  first.value = page.first
+  currentPage.value = page.page + 1
   fetchArticles(props.categoryId, page.page + 1, limit.value)
 }
 
@@ -76,8 +74,7 @@ onMounted(() => {
       <ProgressSpinner size="50" />
     </div>
 
-    <div v-else-if="totalRecords > 0">
-      <div class="">
+    <div v-else-if="totalRecords > 0" class="w-full">
         <div class="flex flex-row w-full mt-2 p-3 gap-3 transition-all transition-duration-500 article-box border-round-md"
              :class="{ 'mt-0': index === 0 }"
              v-for="(item, index) in articles"
@@ -131,13 +128,12 @@ onMounted(() => {
             </div>
           </div>
         </div>
-      </div>
-      <Paginator :rows="limit" :totalRecords="totalRecords" @page="onPageChange"></Paginator>
+      <Paginator :first="first" :rows="limit" :totalRecords="totalRecords" @page="onPageChange"></Paginator>
     </div>
     <div
-        class="flex align-items-center justify-content-center mt-2 h-7rem font-bold border-dashed border-round border-300"
+        class="flex w-full align-items-center justify-content-center mt-2 h-7rem font-bold border-dashed border-round border-300"
         v-else>
-      <span class="text-color-secondary ">这个家伙很懒什么都没有留下</span>
+      <span class="text-color-secondary" style="letter-spacing: 8px;">这个家伙很懒什么都没有留下</span>
     </div>
   </div>
 </template>

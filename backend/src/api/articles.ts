@@ -1,35 +1,70 @@
-import axiosInstance from "@/config/axios";
 import type { Article } from "@/stores/article";
+import type {ApiSuccessResponse} from "@/types/api.ts";
+import http from "@/util/http.ts";
+import type {AxiosResponse} from "axios";
 
-export const fetchArticleById = async (id: string, neetContent: boolean): Promise<Article> => {
-    const res = await axiosInstance.get(`/articles/${id}/${neetContent}`)
-    return res.data.article as Article
+export interface FetchArticleByIdRequest {
+  id: string
+  needContent: boolean
 }
 
-export interface UpdateArticleParams {
+export interface FetchArticleByIdResponse {
+  article: Article
+}
+
+export async function fetchArticleById (req: FetchArticleByIdRequest): Promise<ApiSuccessResponse<FetchArticleByIdResponse>> {
+    return http.get(`/articles/${req.id}/${req.needContent}`, {skipAuth: false})
+}
+
+export interface UpdateArticleRequest {
     id: string
     title: string
     summary: string
-    content: string
+    content?: string
     is_publish: boolean
+    category_id: number
 }
 
-export const updateArticle = async (params: UpdateArticleParams): Promise<Article> => {
-    const res = await axiosInstance.patch('/articles', params)
-    return res.data.article as Article
+export interface UpdateArticleResponse {
+  article: Article
 }
 
-export interface CreateArticleParams {
+export async function updateArticle   (req: UpdateArticleRequest): Promise<ApiSuccessResponse<UpdateArticleResponse>> {
+    return  http.patch('/articles', req)
+}
+
+export interface CreateArticleRequest {
     title: string
     summary: string
     is_publish: boolean
 }
 
-export const createArticle = async (params: CreateArticleParams): Promise<Article> => {
-    const res = await axiosInstance.post('/articles', params)
-    return res.data.article as Article
+export interface CreateArticleResponse {
+  article: Article
 }
 
-export const deleteArticle = async (id: string): Promise<any> => {
-    await axiosInstance.delete(`/articles/${id}`)
+export async function createArticle(req: CreateArticleRequest): Promise<AxiosResponse<CreateArticleResponse>> {
+    return http.post('/articles', req)
+}
+
+export interface DeleteArticleRequest {
+  id: string
+}
+
+export async function deleteArticle (req: DeleteArticleRequest): Promise<AxiosResponse> {
+    return http.delete(`/articles/${req.id}`)
+}
+
+export interface ListAllArticleRequest {
+  page: number
+  limit: number
+}
+
+export interface ListAllArticleResponse {
+  articles: Article[]
+  count: string
+}
+
+export async function listAllArticles(req: ListAllArticleRequest): Promise<AxiosResponse<ListAllArticleResponse>> {
+  return http.get(`/articles?page=${req.page}&limit=${req.limit}`)
 }

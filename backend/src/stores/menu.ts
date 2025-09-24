@@ -1,6 +1,6 @@
-import axiosInstance from '@/config/axios'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import http from "@/util/http.ts";
 
 interface SysMenu {
     id: string
@@ -13,9 +13,9 @@ interface SysMenu {
 
 export const useMenuStore = defineStore('menu', () => {
     const sysMenu = ref<SysMenu[]>([])
-    
+
     const initMenu = async () => {
-        const res = await axiosInstance.get('/menu/init')
+        const res = await http.get('/menu/init')
         sysMenu.value = res.data.init_sys_menu
     }
 

@@ -4,7 +4,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
-import Toast from 'primevue/toast'
+import ConfirmationService from 'primevue/confirmationservice';
 import Aura from '@primeuix/themes/aura'
 import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'
@@ -26,6 +26,6 @@ app.use(PrimeVue, {
 })
 app.use(ToastService)
 app.use(CkeditorPlugin)
-app.component('Toast', Toast)
+app.use(ConfirmationService);
 
 app.mount('#app')

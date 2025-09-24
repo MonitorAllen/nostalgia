@@ -140,7 +140,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     const refreshAccessToken = async () => {
-        if (!refreshToken.value) {
+        if (!refreshToken.value && isRefreshTokenValid.value) {
             throw new Error('No refresh token available')
         }
 
@@ -153,7 +153,6 @@ export const useAuthStore = defineStore('auth', () => {
             updateAccessToken(access_token, access_token_expires_at)
 
             return access_token
-
         } catch (error) {
             // 刷新失败，清除所有认证信息
             logout()

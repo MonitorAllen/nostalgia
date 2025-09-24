@@ -37,11 +37,6 @@ a {
   text-decoration: none; /* 移除链接的默认下划线 */
 }
 
-table {
-  border-collapse: collapse; /* 表格边框合并 */
-  width: 100%; /* 表格宽度占满父元素 */
-}
-
 input[type="text"],
 input[type="email"],
 input[type="password"],
