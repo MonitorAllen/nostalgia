@@ -39,6 +39,15 @@ export const useUserStore = defineStore('user', {
       // 更新 state
       this.refresh_token_expires_at = refresh_token_expires_at
     },
+    setUser(user: User|string) {
+      // 更新本地缓存
+      storageService.set(storageService.USER_INFO, JSON.stringify(user))
+      // 更新 state
+      this.userInfo = user
+    },
+    clearUser() {
+      this.setUser('')
+    },
     SET_USERINFO(userInfo: User | '') {
       // 更新本地缓存
       storageService.set(storageService.USER_INFO, JSON.stringify(userInfo))

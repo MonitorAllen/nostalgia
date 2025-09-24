@@ -8,16 +8,14 @@ const route = useRoute()
 </script>
 
 <template>
-  <div class="card flex justify-center">
-    <Toast />
+  <div>
+    <Toast class="" />
   </div>
-  <div class="layout">
+  <div class="layout w-full">
     <header>
-      <div>
-      <NavBar v-if="!route.meta.hideNavbar"></NavBar>
-      </div>
+        <NavBar v-if="!route.meta.hideNavbar"></NavBar>
     </header>
-    <main class="content">
+    <main class="content w-full">
       <RouterView />
     </main>
     <footer class="footer">

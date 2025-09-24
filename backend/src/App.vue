@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Toast from 'primevue/toast'
 </script>
 
 <template>
@@ -11,7 +12,6 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: var(--font-family);
 }
 
 #app {

@@ -91,7 +91,7 @@ userStore.contributions()
     <div id="cal-heatmap" class="flex"></div>
     <div class="w-full flex justify-content-end align-items-center flex-wrap mt-2 text-xs text-color-secondary">
       <span>Less</span>
-      <div id="ex-ghDay-legend" class="mx-2"></div>
+      <div id="ex-ghDay-legend" class="flex mx-2"></div>
       <span>More</span>
     </div>
   </div>

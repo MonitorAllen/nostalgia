@@ -1,5 +1,3 @@
-import type { Tag } from '@/types/tag'
-
 export interface Article {
   id: string
   title: string
@@ -13,7 +11,7 @@ export interface Article {
   updated_at: string
   deleted_at: string
   username: string
-  tags: Tag[]
+  category_name: string
 }
 
 export interface ArticleComments {

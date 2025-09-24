@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, {type InternalAxiosRequestConfig} from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import storageService from '@/service/storageService'
 import { ref } from 'vue'

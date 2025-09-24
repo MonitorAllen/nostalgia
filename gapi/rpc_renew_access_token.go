@@ -30,7 +30,6 @@ func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessT
 	}
 
 	var adminSession AdminSession
-
 	err = json.Unmarshal([]byte(session), &adminSession)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "cannot unmarshal session")

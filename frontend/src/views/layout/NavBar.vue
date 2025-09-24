@@ -294,4 +294,8 @@ onMounted(() => {
     background: #f1f5f9;
   }
 }
+
+ul li{
+  list-style: none;
+}
 </style>

@@ -404,12 +404,6 @@ interface Post {
   margin-right: auto;
 }
 
-.ck-content {
-  font-family: 'Lato';
-  line-height: 1.6;
-  word-break: break-word;
-}
-
 .editor-container_classic-editor .editor-container__editor .ck-editor__editable_inline{
   min-height: 450px !important;
   min-width: 1000px;

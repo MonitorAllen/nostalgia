@@ -31,6 +31,6 @@ func (server *Server) GetArticle(ctx context.Context, req *pb.GetArticleRequest)
 	}
 
 	return &pb.GetArticleResponse{
-		Article: convertOnlyArticle(getArticle, req.GetNeedContent()),
+		Article: convertArticleWithCategory(getArticle, req.GetNeedContent()),
 	}, nil
 }

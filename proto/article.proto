@@ -15,7 +15,9 @@ message Article {
   optional int32 views = 6;
   optional int32 likes = 7;
   string owner = 8;
-  google.protobuf.Timestamp created_at = 9;
-  google.protobuf.Timestamp updated_at = 10;
-  google.protobuf.Timestamp deleted_at = 11;
+  int64 category_id = 9;
+  string category_name = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+  google.protobuf.Timestamp deleted_at = 13;
 }

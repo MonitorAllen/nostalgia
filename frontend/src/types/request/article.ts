@@ -1,3 +1,5 @@
+import type {Article} from "@/types/article";
+
 export interface CreateArticleRequest {
   title: string
   summary: string
@@ -14,3 +16,18 @@ export interface UpdateArticleRequest {
   owner: string
 }
 
+export interface ListArticlesRequest {
+  categoryId: number
+  page: number
+  limit: number
+}
+
+// 文章列表响应
+export interface ListArticlesResponse {
+  articles: Article[]
+  count: number
+}
+
+export interface ArticleResponse {
+  article: Article
+}

@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateComment(t *testing.T) {
-	article := createRandomArticle(t)
+	article := createRandomArticle(t, false, 1)
 
 	sendCommentUser := createRandomUser(t)
 

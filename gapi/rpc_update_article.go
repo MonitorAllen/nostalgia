@@ -2,6 +2,7 @@ package gapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -52,6 +53,10 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 				Bool:  req.GetIsPublish(),
 				Valid: req.IsPublish != nil,
 			},
+			CategoryID: pgtype.Int8{
+				Int64: req.GetCategoryId(),
+				Valid: req.CategoryId != nil,
+			},
 			UpdatedAt: pgtype.Timestamptz{
 				Time:  time.Now(),
 				Valid: true,
@@ -82,13 +87,9 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 
 	result, err := server.store.UpdateArticleTx(ctx, arg)
 	if err != nil {
-		code, _ := db.ErrorCode(err)
-		errCode := code
-		switch errCode {
-		case db.ForeignKeyViolation, db.UniqueViolation:
-			return nil, status.Errorf(codes.AlreadyExists, "failed to update article: %v", err)
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, "article not found")
 		}
-
 		return nil, status.Errorf(codes.Internal, "failed to update article: %v", err)
 	}
 

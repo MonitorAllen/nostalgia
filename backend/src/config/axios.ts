@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { API_BASE_URL } from './index'
 import { useRouter } from 'vue-router'
+import {STORAGE_KEYS} from "@/stores/auth.ts";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -12,9 +13,9 @@ const axiosInstance = axios.create({
 
 // 判断 token 是否即将过期（比如还有 5 分钟过期）
 const isTokenNearExpiry = () => {
-  const expiryTime = localStorage.getItem('access_token_expires_at')
+  const expiryTime = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN_EXPIRES_AT)
   if (!expiryTime) return true
-  
+
   const expiry = new Date(expiryTime).getTime()
   const currentTime = Date.now()
   const timeUntilExpiry = expiry - currentTime
@@ -23,21 +24,21 @@ const isTokenNearExpiry = () => {
 
 // 刷新 token
 const refreshToken = async () => {
-  const refresh_token = localStorage.getItem('refresh_token')
-  const refreshTokenExpiry = localStorage.getItem('refresh_token_expires_at')
-  
+  const refresh_token = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+  const refreshTokenExpiry = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRES_AT)
+
   if (!refresh_token || !refreshTokenExpiry || new Date(refreshTokenExpiry).getTime() < Date.now()) {
     throw new Error('Refresh token expired')
   }
 
   try {
     const response = await axios.post(`${API_BASE_URL}/admin/renew_access`, {refresh_token: refresh_token})
-    
-    const { 
-      access_token, 
-      access_token_expires_at, 
+
+    const {
+      access_token,
+      access_token_expires_at,
     } = response.data
-    
+
     localStorage.setItem('access_token', access_token)
     localStorage.setItem('access_token_expires_at', access_token_expires_at)
     return access_token
@@ -134,4 +135,4 @@ axiosInstance.interceptors.response.use(
   }
 )
 
-export default axiosInstance 
+export default axiosInstance

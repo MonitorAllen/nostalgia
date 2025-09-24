@@ -13,6 +13,7 @@ type Store interface {
 	VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error)
 	UpdateArticleTx(ctx context.Context, arg UpdateArticleTxParams) (UpdateArticleTxResult, error)
 	DeleteArticleTx(ctx context.Context, arg DeleteArticleTxParams) error
+	DeleteCategoryTx(ctx context.Context, ID int64) error
 }
 
 // SQLStore provides all functions to execute SQL queries and transactions

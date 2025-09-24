@@ -8,37 +8,49 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	AddCommentLikes(ctx context.Context, id int64) (Comment, error)
 	CountAllArticles(ctx context.Context) (int64, error)
-	CountArticles(ctx context.Context, isPublish pgtype.Bool) (int64, error)
+	CountArticles(ctx context.Context, arg CountArticlesParams) (int64, error)
+	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
+	CountCategories(ctx context.Context) (int64, error)
 	CreateAdmin(ctx context.Context, arg CreateAdminParams) (Admin, error)
 	CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error)
+	CreateCategory(ctx context.Context, name string) (Category, error)
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
 	DeleteArticle(ctx context.Context, id uuid.UUID) error
+	DeleteCategory(ctx context.Context, id int64) error
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
 	GetAdmin(ctx context.Context, username string) (Admin, error)
 	GetAdminById(ctx context.Context, id int64) (Admin, error)
-	GetArticle(ctx context.Context, id uuid.UUID) (Article, error)
+	GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Article, error)
+	GetCategory(ctx context.Context, id int64) (Category, error)
+	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetComment(ctx context.Context, id int64) (Comment, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	IncrementArticleLikes(ctx context.Context, id uuid.UUID) error
+	IncrementArticleViews(ctx context.Context, id uuid.UUID) error
 	ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error)
+	ListAllCategories(ctx context.Context) ([]Category, error)
 	ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error)
+	ListArticlesByCategoryID(ctx context.Context, arg ListArticlesByCategoryIDParams) ([]ListArticlesByCategoryIDRow, error)
+	ListCategoriesCountArticles(ctx context.Context, arg ListCategoriesCountArticlesParams) ([]ListCategoriesCountArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
 	ListInitSysMenus(ctx context.Context, roleID int64) ([]ListInitSysMenusRow, error)
+	SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, categoryID int64) error
 	UpdateAdmin(ctx context.Context, arg UpdateAdminParams) (Admin, error)
 	UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error)
+	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
 }

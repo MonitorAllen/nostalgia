@@ -88,8 +88,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 
 	result, err := server.store.CreateUserTx(ctx, arg)
 	if err != nil {
-		code, _ := db.ErrorCode(err)
-		if code == db.UniqueViolation {
+		if db.ErrorCode(err) == db.UniqueViolation {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}

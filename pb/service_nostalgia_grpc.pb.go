@@ -19,19 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Nostalgia_LoginAdmin_FullMethodName       = "/pb.Nostalgia/LoginAdmin"
-	Nostalgia_LogoutAdmin_FullMethodName      = "/pb.Nostalgia/LogoutAdmin"
-	Nostalgia_RenewAccessToken_FullMethodName = "/pb.Nostalgia/RenewAccessToken"
-	Nostalgia_InitSysMenu_FullMethodName      = "/pb.Nostalgia/InitSysMenu"
-	Nostalgia_CreateAdmin_FullMethodName      = "/pb.Nostalgia/CreateAdmin"
-	Nostalgia_UpdateAdmin_FullMethodName      = "/pb.Nostalgia/UpdateAdmin"
-	Nostalgia_AdminInfo_FullMethodName        = "/pb.Nostalgia/AdminInfo"
-	Nostalgia_CreateArticle_FullMethodName    = "/pb.Nostalgia/CreateArticle"
-	Nostalgia_DeleteArticle_FullMethodName    = "/pb.Nostalgia/DeleteArticle"
-	Nostalgia_ListArticles_FullMethodName     = "/pb.Nostalgia/ListArticles"
-	Nostalgia_GetArticle_FullMethodName       = "/pb.Nostalgia/GetArticle"
-	Nostalgia_UpdateArticle_FullMethodName    = "/pb.Nostalgia/UpdateArticle"
-	Nostalgia_UploadFile_FullMethodName       = "/pb.Nostalgia/UploadFile"
+	Nostalgia_LoginAdmin_FullMethodName        = "/pb.Nostalgia/LoginAdmin"
+	Nostalgia_LogoutAdmin_FullMethodName       = "/pb.Nostalgia/LogoutAdmin"
+	Nostalgia_RenewAccessToken_FullMethodName  = "/pb.Nostalgia/RenewAccessToken"
+	Nostalgia_InitSysMenu_FullMethodName       = "/pb.Nostalgia/InitSysMenu"
+	Nostalgia_CreateAdmin_FullMethodName       = "/pb.Nostalgia/CreateAdmin"
+	Nostalgia_UpdateAdmin_FullMethodName       = "/pb.Nostalgia/UpdateAdmin"
+	Nostalgia_AdminInfo_FullMethodName         = "/pb.Nostalgia/AdminInfo"
+	Nostalgia_CreateArticle_FullMethodName     = "/pb.Nostalgia/CreateArticle"
+	Nostalgia_DeleteArticle_FullMethodName     = "/pb.Nostalgia/DeleteArticle"
+	Nostalgia_ListArticles_FullMethodName      = "/pb.Nostalgia/ListArticles"
+	Nostalgia_GetArticle_FullMethodName        = "/pb.Nostalgia/GetArticle"
+	Nostalgia_UpdateArticle_FullMethodName     = "/pb.Nostalgia/UpdateArticle"
+	Nostalgia_UploadFile_FullMethodName        = "/pb.Nostalgia/UploadFile"
+	Nostalgia_CreateCategory_FullMethodName    = "/pb.Nostalgia/CreateCategory"
+	Nostalgia_DeleteCategory_FullMethodName    = "/pb.Nostalgia/DeleteCategory"
+	Nostalgia_UpdateCategory_FullMethodName    = "/pb.Nostalgia/UpdateCategory"
+	Nostalgia_ListCategories_FullMethodName    = "/pb.Nostalgia/ListCategories"
+	Nostalgia_ListAllCategories_FullMethodName = "/pb.Nostalgia/ListAllCategories"
 )
 
 // NostalgiaClient is the client API for Nostalgia service.
@@ -51,6 +56,11 @@ type NostalgiaClient interface {
 	GetArticle(ctx context.Context, in *GetArticleRequest, opts ...grpc.CallOption) (*GetArticleResponse, error)
 	UpdateArticle(ctx context.Context, in *UpdateArticleRequest, opts ...grpc.CallOption) (*UpdateArticleResponse, error)
 	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error)
+	CreateCategory(ctx context.Context, in *CreateCategoryRequest, opts ...grpc.CallOption) (*CreateCategoryResponse, error)
+	DeleteCategory(ctx context.Context, in *DeleteCategoryRequest, opts ...grpc.CallOption) (*DeleteCategoryResponse, error)
+	UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error)
+	ListCategories(ctx context.Context, in *ListCategoriesRequest, opts ...grpc.CallOption) (*ListCategoriesResponse, error)
+	ListAllCategories(ctx context.Context, in *ListAllCategoriesRequest, opts ...grpc.CallOption) (*ListAllCategoriesResponse, error)
 }
 
 type nostalgiaClient struct {
@@ -191,6 +201,56 @@ func (c *nostalgiaClient) UploadFile(ctx context.Context, in *UploadFileRequest,
 	return out, nil
 }
 
+func (c *nostalgiaClient) CreateCategory(ctx context.Context, in *CreateCategoryRequest, opts ...grpc.CallOption) (*CreateCategoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCategoryResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_CreateCategory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) DeleteCategory(ctx context.Context, in *DeleteCategoryRequest, opts ...grpc.CallOption) (*DeleteCategoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteCategoryResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_DeleteCategory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCategoryResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_UpdateCategory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) ListCategories(ctx context.Context, in *ListCategoriesRequest, opts ...grpc.CallOption) (*ListCategoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCategoriesResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_ListCategories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) ListAllCategories(ctx context.Context, in *ListAllCategoriesRequest, opts ...grpc.CallOption) (*ListAllCategoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAllCategoriesResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_ListAllCategories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NostalgiaServer is the server API for Nostalgia service.
 // All implementations must embed UnimplementedNostalgiaServer
 // for forward compatibility.
@@ -208,6 +268,11 @@ type NostalgiaServer interface {
 	GetArticle(context.Context, *GetArticleRequest) (*GetArticleResponse, error)
 	UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error)
 	UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error)
+	CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error)
+	DeleteCategory(context.Context, *DeleteCategoryRequest) (*DeleteCategoryResponse, error)
+	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
+	ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error)
+	ListAllCategories(context.Context, *ListAllCategoriesRequest) (*ListAllCategoriesResponse, error)
 	mustEmbedUnimplementedNostalgiaServer()
 }
 
@@ -256,6 +321,21 @@ func (UnimplementedNostalgiaServer) UpdateArticle(context.Context, *UpdateArticl
 }
 func (UnimplementedNostalgiaServer) UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
+}
+func (UnimplementedNostalgiaServer) CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateCategory not implemented")
+}
+func (UnimplementedNostalgiaServer) DeleteCategory(context.Context, *DeleteCategoryRequest) (*DeleteCategoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteCategory not implemented")
+}
+func (UnimplementedNostalgiaServer) UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCategory not implemented")
+}
+func (UnimplementedNostalgiaServer) ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListCategories not implemented")
+}
+func (UnimplementedNostalgiaServer) ListAllCategories(context.Context, *ListAllCategoriesRequest) (*ListAllCategoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAllCategories not implemented")
 }
 func (UnimplementedNostalgiaServer) mustEmbedUnimplementedNostalgiaServer() {}
 func (UnimplementedNostalgiaServer) testEmbeddedByValue()                   {}
@@ -512,6 +592,96 @@ func _Nostalgia_UploadFile_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Nostalgia_CreateCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCategoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).CreateCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_CreateCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).CreateCategory(ctx, req.(*CreateCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_DeleteCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCategoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).DeleteCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_DeleteCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).DeleteCategory(ctx, req.(*DeleteCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_UpdateCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCategoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).UpdateCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_UpdateCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).UpdateCategory(ctx, req.(*UpdateCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_ListCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCategoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).ListCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_ListCategories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).ListCategories(ctx, req.(*ListCategoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_ListAllCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAllCategoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).ListAllCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_ListAllCategories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).ListAllCategories(ctx, req.(*ListAllCategoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Nostalgia_ServiceDesc is the grpc.ServiceDesc for Nostalgia service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -570,6 +740,26 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadFile",
 			Handler:    _Nostalgia_UploadFile_Handler,
+		},
+		{
+			MethodName: "CreateCategory",
+			Handler:    _Nostalgia_CreateCategory_Handler,
+		},
+		{
+			MethodName: "DeleteCategory",
+			Handler:    _Nostalgia_DeleteCategory_Handler,
+		},
+		{
+			MethodName: "UpdateCategory",
+			Handler:    _Nostalgia_UpdateCategory_Handler,
+		},
+		{
+			MethodName: "ListCategories",
+			Handler:    _Nostalgia_ListCategories_Handler,
+		},
+		{
+			MethodName: "ListAllCategories",
+			Handler:    _Nostalgia_ListAllCategories_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -12,6 +12,7 @@ message UpdateArticleRequest {
   optional string summary = 3;
   optional string content = 4;
   optional bool is_publish = 5;
+  optional int64 category_id = 6;
 }
 
 message UpdateArticleResponse {

@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2025-04-27T11:42:48.652Z
+-- Generated at: 2025-09-08T09:02:41.246Z
 
 CREATE TABLE "users" (
   "id" uuid PRIMARY KEY,
@@ -25,9 +25,18 @@ CREATE TABLE "articles" (
   "likes" int NOT NULL DEFAULT 0,
   "is_publish" boolean NOT NULL DEFAULT false,
   "owner" uuid NOT NULL,
+  "category_id" bigint NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
   "deleted_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
+);
+
+CREATE TABLE "categories" (
+  "id" bigserial PRIMARY KEY,
+  "name" varchar UNIQUE NOT NULL DEFAULT '',
+  "is_system" bool NOT NULL DEFAULT false,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "comments" (
@@ -111,6 +120,8 @@ CREATE TABLE "role_permissions" (
 
 CREATE INDEX ON "articles" ("is_publish", "created_at");
 
+CREATE INDEX ON "articles" ("category_id", "is_publish", "created_at");
+
 CREATE UNIQUE INDEX ON "sys_menus" ("name", "parent_id");
 
 CREATE UNIQUE INDEX ON "role_permissions" ("role_id", "menu_id");
@@ -153,9 +164,17 @@ COMMENT ON COLUMN "articles"."is_publish" IS '是否发布';
 
 COMMENT ON COLUMN "articles"."owner" IS '拥有者';
 
+COMMENT ON COLUMN "articles"."category_id" IS '分类ID';
+
 COMMENT ON COLUMN "articles"."updated_at" IS '更新时间';
 
 COMMENT ON COLUMN "articles"."deleted_at" IS '删除时间';
+
+COMMENT ON TABLE "categories" IS '文章分类表';
+
+COMMENT ON COLUMN "categories"."name" IS '分类名称';
+
+COMMENT ON COLUMN "categories"."is_system" IS '是否为系统分类';
 
 COMMENT ON TABLE "comments" IS '文章评论表';
 
@@ -278,6 +297,8 @@ COMMENT ON COLUMN "role_permissions"."created_by" IS '创建人ID';
 COMMENT ON COLUMN "role_permissions"."created_at" IS '创建时间';
 
 ALTER TABLE "articles" ADD FOREIGN KEY ("owner") REFERENCES "users" ("id");
+
+ALTER TABLE "articles" ADD FOREIGN KEY ("category_id") REFERENCES "categories" ("id");
 
 ALTER TABLE "comments" ADD FOREIGN KEY ("article_id") REFERENCES "articles" ("id") ON DELETE CASCADE;
 

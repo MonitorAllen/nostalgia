@@ -11,69 +11,77 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomArticle(t *testing.T) Article {
+func createRandomArticle(t *testing.T, isPublish bool, categoryID int64) Article {
 	user := createRandomUser(t)
+
+	// 如果没有指定分类，则随机生成一个
+	if categoryID == 0 {
+		category := createRandomCategory(t)
+		categoryID = category.ID
+	}
 
 	ID, err := uuid.NewRandom()
 	require.NoError(t, err)
 
 	arg := CreateArticleParams{
-		ID:        ID,
-		Title:     util.RandomString(6),
-		Summary:   util.RandomString(10),
-		Content:   util.RandomString(50),
-		IsPublish: false,
-		Owner:     user.ID,
+		ID:         ID,
+		Title:      util.RandomString(6),
+		Summary:    util.RandomString(10),
+		Content:    util.RandomString(50),
+		IsPublish:  isPublish,
+		Owner:      user.ID,
+		CategoryID: categoryID,
 	}
 
-	post, err := testStore.CreateArticle(context.Background(), arg)
+	article, err := testStore.CreateArticle(context.Background(), arg)
 
 	require.NoError(t, err)
-	require.Equal(t, arg.ID, post.ID)
-	require.Equal(t, arg.Title, post.Title)
-	require.Equal(t, arg.Summary, post.Summary)
-	require.Equal(t, arg.Content, post.Content)
-	require.Equal(t, int32(0), post.Views)
-	require.Equal(t, int32(0), post.Likes)
-	require.False(t, post.IsPublish)
-	require.Equal(t, arg.Owner, post.Owner)
-	require.NotZero(t, post.CreatedAt)
-	require.True(t, post.UpdatedAt.IsZero())
-	require.True(t, post.DeletedAt.IsZero())
+	require.Equal(t, arg.ID, article.ID)
+	require.Equal(t, arg.Title, article.Title)
+	require.Equal(t, arg.Summary, article.Summary)
+	require.Equal(t, arg.Content, article.Content)
+	require.Equal(t, int32(0), article.Views)
+	require.Equal(t, int32(0), article.Likes)
+	require.Equal(t, isPublish, article.IsPublish)
+	require.Equal(t, arg.Owner, article.Owner)
+	require.Equal(t, arg.CategoryID, article.CategoryID)
+	require.NotZero(t, article.CreatedAt)
+	require.True(t, article.UpdatedAt.IsZero())
+	require.True(t, article.DeletedAt.IsZero())
 
-	return post
+	return article
 }
 
 func TestCreateArticle(t *testing.T) {
-	createRandomArticle(t)
+	createRandomArticle(t, false, 0)
 }
 
 func TestGetArticle(t *testing.T) {
 
-	post := createRandomArticle(t)
+	article := createRandomArticle(t, false, 0)
 
-	getArticle, err := testStore.GetArticle(context.Background(), post.ID)
-
-	require.NoError(t, err)
+	getArticle, err := testStore.GetArticle(context.Background(), article.ID)
 
 	require.NoError(t, err)
-	require.Equal(t, post.ID, getArticle.ID)
-	require.Equal(t, post.Title, getArticle.Title)
-	require.Equal(t, post.Summary, getArticle.Summary)
-	require.Equal(t, post.Content, getArticle.Content)
-	require.Equal(t, post.Views, getArticle.Views)
-	require.Equal(t, post.Likes, getArticle.Likes)
-	require.Equal(t, post.IsPublish, getArticle.IsPublish)
-	require.Equal(t, post.Owner, getArticle.Owner)
-	require.WithinDuration(t, post.CreatedAt, getArticle.CreatedAt, time.Second)
-	require.WithinDuration(t, post.UpdatedAt, getArticle.UpdatedAt, time.Second)
-	require.WithinDuration(t, post.DeletedAt, getArticle.DeletedAt, time.Second)
+
+	require.NoError(t, err)
+	require.Equal(t, article.ID, getArticle.ID)
+	require.Equal(t, article.Title, getArticle.Title)
+	require.Equal(t, article.Summary, getArticle.Summary)
+	require.Equal(t, article.Content, getArticle.Content)
+	require.Equal(t, article.Views, getArticle.Views)
+	require.Equal(t, article.Likes, getArticle.Likes)
+	require.Equal(t, article.IsPublish, getArticle.IsPublish)
+	require.Equal(t, article.Owner, getArticle.Owner)
+	require.WithinDuration(t, article.CreatedAt, getArticle.CreatedAt, time.Second)
+	require.WithinDuration(t, article.UpdatedAt, getArticle.UpdatedAt, time.Second)
+	require.WithinDuration(t, article.DeletedAt, getArticle.DeletedAt, time.Second)
 }
 
 func TestListArticles(t *testing.T) {
 	var lastArticle Article
 	for i := 0; i < 10; i++ {
-		lastArticle = createRandomArticle(t)
+		lastArticle = createRandomArticle(t, false, 1)
 	}
 
 	arg := ListArticlesParams{
@@ -85,19 +93,19 @@ func TestListArticles(t *testing.T) {
 		},
 	}
 
-	posts, err := testStore.ListArticles(context.Background(), arg)
+	articles, err := testStore.ListArticles(context.Background(), arg)
 	require.NoError(t, err)
-	require.NotEmpty(t, posts)
+	require.NotEmpty(t, articles)
 
-	for _, post := range posts {
-		require.NotEmpty(t, post)
+	for _, article := range articles {
+		require.NotEmpty(t, article)
 	}
 
-	require.Equal(t, posts[0].Owner, lastArticle.Owner)
+	require.Equal(t, articles[0].Owner, lastArticle.Owner)
 }
 
 func TestUpdateArticleOnlyTitle(t *testing.T) {
-	oldArticle := createRandomArticle(t)
+	oldArticle := createRandomArticle(t, false, 1)
 
 	arg := UpdateArticleParams{
 		Title: pgtype.Text{
@@ -123,7 +131,7 @@ func TestUpdateArticleOnlyTitle(t *testing.T) {
 }
 
 func TestUpdateArticleOnlySummary(t *testing.T) {
-	oldArticle := createRandomArticle(t)
+	oldArticle := createRandomArticle(t, false, 1)
 
 	arg := UpdateArticleParams{
 		Summary: pgtype.Text{
@@ -149,7 +157,7 @@ func TestUpdateArticleOnlySummary(t *testing.T) {
 }
 
 func TestUpdateArticleOnlyContent(t *testing.T) {
-	oldArticle := createRandomArticle(t)
+	oldArticle := createRandomArticle(t, false, 1)
 
 	arg := UpdateArticleParams{
 		Content: pgtype.Text{
@@ -175,7 +183,7 @@ func TestUpdateArticleOnlyContent(t *testing.T) {
 }
 
 func TestUpdateArticleOnlyIsPublish(t *testing.T) {
-	oldArticle := createRandomArticle(t)
+	oldArticle := createRandomArticle(t, false, 1)
 
 	arg := UpdateArticleParams{
 		IsPublish: pgtype.Bool{
@@ -201,7 +209,9 @@ func TestUpdateArticleOnlyIsPublish(t *testing.T) {
 }
 
 func TestUpdateArticleAllFields(t *testing.T) {
-	oldArticle := createRandomArticle(t)
+	oldArticle := createRandomArticle(t, false, 1)
+
+	newCategory := createRandomCategory(t)
 
 	arg := UpdateArticleParams{
 		Title: pgtype.Text{
@@ -220,6 +230,10 @@ func TestUpdateArticleAllFields(t *testing.T) {
 			Bool:  !oldArticle.IsPublish,
 			Valid: true,
 		},
+		CategoryID: pgtype.Int8{
+			Int64: newCategory.ID,
+			Valid: true,
+		},
 		UpdatedAt: pgtype.Timestamptz{
 			Time:  time.Now(),
 			Valid: true,
@@ -234,12 +248,13 @@ func TestUpdateArticleAllFields(t *testing.T) {
 	require.NotEqual(t, oldArticle.Summary, updatedArticle.Summary)
 	require.NotEqual(t, oldArticle.Content, updatedArticle.Content)
 	require.NotEqual(t, oldArticle.IsPublish, updatedArticle.IsPublish)
+	require.NotEqual(t, oldArticle.CategoryID, updatedArticle.CategoryID)
 	require.WithinDuration(t, oldArticle.CreatedAt, updatedArticle.CreatedAt, time.Second)
 	require.NotZero(t, updatedArticle.UpdatedAt)
 }
 
 func TestDeleteArticle(t *testing.T) {
-	article := createRandomArticle(t)
+	article := createRandomArticle(t, false, 1)
 
 	err := testStore.DeleteArticle(context.Background(), article.ID)
 	require.NoError(t, err)
@@ -247,4 +262,18 @@ func TestDeleteArticle(t *testing.T) {
 	getArticle, err := testStore.GetArticle(context.Background(), article.ID)
 	require.Equal(t, err, ErrRecordNotFound)
 	require.Empty(t, getArticle)
+}
+
+func TestIncrementArticleLikes(t *testing.T) {
+	article := createRandomArticle(t, false, 1)
+
+	err := testStore.IncrementArticleLikes(context.Background(), article.ID)
+	require.NoError(t, err)
+}
+
+func TestIncrementArticleViews(t *testing.T) {
+	article := createRandomArticle(t, false, 1)
+
+	err := testStore.IncrementArticleViews(context.Background(), article.ID)
+	require.NoError(t, err)
 }

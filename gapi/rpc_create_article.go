@@ -37,17 +37,18 @@ func (server *Server) CreateArticle(ctx context.Context, req *pb.CreateArticleRe
 	}
 
 	arg := db.CreateArticleParams{
-		ID:        aritcleID,
-		Title:     title,
-		Summary:   req.GetSummary(),
-		Content:   req.GetContent(),
-		IsPublish: isPublish,
-		Owner:     defaultUserID,
+		ID:         aritcleID,
+		Title:      title,
+		Summary:    req.GetSummary(),
+		Content:    req.GetContent(),
+		IsPublish:  isPublish,
+		Owner:      defaultUserID,
+		CategoryID: 1,
 	}
 
 	article, err := server.store.CreateArticle(ctx, arg)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "can't update article: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to create article: %v", err)
 	}
 
 	resp := &pb.CreateArticleResponse{

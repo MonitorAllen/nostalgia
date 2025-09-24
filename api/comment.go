@@ -101,6 +101,10 @@ type Comment struct {
 	Child        []*Comment `json:"child"`
 }
 
+type listCommentsByArticleIDResponse struct {
+	Comments []*Comment `json:"comments"`
+}
+
 func (server *Server) listCommentsByArticleID(ctx *gin.Context) {
 	var req listCommentsByArticleIDRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -122,7 +126,7 @@ func (server *Server) listCommentsByArticleID(ctx *gin.Context) {
 
 	commentTree := buildCommentTree(comments)
 
-	ctx.JSON(http.StatusOK, commentTree)
+	ctx.JSON(http.StatusOK, listCommentsByArticleIDResponse{Comments: commentTree})
 }
 
 func buildCommentTree(rows []db.ListCommentsByArticleIDRow) []*Comment {
@@ -150,14 +154,15 @@ func buildCommentTree(rows []db.ListCommentsByArticleIDRow) []*Comment {
 
 	// 2. 构造树形结构
 	var rootComments []*Comment
-	for i := range rows {
-		comment := rows[i]
+	for _, comment := range rows {
 		if comment.ParentID == 0 {
 			// 根评论
 			rootComments = append(rootComments, commentMap[comment.ID])
-		} else if parent, exists := commentMap[int64(comment.ParentID)]; exists {
-			// 如果父评论存在，将当前评论添加到父评论的 Child 列表中
-			parent.Child = append(parent.Child, commentMap[comment.ID])
+		} else {
+			if parent, exists := commentMap[comment.ParentID]; exists {
+				// 如果父评论存在，将当前评论添加到父评论的 Child 列表中
+				parent.Child = append(parent.Child, commentMap[comment.ID])
+			}
 		}
 	}
 
