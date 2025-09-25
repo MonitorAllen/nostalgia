@@ -7,13 +7,12 @@ Nostalgia 是一个基于 Golang + gRPC + Gin + Redis + PostgreSQL + Docker 的�
 ---
 
 ## 📂 项目结构
+```text
 NOSTALGIA/
 ├── .github/ # GitHub CI/CD workflows 配置
 ├── api/ # Gin HTTP 服务（博客前台 API）
-├── backend/ # 后台管理系统页面（Vue3）
 ├── db/ # 数据库迁移脚本与 SQLC 定义
 ├── doc/ # 项目文档（含 statik 嵌入）
-├── frontend/ # 博客用户前台页面（Vue3）
 ├── gapi/ # gRPC 服务实现（博客后台 API）
 ├── internal/ # 内部服务模块（如 Redis 封装）
 ├── mail/ # 邮件服务模块
@@ -23,9 +22,11 @@ NOSTALGIA/
 ├── token/ # JWT / Paseto 认证逻辑
 ├── util/ # 配置加载与工具函数
 ├── validator/ # 自定义参数校验器
-├── web/ # 前端Dockfile
+├── web/ # 前端Dockerfile
+│   ├── backend/ # 后台管理系统页面（Vue3）
+│   └── frontend/ # 博客用户前台页面（Vue3）
 └── worker/ # 异步任务处理模块（如邮件队列）
-
+```
 
 ---
 

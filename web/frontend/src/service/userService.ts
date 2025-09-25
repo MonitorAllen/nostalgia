@@ -1,5 +1,5 @@
 import request from '@/util/request'
-import type {User} from '@/types/user.js'
+import type {User} from '@/types/user'
 import type {LoginRequest, RegisterRequest} from '@/types/request/user'
 
 // 用户注册

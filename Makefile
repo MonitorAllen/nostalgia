@@ -74,6 +74,6 @@ decrypt_env:
 	gpg --batch --yes --passphrase "${ENV_PASSPHRASE}" --output .env --decrypt .env.$(env).enc
 
 encrypt_env:
-	gpg --batch --yes --symmetric --cipher-algo AES256 --output .env.$(env).enc .env
+	gpg --batch --yes --symmetric --cipher-algo AES256 --output .env.$(env).enc .env$(suf)
 
 .PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 new_migration db_docs db_schema sqlc test server mock proto evans redis db_dbml decrypt_env encrypt_env

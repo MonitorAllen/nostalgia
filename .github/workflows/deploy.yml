@@ -4,14 +4,23 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag'
+        required: false
+        default: 'latest'
+
+env:
+  TCR_REGISTRY: ${{ secrets.TCR_REGISTRY }}
+  TCR_NAMESPACE: ${{ secrets.TCR_NAMESPACE }}
 
 jobs:
-  deploy:
-    name: Build image
+  build-api:
+    name: Build API Service
     runs-on: ubuntu-latest
-
-    env:
-      ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+    outputs:
+      api-image: ${{ steps.meta.outputs.image }}
 
     steps:
       - name: Check out code
@@ -24,17 +33,77 @@ jobs:
         run: |
           echo "${{ secrets.TCR_PASSWORD }}" | docker login -u ${{ secrets.TCR_USERNAME }} --password-stdin ${{ secrets.TCR_REGISTRY }}
 
-      - name: Decrypt ENV
+      - name: Extract metadata
+        id: meta
         run: |
-          make decrypt_env env=dev
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG=${GITHUB_REF#refs/tags/}
+          fi
+          IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.API_REPOSITORY }}:${TAG}"
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build and push image to Tencent ACR
+      - name: Decrypt ENV
         env:
-          TCR_REGISTRY: ${{ secrets.TCR_REGISTRY }}
-          TCR_NAMESPACE: ${{ secrets.TCR_NAMESPACE }}
-          TCR_REPOSITORY: ${{ secrets.TCR_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}
+          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
         run: |
-          IMAGE=$TCR_REGISTRY/$TCR_NAMESPACE/$TCR_REPOSITORY:$IMAGE_TAG
-          docker build -t $IMAGE .
-          docker push $IMAGE
+          make decrypt_env env=prod
+
+      - name: Build and push API image
+        run: |
+          IIMAGE="${{ steps.meta.outputs.image }}"
+          echo "Building API image: ${IMAGE}"
+          docker build -t ${IMAGE} .
+          docker push ${IMAGE}
+          
+          # 同时推送latest标签
+                    if [[ "${{ steps.meta.outputs.tag }}" != "latest" ]]; then
+                      LATEST_IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.API_REPOSITORY }}:latest"
+                      docker tag ${IMAGE} ${LATEST_IMAGE}
+                      docker push ${LATEST_IMAGE}
+                    fi
+
+  build-web:
+    name: Build Web Service
+    runs-on: ubuntu-latest
+    outputs:
+      web-image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Tencent Cloud TCR
+        run: |
+          echo "${{ secrets.TCR_PASSWORD }}" | docker login -u ${{ secrets.TCR_USERNAME }} --password-stdin ${{ secrets.TCR_REGISTRY }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG=${GITHUB_REF#refs/tags/}
+          fi
+          IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.WEB_REPOSITORY }}:${TAG}"
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Web image
+        run: |
+          IMAGE="${{ steps.meta.outputs.image }}"
+          echo "Building Web image: ${IMAGE}"
+          cd web
+          docker build -t ${IMAGE} .
+          docker push ${IMAGE}
+          
+          # 同时推送latest标签
+          if [[ "${{ steps.meta.outputs.tag }}" != "latest" ]]; then
+            LATEST_IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.WEB_REPOSITORY }}:latest"
+            docker tag ${IMAGE} ${LATEST_IMAGE}
+            docker push ${LATEST_IMAGE}
+          fi

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from '@/config/axios'
 import { API_BASE_URL } from './index'
 import { useRouter } from 'vue-router'
 import {STORAGE_KEYS} from "@/stores/auth.ts";

@@ -53,7 +53,7 @@ const handleReply = () => {
             size="small"
             value="作者"
         />
-        <template v-if="comment.to_user_id && comment.from_user_id !== comment.to_user_id">
+        <template v-if="isChild && comment.to_user_id && comment.from_user_id !== comment.to_user_id">
           <i class="pi pi-sort-up-fill rotate-90 text-xs"></i>
           <h6 class="m-0 text-base font-semibold">{{ comment.to_user_name }}</h6>
           <Badge

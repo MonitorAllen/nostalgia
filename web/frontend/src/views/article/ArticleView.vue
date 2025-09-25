@@ -251,7 +251,7 @@ onMounted(async () => {
     try {
       const [articleRes, commentRes] = await Promise.all([getArticle({id}), listComments({articleId: id})]);
       article.value = articleRes.data.article
-      comments.value = commentRes.data.comments
+      comments.value = commentRes.data.comments === null ? [] : commentRes.data.comments
     } catch (error: any) {
       toast.add({
         severity: 'error',

@@ -13,6 +13,8 @@ services:
     depends_on:
       - web
       - api
+    restart: unless-stopped
+
   postgres:
     image: postgres:12-alpine
     environment:
@@ -25,16 +27,18 @@ services:
       - nostalgia
     volumes:
       - data-volume:/var/lib/postgresql/data
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
     networks:
       - nostalgia
+    restart: unless-stopped
+
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${TCR_REGISTRY}/${TCR_NAMESPACE}/${API_REPOSITORY}:${API_TAG:-latest}
     ports:
       - "8080:8080"
       - "9090:9090"
@@ -51,16 +55,18 @@ services:
       - redis
     entrypoint: ["/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh"]
     command: ["/app/main"]
+    restart: unless-stopped
+
   web:
-    build:
-      context: .
-      dockerfile: web/Dockerfile
+    image: ${TCR_REGISTRY}/${TCR_NAMESPACE}/${WEB_REPOSITORY}:${WEB_TAG:-latest}
     volumes:
       - ./resources:/usr/share/nginx/resources
     networks:
       - nostalgia
     depends_on:
       - api
+    restart: unless-stopped
+
 volumes:
   data-volume:
   caddy_data:

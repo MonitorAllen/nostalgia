@@ -22,7 +22,7 @@ COPY --from=build-frontend /app/frontend/dist /usr/share/nginx/html/
 COPY --from=build-backend /app/backend/dist /usr/share/nginx/html/backend/
 
 # 拷贝 nginx 配置
-COPY web/nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # 日志文件夹
 RUN mkdir -p /etc/nginx/logs && touch /etc/nginx/logs/error.log && \
