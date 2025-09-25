@@ -1,7 +1,8 @@
-import axios from '@/config/axios'
 import { API_BASE_URL } from './index'
 import { useRouter } from 'vue-router'
 import {STORAGE_KEYS} from "@/stores/auth.ts";
+import type { InternalAxiosRequestConfig} from "axios";
+import axios from "axios";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -63,14 +64,14 @@ const onRefreshed = (token: string) => {
 
 // 请求拦截器
 axiosInstance.interceptors.request.use(
-  async (config) => {
+  async (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('access_token')
     if (token) {
       if (isTokenNearExpiry() && !config.url?.includes('/auth/refresh_token')) {
         try {
           const newToken = await refreshToken()
           config.headers.Authorization = `Bearer ${newToken}`
-        } catch (error) {
+        } catch (error: any) {
           // 如果刷新失败，继续使用旧 token
           config.headers.Authorization = `Bearer ${token}`
         }
@@ -80,7 +81,7 @@ axiosInstance.interceptors.request.use(
     }
     return config
   },
-  (error) => {
+  (error: any) => {
     return Promise.reject(error)
   }
 )

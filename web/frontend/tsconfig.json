@@ -9,6 +9,7 @@
     }
   ],
   "compilerOptions": {
-    "types": ["vite/client", "pinia"]
+    "types": ["vite/client", "pinia"],
+    "noImplicitAny": false,
   }
 }

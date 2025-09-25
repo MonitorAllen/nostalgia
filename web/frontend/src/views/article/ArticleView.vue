@@ -48,7 +48,6 @@ const replyCommentParentId = ref(0)
 
 const replyComment = (id: number, to_user_id: string, to_user_name: string, parent_id: number) => {
   //取消回复
-  console.log('id: ' + id, 'to user id: ' + to_user_id, 'to user name: ' + to_user_name, 'parent id: ' + parent_id)
   if (replyCommentId.value === id) {
     replyCommentId.value = 0
     replyUserName.value = ''

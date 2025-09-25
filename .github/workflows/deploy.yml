@@ -53,7 +53,7 @@ jobs:
 
       - name: Build and push API image
         run: |
-          IIMAGE="${{ steps.meta.outputs.image }}"
+          IMAGE="${{ steps.meta.outputs.image }}"
           echo "Building API image: ${IMAGE}"
           docker build -t ${IMAGE} .
           docker push ${IMAGE}
