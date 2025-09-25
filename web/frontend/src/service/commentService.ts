@@ -1,4 +1,4 @@
-import request from '@/util/request.js'
+import request from '@/util/request'
 import type {CreateCommentRequest, DeleteCommentRequest} from "@/types/request/comment";
 
 

@@ -130,6 +130,10 @@ func (server *Server) listCommentsByArticleID(ctx *gin.Context) {
 }
 
 func buildCommentTree(rows []db.ListCommentsByArticleIDRow) []*Comment {
+	if len(rows) == 0 {
+		return nil
+	}
+
 	// 用来存储 id -> Comment 的映射
 	commentMap := make(map[int64]*Comment)
 

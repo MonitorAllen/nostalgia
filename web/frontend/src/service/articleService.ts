@@ -1,4 +1,4 @@
-import request from '@/util/request.js'
+import request from '@/util/request'
 import type {CreateArticleRequest, UpdateArticleRequest} from '@/types/request/article'
 
 // 根据ID获取文章
