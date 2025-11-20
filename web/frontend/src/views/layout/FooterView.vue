@@ -1,19 +1,12 @@
 <script setup>
-const date = new Date()
-const currentYear = date.getFullYear()
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-    <div class="w-full flex-row justify-content-center ">
-        <div class="flex flex-column row-gap-2 text-color-secondary text-sm">
-            <p>Copyright © {{ currentYear }} Nostalgia. Design by Primevue.</p>
-            <p>粤ICP备2025431323号</p>
-        </div>
+  <footer class="w-full py-4 bg-gray-50 mt-auto">
+    <div class="flex flex-column align-items-center text-600 text-sm gap-2">
+      <p class="m-0">Copyright © {{ currentYear }} Nostalgia. Design by PrimeVue.</p>
+      <p class="m-0 hover:text-900 cursor-pointer transition-colors">粤ICP备2025431323号</p>
     </div>
+  </footer>
 </template>
-
-<style scoped>
-p {
-  margin: 0;
-}
-</style>

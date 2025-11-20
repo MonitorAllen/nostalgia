@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+    <!-- 外圈 -->
+    <circle cx="50" cy="50" r="48" fill="none" stroke="#20c997" stroke-width="2" stroke-linecap="round" />
+
+    <!-- 快门叶片 1 (右上) -->
+    <polygon points="50,15 85,35 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+    <!-- 快门叶片 2 (右) -->
+    <polygon points="85,35 85,65 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+    <!-- 快门叶片 3 (右下) -->
+    <polygon points="85,65 50,85 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+    <!-- 快门叶片 4 (左下) -->
+    <polygon points="50,85 15,65 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+    <!-- 快门叶片 5 (左) -->
+    <polygon points="15,65 15,35 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+    <!-- 快门叶片 6 (左上) -->
+    <polygon points="15,35 50,15 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+    <!-- 中心 N 字 - 左竖 -->
+    <path d="M35 30 V70" fill="none" stroke="#20c997" stroke-width="5" stroke-linecap="round" />
+
+    <!-- 中心 N 字 - 右竖 -->
+    <path d="M65 30 V70" fill="none" stroke="#20c997" stroke-width="5" stroke-linecap="round" />
+
+    <!-- 中心 N 字 - 对角线 -->
+    <path d="M35 70 L65 30" fill="none" stroke="#20c997" stroke-width="5" stroke-linecap="round" />
+</svg>

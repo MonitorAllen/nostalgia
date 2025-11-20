@@ -46,6 +46,8 @@ const replyUserName = ref('')
 const replyUserId = ref('')
 const replyCommentParentId = ref(0)
 
+const comments = ref<ArticleComments[]>([])
+
 const replyComment = (id: number, to_user_id: string, to_user_name: string, parent_id: number) => {
   //取消回复
   if (replyCommentId.value === id) {
@@ -82,7 +84,7 @@ const deleteComment = (id: number, index: number) => {
     },
     accept: () => {
       commentStore.deleteComment(id)
-          .then((res: any) => {
+          .then(() => {
             comments.value?.splice(index, 1)
             toast.add({severity: 'success', summary: '成功', detail: '该评论已删除', life: 3000});
           })
@@ -93,16 +95,14 @@ const deleteComment = (id: number, index: number) => {
   });
 }
 
-const comments = ref<ArticleComments[]>([])
-
 const createComment = (parent_id: number, to_user_id: string) => {
   if (!userStore.userInfo) {
-    toast.add({severity: 'info', summary: 'Tips', detail: "请登录后使用评论功能", life: 2500})
+    toast.add({severity: 'info', summary: '提示', detail: "请登录后使用评论功能", life: 2500})
     return
   }
 
   if (editorData.value.length === 0) {
-    toast.add({severity: 'warn', summary: 'Warning', detail: "评论内容不能为空", life: 2500})
+    toast.add({severity: 'warn', summary: '提示', detail: "评论内容不能为空", life: 2500})
     return
   }
 
@@ -135,7 +135,7 @@ const createComment = (parent_id: number, to_user_id: string) => {
       })
     }
     // 回复成功后
-    toast.add({severity: 'success', summary: 'Success', detail: "评论成功", life: 2500})
+    toast.add({severity: 'success', summary: '成功', detail: "评论成功", life: 2500})
 
     // 重置编辑框内容
     editorData.value = ''
@@ -269,6 +269,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearTimeout(timer)
+  window.removeEventListener('scroll', updateScrollProgress)
   if (editor.value) {
     editor.value.destroy()
   }
@@ -279,19 +280,34 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
   editor.value = editorInstance
 }
 
+// 阅读进度条
+const scrollProgress = ref(0)
+
+// 更新阅读进度
+const updateScrollProgress = () => {
+  const winScroll = document.documentElement.scrollTop
+  const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
+  scrollProgress.value = (winScroll / height) * 100
+}
+
+// 添加滚动监听
+window.addEventListener('scroll', updateScrollProgress)
 </script>
 
 <template>
-  <div class="flex flex-column row-gap-3 justify-content-center w-11 md:w-10 lg:w-8 mx-auto">
-    <div class="article-container surface-0 w-full flex flex-column m-auto p-2 mt-3">
+  <!-- 🆕 阅读进度条 -->
+  <div class="reading-progress fixed top-0 left-0" :style="{width: scrollProgress + '%'}"></div>
+
+  <div class="flex flex-column row-gap-3 justify-content-center w-11 md:w-10 lg:w-6 mx-auto" style="max-width: 700px">
+    <div class="article-container surface-0 w-full flex flex-column m-auto p-2 mt-3 line-height-3">
       <div class="flex flex-column align-items-center">
         <div>
           <h2 class="article-title text-green-600">{{ article?.title }}</h2>
         </div>
-        <div class="flex flex-row gap-3">
+        <div class="flex flex-row gap-3 justify-content-center">
           <div class="flex align-items-center">
             <i class="pi pi-calendar" style="font-size: .8rem"></i>
-            <div class="font-medium text-sm ml-1">{{ date.format(article?.created_at as string, 'YYYY-MM-DD HH:mm') }}</div>
+            <div class="font-medium text-sm ml-1">{{ date.format(article?.created_at as string, 'YYYY-MM-DD') }}</div>
           </div>
           <div class="flex align-items-center">
             <i class="pi pi-heart" style="font-size: .8rem"></i>
@@ -313,17 +329,22 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
       <Divider/>
       <div class="w-full ck-content" style="overflow-wrap: break-word; word-break: break-word;" v-html="article?.content"></div>
     </div>
-    <div class="flex flex-column w-full bg-gray-50 border-1 border-gray-200 m-auto">
-      <div class="flex flex-row column-gap-1 h-2rem bg-green-200 p-1 align-items-center">
-        <i class="pi pi-exclamation-triangle"></i>
-        <div>小提示</div>
+    <div class="flex flex-column w-full bg-gray-50 border-1 border-gray-200 m-auto copyright-box">
+      <div class="flex flex-row column-gap-1 p-2 align-items-center copyright-header">
+        <i class="pi pi-shield"></i>
+        <span>版权声明</span>
       </div>
-      <div class="flex flex-column p-1">
+      <div class="flex flex-column p-2 row-gap-2">
         <div>
-          版权声明：原创不易，转载请注明出处。
+          <strong>原文链接：</strong>{{articlePath}}
         </div>
         <div>
-          原文链接：{{articlePath}}
+          <strong>版权说明：</strong>本文采用
+          <a
+              class="border-dashed border-bottom-1 border-x-none border-top-none hover:border-bottom-1 hover:border-solid"
+              style="color: #e67e22;"
+              href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a>
+          许可协议，转载请注明出处。
         </div>
       </div>
     </div>
@@ -347,7 +368,7 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
         <div class="editor-container editor-container_classic-editor">
           <div id="editor" class="editor-container__editor">
             <ckeditor
-            
+
                 v-if="isLayoutReady"
                 v-model="editorData"
                 :editor="ClassicEditor"
@@ -403,8 +424,18 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
 </template>
 
 <style scoped>
+/* ==================== 阅读进度条 ==================== */
+.reading-progress {
+  height: 3px;
+  background: linear-gradient(90deg, #20c997, #17a2b8);
+  z-index: 9999;
+  transition: width 0.1s ease;
+  box-shadow: 0 2px 4px rgba(32, 201, 151, 0.3);
+}
+
 .article-container {
   border: .1rem solid #ebebeb;
+  letter-spacing: 0.01em;
 
   .article-title {
     margin: 2px 0;
@@ -423,6 +454,27 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
   }
 }
 
+/* ==================== 版权声明 ==================== */
+.copyright-box {
+  background: linear-gradient(135deg, #fff9e6 0%, #fff3d6 100%);
+  border: 2px solid #ffc107;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.copyright-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 193, 7, 0.2);
+}
+
+.copyright-header {
+  background: #ffc107;
+  color: #2d3748;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+}
+
 .comment-box {
   border: .1rem solid #ebebeb;
   background-color: rgb(239 239 239 / 0.3);
@@ -439,6 +491,27 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
 :deep(.ck-content) blockquote {
   border-left: solid 5px #20c997;
   background-color: #f7f7f7;
+}
+
+/* 链接 */
+:deep(.ck-content) a {
+  color: #20c997;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+:deep(.ck-content) a:hover {
+  color: #17a085;
+  border-bottom-color: #17a085;
+}
+
+/* 水平线 */
+:deep(.ck-content) hr {
+  border: none;
+  height: 1px;
+  margin: 1rem 0;
+  padding: 0 1rem;
 }
 
 .editor-container_classic-editor .editor-container__editor .ck-editor__editable_inline {
