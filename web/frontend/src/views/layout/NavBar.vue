@@ -1,18 +1,18 @@
 <template>
   <div class="flex flex-row min-w-min h-4rem relative shadow-1 justify-content-between">
-    <div class="flex flex-row nav-r-box gap-5">
-      <div class="flex flex-row align-items-center ml-6 logo-box">
-        <span>Nostalgia</span>
-      </div>
+    <div class="flex flex-row nav-r-box gap-1">
+      <router-link to="/" class="flex flex-row align-items-center ml-2 sm:ml-6 cursor-pointer select-none">
+        <img src="../../../public/logo.svg" alt="Nostalgia Logo" class="h-2rem">
+      </router-link>
       <a class="flex align-items-center lg:hidden" @click="toggleNav" ref="navIcon">
         <i class="pi pi-bars"></i>
       </a>
       <div
         :class="[isNavOpen ? 'flex absolute w-full bg-white nav-open h-auto shadow-1' : '']"
-        class="flex-column align-content-between md:shadow-none hidden lg:flex lg:flex-row lg:static menu-box"
+        class="flex-column align-content-between hidden lg:shadow-none lg:flex lg:flex-row lg:static menu-box"
         ref="leftPanelRef"
       >
-        <ul class="flex flex-column hidden lg:flex-row lg:static menu-box m-0"
+        <ul class="flex flex-column hidden lg:flex-row  menu-box m-0 pl-0"
             :class="[isNavOpen ? 'flex w-full' :  '']">
           <li v-for="(item, index) in navItems" :key="index" class="h-full">
             <router-link

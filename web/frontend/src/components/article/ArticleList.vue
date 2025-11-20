@@ -1,65 +1,57 @@
 <script setup lang="ts">
-
+import { onMounted, ref, watch } from "vue";
+import { RouterLink } from 'vue-router';
 import date from "@/util/date";
-import Paginator, {type PageState} from "primevue/paginator";
-import ProgressSpinner from 'primevue/progressspinner';
-import {useToast} from "primevue/usetoast";
-import {onMounted, ref, watch} from "vue";
-import type {Article} from "@/types/article";
-import {listArticle} from "@/api/article";
+import { listArticle } from "@/api/article";
+import type { Article } from "@/types/article";
+
+// PrimeVue Components
+import Paginator, { type PageState } from "primevue/paginator";
+import { useToast } from "primevue/usetoast";
+import Skeleton from 'primevue/skeleton';
 
 const props = defineProps({
-  categoryId: {
-    type: Number,
-    default: 0
-  }
+  categoryId: { type: Number, default: 0 }
 })
-
 
 const first = ref(0)
 const currentPage = ref(1)
 const limit = ref(10)
 const totalRecords = ref(0)
 const articles = ref<Article[]>([])
-
-// 添加加载状态
 const loading = ref(false)
-const error = ref('')
+const toast = useToast()
 
 const fetchArticles = async (categoryId: number, page: number, limit: number) => {
   loading.value = true
-  error.value = ''
   try {
     const resp = await listArticle({categoryId, page, limit})
     totalRecords.value = resp.data.count
     articles.value = resp.data.articles
+    if(page > 1) window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err: any) {
-    const toast = useToast()
-    error.value = err.response?.data?.error || '获取文章列表失败'
-    toast.add({
-      severity: 'error',
-      summary: '错误',
-      detail: error.value,
-      life: 3000
-    })
+    toast.add({ severity: 'error', summary: '错误', detail: err.response?.data?.error || '获取失败', life: 3000 })
   } finally {
     loading.value = false
   }
 }
 
-// 监听 categoryId 变化
-watch(() => props.categoryId, (newId: number, oldId) => {
-  if (newId) {
+watch(() => props.categoryId, (newId) => {
+  if (newId !== undefined) {
     first.value = 0
     currentPage.value = 1
-    fetchArticles(newId, currentPage.value, limit.value)
+    fetchArticles(newId, 1, limit.value)
   }
 })
 
 const onPageChange = (page: PageState) => {
   first.value = page.first
   currentPage.value = page.page + 1
-  fetchArticles(props.categoryId, page.page + 1, limit.value)
+  fetchArticles(props.categoryId, currentPage.value, limit.value)
+}
+
+const onImageError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/go.png';
 }
 
 onMounted(() => {
@@ -68,100 +60,120 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex w-full relative px-2 center">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="flex justify-content-center mt-4">
-      <ProgressSpinner size="50" />
+  <div class="flex flex-column w-full relative px-0 pb-2">
+
+    <div v-if="loading" class="flex flex-column gap-3">
+      <div v-for="i in 3" :key="i" class="flex p-3 surface-card border-round-md h-10rem gap-3 shadow-1">
+        <Skeleton width="30%" height="100%" class="border-round"></Skeleton>
+        <div class="flex flex-column justify-content-between flex-1">
+          <Skeleton width="60%" height="1.5rem" class="mb-2"></Skeleton>
+          <Skeleton width="100%" height="3rem"></Skeleton>
+          <div class="flex justify-content-between mt-2">
+            <Skeleton width="4rem" height="1rem"></Skeleton>
+            <Skeleton width="8rem" height="1rem"></Skeleton>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-else-if="totalRecords > 0" class="w-full">
-        <div class="flex flex-row w-full mt-2 p-3 gap-3 transition-all transition-duration-500 article-box border-round-md"
-             :class="{ 'mt-0': index === 0 }"
-             v-for="(item, index) in articles"
-             :key="index">
-          <div class="flex flex-row w-3 align-items-center article-cover">
-            <a :herf="`/article/${item.id}`">
-              <img
-                  class="w-full "
-                  src="/images/go.png"
-                  alt="Image"
-              />
-            </a>
+    <div v-else-if="totalRecords > 0" class="flex flex-column gap-3">
+      <div v-for="(item, index) in articles" :key="item.id"
+           class="flex flex-column sm:flex-row p-3 gap-3 border-round-md surface-card shadow-1 hover:shadow-4 transition-all transition-duration-300"
+           :class="{ 'mt-0': index === 0 }">
+
+        <div class="w-full sm:w-12rem flex-shrink-0 overflow-hidden border-round-md relative surface-ground">
+          <RouterLink :to="`/article/${item.id}`" class="block h-12rem sm:h-10rem w-full">
+            <img
+                class="w-full h-full object-contain hover:scale-110 transition-transform transition-duration-500 bg-white"
+                :src="item.cover || '/images/go.png'"
+                @error="onImageError"
+                alt="Cover"
+            />
+          </RouterLink>
+        </div>
+
+        <div class="flex flex-column flex-1 justify-content-between">
+          <div class="flex flex-column gap-2">
+            <RouterLink :to="`/article/${item.id}`" class="text-color no-underline transition-colors theme-hover-text">
+              <h3 class="text-xl font-bold m-0 line-height-3">{{ item.title }}</h3>
+            </RouterLink>
+            <p class="text-color-secondary m-0 text-sm line-height-3 overflow-hidden text-overflow-ellipsis"
+               style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+              {{ item.summary }}
+            </p>
           </div>
-          <div class="flex flex-column w-9 justify-content-between">
-            <div class="flex flex-column justify-content-start">
-              <div class="flex font-medium text-2xl text-primary">
-                <a class="text-green-500" :href="`/article/${item.id}`" target="_blank">{{ item.title }}
-                </a>
-              </div>
-              <div class="text-base">
-                <p>
-                  {{ item.summary.length > 100 ? item.summary.substring(0, 100) + "……" : item.summary }}
-                </p>
+
+          <div class="flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+            <div class="flex align-items-center">
+              <div class="theme-tag px-2 py-1 text-xs border-round font-medium flex align-items-center gap-1">
+                <i class="pi pi-tag text-xs"></i>
+                <span>{{ item.category_name }}</span>
               </div>
             </div>
-            <div class="flex flex-wrap sm:flex-row gap-3 justify-content-between mt-3 md:mt-0 lg:mt-3">
-              <div class="flex flex-row gap-3">
-                <div class="flex align-items-center">
-                  <i class="pi pi-tag" style="font-size: .75rem;"></i>
-                  <div class="font-medium text-xs ml-1 ">{{ item.category_name }}</div>
-                </div>
+
+            <div class="flex flex-wrap align-items-center gap-3 text-sm text-700 select-none">
+
+              <div class="flex align-items-center gap-1">
+                <i class="pi pi-user text-sm"></i>
+                <span>{{ item.username }}</span>
               </div>
-              <div class="flex flex-wrap sm:flex-row gap-3">
-                <div class="flex align-items-center">
-                  <i class="pi pi-user" style="font-size: .75rem"></i>
-                  <div class="font-medium text-xs ml-1 ">{{ item.username }}</div>
-                </div>
-                <div class="flex align-items-center">
-                  <i class="pi pi-calendar" style="font-size: .75rem"></i>
-                  <div class="font-medium text-xs ml-1">{{ date.format(item.created_at, 'YYYY-MM-DD') }}</div>
-                </div>
-                <div class="flex align-items-center">
-                  <i class="pi pi-heart" style="font-size: .75rem"></i>
-                  <div class="font-medium text-xs ml-1">{{ item.likes }}</div>
-                </div>
-                <div class="flex align-items-center">
-                  <i class="pi pi-eye" style="font-size: .75rem; padding-top: 1px"></i>
-                  <div class="font-medium text-xs ml-1">{{ item.views }}</div>
-                </div>
+
+              <div class="hidden sm:flex align-items-center gap-1">
+                <i class="pi pi-calendar text-sm"></i>
+                <span>{{ date.format(item.created_at, 'YYYY-MM-DD') }}</span>
               </div>
+
+              <div class="flex align-items-center gap-1">
+                <i class="pi pi-heart text-sm"></i>
+                <span>{{ item.likes }}</span>
+              </div>
+
+              <div class="flex align-items-center gap-1">
+                <i class="pi pi-eye text-sm"></i>
+                <span>{{ item.views }}</span>
+              </div>
+
             </div>
           </div>
         </div>
-      <Paginator :first="first" :rows="limit" :totalRecords="totalRecords" @page="onPageChange"></Paginator>
+      </div>
+
+      <Paginator
+          :first="first" :rows="limit" :totalRecords="totalRecords" @page="onPageChange"
+          :template="{
+                      '350px': 'FirstPageLink PrevPageLink NextPageLink LastPageLink',
+                      default: 'FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink'
+                    }"
+          class="surface-card border-round-md shadow-1 mt-2"></Paginator>
     </div>
-    <div
-        class="flex w-full align-items-center justify-content-center mt-2 h-7rem font-bold border-dashed border-round border-300"
-        v-else>
-      <span class="text-color-secondary" style="letter-spacing: 8px;">这个家伙很懒什么都没有留下</span>
+
+    <div v-else class="flex flex-column align-items-center justify-content-center py-6 surface-card border-round shadow-1">
+      <i class="pi pi-inbox text-500 text-4xl mb-3"></i>
+      <span class="text-500 font-medium">暂时没有文章</span>
     </div>
+
   </div>
 </template>
 
 <style scoped>
-.center {
-  .article-box {
-    background-color: #fbfbfb;
-
-    .article-cover {
-      img {
-        vertical-align: middle;
-        border-style: none;
-      }
-    }
-  }
+.object-cover {
+  object-fit: cover;
 }
 
-.full-width {
-  flex: none !important;
-  max-width: none !important;
-  width: 100% !important;
+/* 如果你极度介意图片被裁切，想看全图（但会有留白），
+   可以将上面的 object-cover 改为 object-contain，并取消下面的注释 */
+ .object-contain {
+  object-fit: contain;
+  background-color: #f8f9fa;
 }
 
-@media (min-width: 992px) {
-  .center {
-    flex: 0 0 66.666667%;
-    max-width: 66.666667%;
-  }
+/* --- 主题色 #10b981 --- */
+.theme-hover-text:hover {
+  color: #10b981 !important;
+}
+
+.theme-tag {
+  background-color: #ecfdf5;
+  color: #10b981;
 }
 </style>

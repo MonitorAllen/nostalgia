@@ -55,11 +55,11 @@ const handleRegister = () => {
 
 <template>
   <div class="flex flex-column register">
-    <Panel header="Welcome to Nostalgia!">
+    <Panel header="欢迎来到 Nostalgia!">
       <div class="flex flex-column row-gap-5 register-form">
         <InputGroup>
           <InputGroupAddon>
-            <i class="pi pi-user"></i>
+            <i class="pi pi-envelope"></i>
           </InputGroupAddon>
           <FloatLabel>
             <InputText id="email" v-model="user.email" />

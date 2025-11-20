@@ -38,13 +38,13 @@
                 class="user-menu list-none m-0 p-0 absolute w-12rem surface-overlay border-none shadow-2"
               >
                 <li>
-                  <router-link
+                  <RouterLink
                     :to="{name: 'update-admin'}"
                     class="flex align-items-center gap-2 px-3 py-2 hover:surface-200 cursor-pointer text-color"
                   >
                     <i class="pi pi-user-edit"></i>
                     <span>修改密码</span>
-                  </router-link>
+                  </RouterLink>
                 </li>
                 <li class="border-top-1 surface-border"></li>
                 <li>
@@ -95,24 +95,24 @@
                     }"
                   >
                     <li v-for="(subItem, subIndex) in item.children" :key="subIndex">
-                      <router-link
+                      <RouterLink
                         :to="subItem.path || ''"
                         class="flex align-items-center gap-2 p-3 pl-5 hover:surface-200 cursor-pointer text-color no-underline"
                       >
                         <i :class="[subItem.icon || 'pi pi-circle-fill', 'text-lg']"></i>
                         <span v-show="!isSidebarCollapsed">{{ subItem.name }}</span>
-                      </router-link>
+                      </RouterLink>
                     </li>
                   </ul>
                 </template>
-                <router-link
+                <RouterLink
                   v-else
                   :to="item.path || ''"
                   class="flex align-items-center gap-2 p-3 hover:surface-200 border-round cursor-pointer text-color no-underline"
                 >
                   <i :class="[item.icon || 'pi pi-circle', 'text-xl']"></i>
                   <span v-show="!isSidebarCollapsed">{{ item.name }}</span>
-                </router-link>
+                </RouterLink>
               </li>
             </ul>
           </nav>
@@ -183,7 +183,7 @@ const toggleUserMenu = (event: Event) => {
 
 const handleLogout = () => {
   authStore.logout()
-  router.push('/login')
+  router.push({ name: 'login'})
   isUserMenuVisible.value = false
 }
 
