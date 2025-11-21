@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, onUnmounted, onUpdated, type Ref, ref} from 'vue'
+import {onMounted, onUnmounted, onUpdated, provide, type Ref, ref} from 'vue'
 import router from "@/router";
 
 import Divider from 'primevue/divider';
@@ -70,7 +70,26 @@ const replyComment = (id: number, to_user_id: string, to_user_name: string, pare
   }
 }
 
-const deleteComment = (id: number, index: number) => {
+// 递归在评论树中查找并删除指定 id
+const removeCommentFromTree = (list: ArticleComments[], targetId: number): boolean => {
+  const index = list.findIndex(c => c.id === targetId)
+  if (index > -1) {
+    list.splice(index, 1)
+    return true // 找到了并删除了
+  }
+
+  // 没找到，继续找子级
+  for (const comment of list) {
+    if (comment.child && comment.child.length > 0) {
+      if (removeCommentFromTree(comment.child, targetId)) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+const deleteComment = (id: number) => {
   confirm.require({
     message: '确认删除这条评论吗？',
     rejectProps: {
@@ -85,8 +104,9 @@ const deleteComment = (id: number, index: number) => {
     accept: () => {
       commentStore.deleteComment(id)
           .then(() => {
-            comments.value?.splice(index, 1)
-            toast.add({severity: 'success', summary: '成功', detail: '该评论已删除', life: 3000});
+            if(removeCommentFromTree(comments.value, id)) {
+              toast.add({severity: 'success', summary: '成功', detail: '该评论已删除', life: 3000});
+            }
           })
     },
     reject: () => {
@@ -94,6 +114,9 @@ const deleteComment = (id: number, index: number) => {
     }
   });
 }
+
+// 3. 提供给所有后代组件
+provide('deleteComment', deleteComment);
 
 const createComment = (parent_id: number, to_user_id: string) => {
   if (!userStore.userInfo) {
@@ -412,7 +435,6 @@ window.addEventListener('scroll', updateScrollProgress)
             :comment="comment"
             :article-owner-id="article!.owner"
             :reply-comment-id="replyCommentId"
-            @delete="deleteComment"
             @reply="replyComment"
         />
       </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"
+import {ref, computed, inject} from "vue"
 import {useUserStore} from "@/store/module/user";
 import date  from "@/util/date"
 import Badge from "primevue/badge"
@@ -27,8 +27,11 @@ const displayedChildren = computed(() => {
   return showAllChildren.value ? props.comment.child : props.comment.child.slice(0, 2)
 })
 
+const deleteComment = inject<(id: number) => void>('deleteComment')
 const handleDelete = () => {
-  emit("delete", props.comment.id)
+  if (deleteComment) {
+    deleteComment(props.comment.id)
+  }
 }
 
 const handleReply = () => {
@@ -97,7 +100,6 @@ const handleReply = () => {
           :article-owner-id="articleOwnerId"
           :reply-comment-id="replyCommentId"
           is-child
-          @delete="emit('delete', $event)"
           @reply="(...args) => emit('reply', ...args)"
       />
 
