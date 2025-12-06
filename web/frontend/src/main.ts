@@ -17,6 +17,9 @@ import Tooltip from 'primevue/tooltip';
 
 import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
 
+import dayjs from 'dayjs'
+import localData from 'dayjs/plugin/localeData'
+
 const app = createApp(App)
 
 app.use(router)
@@ -37,5 +40,7 @@ app.use(PrimeVue, {
 })
 
 app.use(CkeditorPlugin)
+
+dayjs.extend(localData)
 
 app.mount('#app')

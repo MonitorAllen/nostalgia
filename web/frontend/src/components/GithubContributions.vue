@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, nextTick } from "vue";
 import { useUserStore } from "@/store/module/user";
+import dayjs from "dayjs";
 
 // @ts-ignore
 import CalHeatmap from "cal-heatmap";
