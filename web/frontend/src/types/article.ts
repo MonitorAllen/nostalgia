@@ -6,6 +6,7 @@ export interface Article {
   views: number
   likes: number
   is_publish: boolean
+  cover: string
   owner: string
   created_at: string
   updated_at: string

@@ -3,8 +3,12 @@ name: Run unit tests
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - 'web/**'
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - 'web/**'
 
 jobs:
   test:
