@@ -6,6 +6,9 @@ COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
+
+ENV VITE_APP_BASE_URL=http://localhost:80/api
+
 RUN npm run build
 
 # Stage 2: Build backend
@@ -16,6 +19,9 @@ COPY backend/package*.json ./
 RUN npm ci
 
 COPY backend/ ./
+
+ENV VITE_APP_BASE_URL=http://localhost:80/v1
+
 RUN npm run build
 
 # Stage 3: Final nginx server

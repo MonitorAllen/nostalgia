@@ -111,6 +111,21 @@ func (mr *MockStoreMockRecorder) CountCategories(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountCategories", reflect.TypeOf((*MockStore)(nil).CountCategories), arg0)
 }
 
+// CountSearchArticles mocks base method.
+func (m *MockStore) CountSearchArticles(arg0 context.Context, arg1 db.CountSearchArticlesParams) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountSearchArticles", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountSearchArticles indicates an expected call of CountSearchArticles.
+func (mr *MockStoreMockRecorder) CountSearchArticles(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountSearchArticles", reflect.TypeOf((*MockStore)(nil).CountSearchArticles), arg0, arg1)
+}
+
 // CreateAdmin mocks base method.
 func (m *MockStore) CreateAdmin(arg0 context.Context, arg1 db.CreateAdminParams) (db.Admin, error) {
 	m.ctrl.T.Helper()
@@ -610,6 +625,21 @@ func (m *MockStore) ListInitSysMenus(arg0 context.Context, arg1 int64) ([]db.Lis
 func (mr *MockStoreMockRecorder) ListInitSysMenus(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInitSysMenus", reflect.TypeOf((*MockStore)(nil).ListInitSysMenus), arg0, arg1)
+}
+
+// SearchArticles mocks base method.
+func (m *MockStore) SearchArticles(arg0 context.Context, arg1 db.SearchArticlesParams) ([]db.SearchArticlesRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchArticles", arg0, arg1)
+	ret0, _ := ret[0].([]db.SearchArticlesRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchArticles indicates an expected call of SearchArticles.
+func (mr *MockStoreMockRecorder) SearchArticles(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchArticles", reflect.TypeOf((*MockStore)(nil).SearchArticles), arg0, arg1)
 }
 
 // SetArticleDefaultCategoryIdByCategoryId mocks base method.

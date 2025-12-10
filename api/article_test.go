@@ -168,7 +168,8 @@ func TestCreateArticleAPI(t *testing.T) {
 func TestGetArticleAPI(t *testing.T) {
 	user, _ := randomUser(t)
 
-	article := randomGetArticleRow(t, user.ID)
+	article := randomGetArticleRow(t, user.ID, true)
+	unpublishedArticle := randomGetArticleRow(t, user.ID, false)
 
 	testCases := []struct {
 		name          string
@@ -207,7 +208,7 @@ func TestGetArticleAPI(t *testing.T) {
 			articleID: article.ID.String(),
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					GetArticle(gomock.Any(), gomock.Any()).
+					GetArticle(gomock.Any(), gomock.Eq(article.ID)).
 					Times(1).
 					Return(db.GetArticleRow{}, sql.ErrConnDone)
 			},
@@ -220,12 +221,25 @@ func TestGetArticleAPI(t *testing.T) {
 			articleID: article.ID.String(),
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					GetArticle(gomock.Any(), gomock.Any()).
+					GetArticle(gomock.Any(), gomock.Eq(article.ID)).
 					Times(1).
 					Return(db.GetArticleRow{}, db.ErrRecordNotFound)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name:      "Forbidden",
+			articleID: unpublishedArticle.ID.String(),
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetArticle(gomock.Any(), gomock.Eq(unpublishedArticle.ID)).
+					Times(1).
+					Return(unpublishedArticle, nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
 		},
 	}
@@ -325,7 +339,7 @@ func TestListArticleAPI(t *testing.T) {
 		{
 			name: "BadRequest",
 			query: Query{
-				page:  1,
+				page:  0,
 				limit: 40,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
@@ -388,6 +402,212 @@ func TestListArticleAPI(t *testing.T) {
 	}
 }
 
+func TestSearchArticleAPI(t *testing.T) {
+	user, _ := randomUser(t)
+	n := 3
+	searchArticlesRows := make([]db.SearchArticlesRow, n)
+	for i := 0; i < n; i++ {
+		article := randomArticle(t, user.ID)
+		searchArticlesRows[i] = db.SearchArticlesRow{
+			ID:        article.ID,
+			Title:     article.Title,
+			Summary:   article.Summary,
+			Views:     article.Views,
+			Likes:     article.Likes,
+			IsPublish: article.IsPublish,
+			Owner:     article.Owner,
+			CreatedAt: article.CreatedAt,
+			UpdatedAt: article.UpdatedAt,
+			DeletedAt: article.DeletedAt,
+			Username: pgtype.Text{
+				String: user.Username,
+				Valid:  true,
+			},
+		}
+	}
+
+	testCases := []struct {
+		name          string
+		req           searchArticlesRequest
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			req: searchArticlesRequest{
+				Keyword: "Go",
+				Page:    1,
+				Limit:   10,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				arg := db.SearchArticlesParams{
+					Limit:   10,
+					Offset:  0,
+					Keyword: "go",
+					IsPublish: pgtype.Bool{
+						Bool:  true,
+						Valid: true,
+					},
+				}
+				store.EXPECT().SearchArticles(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(searchArticlesRows, nil)
+
+				countArg := db.CountSearchArticlesParams{
+					Keyword:   "go",
+					IsPublish: pgtype.Bool{Bool: true, Valid: true},
+				}
+				store.EXPECT().CountSearchArticles(gomock.Any(), gomock.Eq(countArg)).
+					Times(1).
+					Return(int64(n), nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+				requireBodyMatchSearchArticles(t, recorder.Body, searchArticlesRows)
+			},
+		},
+		{
+			name: "OK_EmptyResult",
+			req: searchArticlesRequest{
+				Keyword: "java",
+				Page:    1,
+				Limit:   10,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				// 模拟返回空列表
+				store.EXPECT().
+					SearchArticles(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return([]db.SearchArticlesRow{}, nil)
+
+				store.EXPECT().
+					CountSearchArticles(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(int64(0), nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+
+				// 验证返回的是空数组而不是 null，且 count 为 0
+				data := recorder.Body.Bytes()
+				var resp searchArticlesResponse
+				err := json.Unmarshal(data, &resp)
+				require.NoError(t, err)
+				require.Equal(t, int64(0), resp.Count)
+				require.Empty(t, resp.Articles)
+			},
+		},
+		{
+			name: "OK_WithSegmentation",
+			req: searchArticlesRequest{
+				Keyword: "Go 并发",
+				Page:    1,
+				Limit:   10,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				// 修改这里：期望 "go OR 并发"
+				arg := db.SearchArticlesParams{
+					Limit:     10,
+					Offset:    0,
+					Keyword:   "go OR 并发", // <--- Go 改成小写
+					IsPublish: pgtype.Bool{Bool: true, Valid: true},
+				}
+
+				store.EXPECT().
+					SearchArticles(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(searchArticlesRows, nil)
+
+				countArg := db.CountSearchArticlesParams{
+					Keyword:   "go OR 并发", // <--- Go 改成小写
+					IsPublish: pgtype.Bool{Bool: true, Valid: true},
+				}
+				store.EXPECT().
+					CountSearchArticles(gomock.Any(), gomock.Eq(countArg)).
+					Times(1).
+					Return(int64(n), nil)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "InternalError",
+			req: searchArticlesRequest{
+				Keyword: "Crash",
+				Page:    1,
+				Limit:   10,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					SearchArticles(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return([]db.SearchArticlesRow{}, sql.ErrConnDone)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "InvalidPageParam",
+			req: searchArticlesRequest{
+				Keyword: "Go",
+				Page:    0, // 非法页码
+				Limit:   10,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().SearchArticles(gomock.Any(), gomock.Any()).Times(0)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			store := mockdb.NewMockStore(ctrl)
+			tc.buildStubs(store)
+
+			testServer := newTestServer(t, store, nil, nil)
+			recorder := httptest.NewRecorder()
+
+			url := "/api/articles/search"
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			q := request.URL.Query()
+			q.Add("keyword", tc.req.Keyword)
+			q.Add("page", fmt.Sprintf("%d", tc.req.Page))
+			q.Add("limit", fmt.Sprintf("%d", tc.req.Limit))
+			request.URL.RawQuery = q.Encode()
+
+			testServer.router.ServeHTTP(recorder, request)
+
+			tc.checkResponse(t, recorder)
+		})
+	}
+}
+
+func requireBodyMatchSearchArticles(t *testing.T, body *bytes.Buffer, expectedRows []db.SearchArticlesRow) {
+	data := body.Bytes()
+	var resp searchArticlesResponse
+	err := json.Unmarshal(data, &resp)
+	require.NoError(t, err)
+
+	require.Equal(t, int64(len(expectedRows)), resp.Count)
+	require.Equal(t, len(expectedRows), len(resp.Articles))
+
+	if len(expectedRows) > 0 {
+		require.Equal(t, expectedRows[0].ID, resp.Articles[0].ID)
+		require.Equal(t, expectedRows[0].Title, resp.Articles[0].Title)
+	}
+}
+
 func requireBodyMatchArticles(t *testing.T, body *bytes.Buffer, listArticlesRow []db.ListArticlesRow) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
@@ -419,18 +639,19 @@ func randomArticle(t *testing.T, owner uuid.UUID) db.Article {
 	require.NoError(t, err)
 
 	article := db.Article{
-		ID:        articleID,
-		Title:     util.RandomString(10),
-		Summary:   util.RandomString(20),
-		Content:   util.RandomString(30),
-		IsPublish: false,
-		Owner:     owner,
+		ID:         articleID,
+		Title:      util.RandomString(10),
+		Summary:    util.RandomString(20),
+		Content:    util.RandomString(30),
+		IsPublish:  false,
+		Owner:      owner,
+		CategoryID: 1,
 	}
 
 	return article
 }
 
-func randomGetArticleRow(t *testing.T, owner uuid.UUID) db.GetArticleRow {
+func randomGetArticleRow(t *testing.T, owner uuid.UUID, isPublish bool) db.GetArticleRow {
 	articleID, err := uuid.NewRandom()
 	require.NoError(t, err)
 
@@ -439,7 +660,7 @@ func randomGetArticleRow(t *testing.T, owner uuid.UUID) db.GetArticleRow {
 		Title:      util.RandomString(10),
 		Summary:    util.RandomString(20),
 		Content:    util.RandomString(30),
-		IsPublish:  false,
+		IsPublish:  isPublish,
 		Owner:      owner,
 		CategoryID: 1,
 		CategoryName: pgtype.Text{

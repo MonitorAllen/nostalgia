@@ -82,14 +82,11 @@ func convertArticleWithCategory(article db.GetArticleRow, needContent bool) *pb.
 		Id:           article.ID.String(),
 		Title:        article.Title,
 		Summary:      &article.Summary,
-		IsPublish:    &article.IsPublish,
 		Views:        &article.Views,
 		Likes:        &article.Likes,
 		CreatedAt:    timestamppb.New(article.CreatedAt),
 		UpdatedAt:    timestamppb.New(article.UpdatedAt),
-		DeletedAt:    timestamppb.New(article.DeletedAt),
 		Owner:        article.Owner.String(),
-		CategoryId:   article.CategoryID,
 		CategoryName: article.CategoryName.String,
 	}
 	if needContent {

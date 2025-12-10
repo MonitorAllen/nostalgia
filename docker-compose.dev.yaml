@@ -2,7 +2,7 @@ services:
   caddy:
     image: caddy:2
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     ports:
@@ -22,6 +22,8 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=nostalgia
       - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
     networks:
       - nostalgia
     volumes:
@@ -35,7 +37,9 @@ services:
     restart: unless-stopped
 
   api:
-    image: ${TCR_REGISTRY}/${TCR_NAMESPACE}/${API_REPOSITORY}:${API_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
     networks:
       - nostalgia
     volumes:
@@ -51,7 +55,9 @@ services:
     restart: unless-stopped
 
   web:
-    image: ${TCR_REGISTRY}/${TCR_NAMESPACE}/${WEB_REPOSITORY}:${WEB_TAG:-latest}
+    build:
+      context: web
+      dockerfile: Dockerfile.dev
     volumes:
       - ./resources:/usr/share/nginx/resources
       - ./logs/nginx:/var/log/nginx

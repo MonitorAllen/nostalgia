@@ -1,16 +1,10 @@
-www.3catz.icu {
+:80 {
     encode gzip
 
     log {
-        output file /var/log/caddy/access.log
-        format json
-    }
-
-    header {
-        X-Frame-Options "SAMEORIGIN"
-        X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-    }
+            output stdout
+            format json
+        }
 
     handle /api/* {
         reverse_proxy api:8080

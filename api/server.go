@@ -80,6 +80,7 @@ func (server *Server) setupRouter() {
 		public.GET("/articles", server.listArticle)
 		public.PATCH("/articles/increment_likes", server.incrementArticleLikes)
 		public.PATCH("/articles/increment_views", server.incrementArticleViews)
+		public.GET("/articles/search", server.searchArticle)
 
 		public.GET("/comments/:article_id", server.listCommentsByArticleID)
 
@@ -97,7 +98,7 @@ func (server *Server) setupRouter() {
 
 		authRoutes.POST("/upload/:id", server.uploadFile).Use(uploadFileMiddleware(server.config))
 	}
-	
+
 	server.router = router
 }
 

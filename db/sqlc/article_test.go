@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -276,4 +277,101 @@ func TestIncrementArticleViews(t *testing.T) {
 
 	err := testStore.IncrementArticleViews(context.Background(), article.ID)
 	require.NoError(t, err)
+}
+
+func TestSearchArticles(t *testing.T) {
+	user := createRandomUser(t)
+	category := createRandomCategory(t)
+
+	// 1. 生成一个本次测试独有的随机特征码
+	// 例如: "test_run_x8s7d6"
+	uniqueTestTag := util.RandomString(10)
+
+	// 2. 构造测试数据
+	// 技巧：将 uniqueTestTag 拼接到 Title 或 Content 中
+
+	// 文章 A: 命中 (标题包含特征码)
+	articleA := CreateArticleParams{
+		ID:         uuid.New(),
+		Title:      fmt.Sprintf("Mastering Golang %s", uniqueTestTag), // 注入特征码
+		Summary:    "Concurrency patterns",
+		Content:    "Go is fast.",
+		IsPublish:  true,
+		Owner:      user.ID,
+		CategoryID: category.ID,
+	}
+	_, err := testStore.CreateArticle(context.Background(), articleA)
+	require.NoError(t, err)
+
+	// 文章 B: 命中 (内容包含特征码)
+	articleB := CreateArticleParams{
+		ID:         uuid.New(),
+		Title:      "Backend Dev",
+		Summary:    "Summary info",
+		Content:    fmt.Sprintf("We use %s for performance.", uniqueTestTag), // 注入特征码
+		IsPublish:  true,
+		Owner:      user.ID,
+		CategoryID: category.ID,
+	}
+	_, err = testStore.CreateArticle(context.Background(), articleB)
+	require.NoError(t, err)
+
+	// 文章 C: 命中但被过滤 (未发布)
+	articleC := CreateArticleParams{
+		ID:         uuid.New(),
+		Title:      fmt.Sprintf("Secret Draft %s", uniqueTestTag), // 注入特征码
+		IsPublish:  false,                                         // 未发布
+		Owner:      user.ID,
+		CategoryID: category.ID,
+		Content:    "Draft",
+	}
+	_, err = testStore.CreateArticle(context.Background(), articleC)
+	require.NoError(t, err)
+
+	// 文章 D: 噪音数据 (完全不包含特征码)
+	articleD := CreateArticleParams{
+		ID:         uuid.New(),
+		Title:      "Rust Programming",
+		Content:    "Safe memory without GC", // 这里的文本里没有 uniqueTestTag
+		IsPublish:  true,
+		Owner:      user.ID,
+		CategoryID: category.ID,
+	}
+	_, err = testStore.CreateArticle(context.Background(), articleD)
+	require.NoError(t, err)
+
+	// -------------------------------------------------------
+	// 测试场景 1: 搜索 特征码 (uniqueTestTag)
+	// -------------------------------------------------------
+	searchArg := SearchArticlesParams{
+		Limit:   10,
+		Offset:  0,
+		Keyword: uniqueTestTag, // 只搜这个随机字符串
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+
+	results, err := testStore.SearchArticles(context.Background(), searchArg)
+	require.NoError(t, err)
+
+	// 断言：无论数据库里有多少脏数据，包含这个 uniqueTestTag 且已发布的，只有 A 和 B
+	require.Len(t, results, 2)
+
+	// ... 后续验证 ID 的逻辑不变 ...
+
+	// -------------------------------------------------------
+	// 测试场景 2: Count
+	// -------------------------------------------------------
+	countArg := CountSearchArticlesParams{
+		Keyword: uniqueTestTag,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+	count, err := testStore.CountSearchArticles(context.Background(), countArg)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), count)
 }
