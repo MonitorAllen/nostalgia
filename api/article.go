@@ -3,9 +3,11 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/go-ego/gse"
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
@@ -15,6 +17,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+var segmenter gse.Segmenter
+
+func init() {
+	segmenter.LoadDict()
+}
 
 type createArticleRequest struct {
 	Title     string `json:"title" binding:"required"`
@@ -90,6 +98,11 @@ func (server *Server) getArticle(ctx *gin.Context) {
 		return
 	}
 
+	if !article.IsPublish {
+		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("访问受限")))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, getArticleResponse{Article: article})
 }
 
@@ -136,7 +149,7 @@ func (server *Server) getArticleForUpdate(ctx *gin.Context) {
 type listArticleRequest struct {
 	CategoryID int64 `form:"category_id" binding:"omitempty"`
 	Page       int32 `form:"page" binding:"required,min=1"`
-	Limit      int32 `form:"limit" binding:"required,min=1,max=20"`
+	Limit      int32 `form:"limit" binding:"required,min=1,max=50"`
 }
 
 type listArticleResponse struct {
@@ -378,4 +391,71 @@ func (server *Server) incrementArticleViews(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{})
+}
+
+type searchArticlesRequest struct {
+	Keyword string `form:"keyword" binding:"required"`
+	Page    int32  `form:"page" binding:"required,min=0"`
+	Limit   int32  `form:"limit" binding:"required,min=1,max=20"`
+}
+
+type searchArticlesResponse struct {
+	Articles []db.SearchArticlesRow `json:"articles"`
+	Count    int64                  `json:"count"`
+}
+
+func (server *Server) searchArticle(ctx *gin.Context) {
+	var req searchArticlesRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	userInput := req.Keyword
+
+	segments := segmenter.Cut(userInput, true)
+
+	var cleanSegments []string
+	for _, s := range segments {
+		if len(s) > 0 && s != " " {
+			cleanSegments = append(cleanSegments, s)
+		}
+	}
+	keyword := strings.Join(cleanSegments, " OR ")
+	if keyword == "" {
+		keyword = req.Keyword
+	}
+
+	arg := db.SearchArticlesParams{
+		Limit:   req.Limit,
+		Offset:  (req.Page - 1) * req.Limit,
+		Keyword: keyword,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+	searchArticlesRows, err := server.store.SearchArticles(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	countArg := db.CountSearchArticlesParams{
+		Keyword: keyword,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+	countSearchArticles, err := server.store.CountSearchArticles(ctx, countArg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, searchArticlesResponse{
+		Articles: searchArticlesRows,
+		Count:    countSearchArticles,
+	})
 }

@@ -11,14 +11,18 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: GetArticle :one
-SELECT a.*, c.name as category_name
+SELECT
+a.id, a.title, a.summary, a.content, a.is_publish, a.views, a.likes, a.owner,
+a.created_at, a.updated_at, a.deleted_at, a.category_id, c.name as category_name
 FROM articles a
 LEFT OUTER JOIN categories c on c.id = a.category_id
 WHERE a.id = $1
 LIMIT 1;
 
 -- name: GetArticleForUpdate :one
-SELECT * FROM articles
+SELECT
+    id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id
+FROM articles
 WHERE id = $1 LIMIT 1
 FOR NO KEY UPDATE;
 
@@ -73,3 +77,24 @@ DELETE FROM articles WHERE id = $1;
 
 -- name: SetArticleDefaultCategoryIdByCategoryId :exec
 UPDATE articles SET category_id = 1 WHERE category_id = $1;
+
+-- name: SearchArticles :many
+SELECT a.id, a.title, a.summary, a.views, a.likes, a.is_publish, a.owner,a.created_at, a.updated_at, a.deleted_at,
+       c.name as category_name, u.username, pgroonga_score(a.tableoid, a.ctid) AS score
+FROM articles a
+         LEFT JOIN categories c on c.id = a.category_id
+         LEFT JOIN users u on a.owner = u.id
+WHERE
+    (title || ' ' || summary || ' ' || content) &@~ sqlc.arg(keyword)::text
+    AND (sqlc.narg('is_publish')::boolean IS NULL OR a.is_publish = sqlc.narg('is_publish'))
+    AND a.deleted_at = '0001-01-01 00:00:00Z'
+ORDER BY score DESC, a.created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountSearchArticles :one
+SELECT count(*)
+FROM articles a
+WHERE
+    (title || ' ' || summary || ' ' || content) &@~ sqlc.arg(keyword)::text
+    AND (sqlc.narg('is_publish')::boolean IS NULL OR a.is_publish = sqlc.narg('is_publish'))
+    AND a.deleted_at = '0001-01-01 00:00:00Z';

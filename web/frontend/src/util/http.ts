@@ -65,6 +65,10 @@ class HttpClient {
     private async handleResponseError(error: any) {
         const { config, response } = error
 
+        if (response?.status === 403) {
+            window.location.href = '/403'
+        }
+
         // 401 错误且不是刷新 token 的请求
         if (response?.status === 401 && !config.skipAuth) {
             try {

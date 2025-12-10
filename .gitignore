@@ -23,9 +23,13 @@ go.work.sum
 
 .idea
 .vscode
+.DS_Store
 *.log
+logs
 .env
 .env.prod
+
+postgres_data
 
 # Ignore env files containing sensitive data
 /resources/

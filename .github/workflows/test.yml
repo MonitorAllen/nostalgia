@@ -23,7 +23,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:12
+        image: groonga/pgroonga:3.2.3-alpine-16
         # Provide the password for postgres
         env:
           POSTGRES_USER: ${{ secrets.DB_USER }}

@@ -2,16 +2,18 @@
 import { onMounted, ref, watch } from "vue";
 import { RouterLink } from 'vue-router';
 import date from "@/util/date";
-import { listArticle } from "@/api/article";
+import {listArticle, searchArticles} from "@/api/article";
 import type { Article } from "@/types/article";
 
 // PrimeVue Components
 import Paginator, { type PageState } from "primevue/paginator";
 import { useToast } from "primevue/usetoast";
 import Skeleton from 'primevue/skeleton';
+import TextHighlight from "@/components/common/TextHighlight.vue";
 
 const props = defineProps({
-  categoryId: { type: Number, default: 0 }
+  categoryId: { type: Number, default: 0 },
+  keyword: { type: String, default: '' }
 })
 
 const first = ref(0)
@@ -22,10 +24,15 @@ const articles = ref<Article[]>([])
 const loading = ref(false)
 const toast = useToast()
 
-const fetchArticles = async (categoryId: number, page: number, limit: number) => {
+const fetchArticles = async (page: number, limit: number) => {
   loading.value = true
+  let resp:any
   try {
-    const resp = await listArticle({categoryId, page, limit})
+    if (props.keyword != '') {
+      resp = await searchArticles({keyword: props.keyword, page, limit})
+    } else {
+      resp = await listArticle({category_id: props.categoryId, page, limit})
+    }
     totalRecords.value = resp.data.count
     articles.value = resp.data.articles
     if(page > 1) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -36,18 +43,16 @@ const fetchArticles = async (categoryId: number, page: number, limit: number) =>
   }
 }
 
-watch(() => props.categoryId, (newId) => {
-  if (newId !== undefined) {
-    first.value = 0
-    currentPage.value = 1
-    fetchArticles(newId, 1, limit.value)
-  }
+watch([() => props.categoryId, () => props.keyword], () => {
+  first.value = 0
+  currentPage.value = 1
+  fetchArticles(currentPage.value, limit.value)
 })
 
 const onPageChange = (page: PageState) => {
   first.value = page.first
   currentPage.value = page.page + 1
-  fetchArticles(props.categoryId, currentPage.value, limit.value)
+  fetchArticles(currentPage.value, limit.value)
 }
 
 const onImageError = (e: Event) => {
@@ -55,7 +60,7 @@ const onImageError = (e: Event) => {
 }
 
 onMounted(() => {
-  fetchArticles(props.categoryId, currentPage.value, limit.value)
+  fetchArticles(currentPage.value, limit.value)
 })
 </script>
 
@@ -95,11 +100,13 @@ onMounted(() => {
         <div class="flex flex-column flex-1 justify-content-between">
           <div class="flex flex-column gap-2">
             <RouterLink :to="`/article/${item.id}`" class="text-color no-underline transition-colors theme-hover-text">
-              <h3 class="text-xl font-bold m-0 line-height-3">{{ item.title }}</h3>
+              <h3 class="text-xl font-bold m-0 line-height-3">
+                <TextHighlight :content="item.title" :keyword="props.keyword" />
+              </h3>
             </RouterLink>
             <p class="text-color-secondary m-0 text-sm line-height-3 overflow-hidden text-overflow-ellipsis"
                style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-              {{ item.summary }}
+              <TextHighlight :content="item.summary" :keyword="props.keyword" />
             </p>
           </div>
 

@@ -44,6 +44,27 @@ func (q *Queries) CountArticles(ctx context.Context, arg CountArticlesParams) (i
 	return count, err
 }
 
+const countSearchArticles = `-- name: CountSearchArticles :one
+SELECT count(*)
+FROM articles a
+WHERE
+    (title || ' ' || summary || ' ' || content) &@~ $1::text
+    AND ($2::boolean IS NULL OR a.is_publish = $2)
+    AND a.deleted_at = '0001-01-01 00:00:00Z'
+`
+
+type CountSearchArticlesParams struct {
+	Keyword   string      `json:"keyword"`
+	IsPublish pgtype.Bool `json:"is_publish"`
+}
+
+func (q *Queries) CountSearchArticles(ctx context.Context, arg CountSearchArticlesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSearchArticles, arg.Keyword, arg.IsPublish)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createArticle = `-- name: CreateArticle :one
 INSERT INTO articles (id,
                   title,
@@ -105,7 +126,9 @@ func (q *Queries) DeleteArticle(ctx context.Context, id uuid.UUID) error {
 }
 
 const getArticle = `-- name: GetArticle :one
-SELECT a.id, a.title, a.summary, a.content, a.views, a.likes, a.is_publish, a.owner, a.created_at, a.updated_at, a.deleted_at, a.category_id, c.name as category_name
+SELECT
+a.id, a.title, a.summary, a.content, a.is_publish, a.views, a.likes, a.owner,
+a.created_at, a.updated_at, a.deleted_at, a.category_id, c.name as category_name
 FROM articles a
 LEFT OUTER JOIN categories c on c.id = a.category_id
 WHERE a.id = $1
@@ -117,9 +140,9 @@ type GetArticleRow struct {
 	Title        string      `json:"title"`
 	Summary      string      `json:"summary"`
 	Content      string      `json:"content"`
+	IsPublish    bool        `json:"is_publish"`
 	Views        int32       `json:"views"`
 	Likes        int32       `json:"likes"`
-	IsPublish    bool        `json:"is_publish"`
 	Owner        uuid.UUID   `json:"owner"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
@@ -136,9 +159,9 @@ func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, 
 		&i.Title,
 		&i.Summary,
 		&i.Content,
+		&i.IsPublish,
 		&i.Views,
 		&i.Likes,
-		&i.IsPublish,
 		&i.Owner,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -150,7 +173,9 @@ func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, 
 }
 
 const getArticleForUpdate = `-- name: GetArticleForUpdate :one
-SELECT id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id FROM articles
+SELECT
+    id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id
+FROM articles
 WHERE id = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
@@ -313,6 +338,82 @@ func (q *Queries) ListArticles(ctx context.Context, arg ListArticlesParams) ([]L
 			&i.DeletedAt,
 			&i.CategoryName,
 			&i.Username,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchArticles = `-- name: SearchArticles :many
+SELECT a.id, a.title, a.summary, a.views, a.likes, a.is_publish, a.owner,a.created_at, a.updated_at, a.deleted_at,
+       c.name as category_name, u.username, pgroonga_score(a.tableoid, a.ctid) AS score
+FROM articles a
+         LEFT JOIN categories c on c.id = a.category_id
+         LEFT JOIN users u on a.owner = u.id
+WHERE
+    (title || ' ' || summary || ' ' || content) &@~ $3::text
+    AND ($4::boolean IS NULL OR a.is_publish = $4)
+    AND a.deleted_at = '0001-01-01 00:00:00Z'
+ORDER BY score DESC, a.created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type SearchArticlesParams struct {
+	Limit     int32       `json:"limit"`
+	Offset    int32       `json:"offset"`
+	Keyword   string      `json:"keyword"`
+	IsPublish pgtype.Bool `json:"is_publish"`
+}
+
+type SearchArticlesRow struct {
+	ID           uuid.UUID   `json:"id"`
+	Title        string      `json:"title"`
+	Summary      string      `json:"summary"`
+	Views        int32       `json:"views"`
+	Likes        int32       `json:"likes"`
+	IsPublish    bool        `json:"is_publish"`
+	Owner        uuid.UUID   `json:"owner"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
+	DeletedAt    time.Time   `json:"deleted_at"`
+	CategoryName pgtype.Text `json:"category_name"`
+	Username     pgtype.Text `json:"username"`
+	Score        interface{} `json:"score"`
+}
+
+func (q *Queries) SearchArticles(ctx context.Context, arg SearchArticlesParams) ([]SearchArticlesRow, error) {
+	rows, err := q.db.Query(ctx, searchArticles,
+		arg.Limit,
+		arg.Offset,
+		arg.Keyword,
+		arg.IsPublish,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchArticlesRow{}
+	for rows.Next() {
+		var i SearchArticlesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Summary,
+			&i.Views,
+			&i.Likes,
+			&i.IsPublish,
+			&i.Owner,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.CategoryName,
+			&i.Username,
+			&i.Score,
 		); err != nil {
 			return nil, err
 		}

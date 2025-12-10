@@ -1,0 +1,3 @@
+### 搜索文章
+GET {{host}}/articles/search?keyword=通过回表&page=1&limit=20
+Accept: application/json

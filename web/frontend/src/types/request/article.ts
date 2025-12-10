@@ -17,7 +17,7 @@ export interface UpdateArticleRequest {
 }
 
 export interface ListArticlesRequest {
-  categoryId: number
+  category_id: number
   page: number
   limit: number
 }
@@ -30,4 +30,15 @@ export interface ListArticlesResponse {
 
 export interface ArticleResponse {
   article: Article
+}
+
+export interface SearchArticlesRequest {
+  keyword: string
+  page: number
+  limit: number
+}
+
+export interface SearchArticlesResponse {
+  articles: Article[]
+  count: number
 }

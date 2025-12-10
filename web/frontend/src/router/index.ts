@@ -1,13 +1,13 @@
 import {createRouter, createWebHistory} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginUser from '@/components/LoginUser.vue'
-import EditorView from '@/views/article/EditorView.vue'
 import ArticleView from '@/views/article/ArticleView.vue'
 import RegisterUser from '@/components/RegisterUser.vue'
 import VerifyEmail from '@/views/auth/VerifyEmail.vue'
 import NotFound from '@/views/NotFound.vue'
 import MainLayout from "@/views/layout/MainLayout.vue";
 import CategoryArticleView from "@/views/category/CategoryArticleView.vue";
+import Forbidden from "@/views/Forbidden.vue";
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,11 +23,16 @@ const router = createRouter({
                 },
                 {
                     path: 'category/:id',
-                    name: 'categoryArticleView',
+                    name: 'categoryArticle',
                     component: CategoryArticleView,
                     props: (route) => ({
                         id: Number(route.params.id) // 在这里转换为 number
                     })
+                },
+                {
+                    path: 'search',
+                    name: 'search',
+                    component: () => import('@/views/article/SearchArticleView.vue')
                 }
             ]
         },
@@ -54,6 +59,12 @@ const router = createRouter({
             name: 'verifyEmail',
             component: VerifyEmail,
             props: true,
+            meta: {hideNavbar: true}
+        },
+        {
+            path: '/403',
+            name: 'Forbidden',
+            component: Forbidden,
             meta: {hideNavbar: true}
         },
         {

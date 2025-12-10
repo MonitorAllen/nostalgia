@@ -16,6 +16,7 @@ type Querier interface {
 	CountArticles(ctx context.Context, arg CountArticlesParams) (int64, error)
 	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
 	CountCategories(ctx context.Context) (int64, error)
+	CountSearchArticles(ctx context.Context, arg CountSearchArticlesParams) (int64, error)
 	CreateAdmin(ctx context.Context, arg CreateAdminParams) (Admin, error)
 	CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error)
 	CreateCategory(ctx context.Context, name string) (Category, error)
@@ -47,6 +48,7 @@ type Querier interface {
 	ListCategoriesCountArticles(ctx context.Context, arg ListCategoriesCountArticlesParams) ([]ListCategoriesCountArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
 	ListInitSysMenus(ctx context.Context, roleID int64) ([]ListInitSysMenusRow, error)
+	SearchArticles(ctx context.Context, arg SearchArticlesParams) ([]SearchArticlesRow, error)
 	SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, categoryID int64) error
 	UpdateAdmin(ctx context.Context, arg UpdateAdminParams) (Admin, error)
 	UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error)
