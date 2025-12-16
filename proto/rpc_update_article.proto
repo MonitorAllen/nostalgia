@@ -13,6 +13,9 @@ message UpdateArticleRequest {
   optional string content = 4;
   optional bool is_publish = 5;
   optional int64 category_id = 6;
+  optional string cover = 7;
+  optional string slug = 8;
+  optional bool check_outdated = 9;
 }
 
 message UpdateArticleResponse {

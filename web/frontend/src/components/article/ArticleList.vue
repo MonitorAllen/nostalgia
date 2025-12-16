@@ -37,7 +37,7 @@ const fetchArticles = async (page: number, limit: number) => {
     articles.value = resp.data.articles
     if(page > 1) window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err: any) {
-    toast.add({ severity: 'error', summary: '错误', detail: err.response?.data?.error || '获取失败', life: 3000 })
+    toast.add({ severity: 'error', summary: '失败', detail: err.response?.data?.error || '获取失败', life: 3000 })
   } finally {
     loading.value = false
   }
@@ -90,7 +90,7 @@ onMounted(() => {
           <RouterLink :to="`/article/${item.id}`" class="block h-12rem sm:h-10rem w-full">
             <img
                 class="w-full h-full object-contain hover:scale-110 transition-transform transition-duration-500 bg-white"
-                :src="item.cover || '/images/go.png'"
+                :src="item.cover"
                 @error="onImageError"
                 alt="Cover"
             />
@@ -99,7 +99,7 @@ onMounted(() => {
 
         <div class="flex flex-column flex-1 justify-content-between">
           <div class="flex flex-column gap-2">
-            <RouterLink :to="`/article/${item.id}`" class="text-color no-underline transition-colors theme-hover-text">
+            <RouterLink :to="`/article/${item.slug ? item.slug : item.id}`" class="text-color no-underline transition-colors theme-hover-text">
               <h3 class="text-xl font-bold m-0 line-height-3">
                 <TextHighlight :content="item.title" :keyword="props.keyword" />
               </h3>

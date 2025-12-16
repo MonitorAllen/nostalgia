@@ -20,4 +20,9 @@ message Article {
   google.protobuf.Timestamp created_at = 11;
   google.protobuf.Timestamp updated_at = 12;
   google.protobuf.Timestamp deleted_at = 13;
+  string slug = 14;
+  optional bool check_outdated = 15;
+  string read_time = 16;
+  google.protobuf.Timestamp last_updated = 17;
+
 }

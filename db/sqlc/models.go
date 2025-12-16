@@ -49,6 +49,16 @@ type Article struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 	DeletedAt  time.Time `json:"deleted_at"`
 	CategoryID int64     `json:"category_id"`
+	// 短标识
+	Slug pgtype.Text `json:"slug"`
+	// 封面
+	Cover string `json:"cover"`
+	// 最后更新时间
+	LastUpdated time.Time `json:"last_updated"`
+	// 检查过时
+	CheckOutdated bool `json:"check_outdated"`
+	// 阅读时间
+	ReadTime string `json:"read_time"`
 }
 
 // 文章分类表

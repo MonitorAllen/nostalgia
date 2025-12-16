@@ -30,6 +30,14 @@ export async function getArticle(req: GetArticleRequest): Promise<ApiSuccessResp
     return http.get(`/articles/${req.id}`, {skipAuth: true})
 }
 
+export interface GetArticleBySlugRequest {
+    slug: string
+}
+
+export async function getArticleBySlug(req: GetArticleBySlugRequest): Promise<ApiSuccessResponse<GetArticleResponse>> {
+    return http.get(`/articles/slug/${req.slug}`, {skipAuth: true})
+}
+
 export interface IncrementArticleLikesRequest {
     id: string
 }

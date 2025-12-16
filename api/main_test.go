@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func newTestServer(t *testing.T, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) *Server {
+func newTestServer(t *testing.T, store db.Store, taskDistributor worker.TaskDistributor, redisService service.Redis) *Server {
 	config := util.Config{
 		TokenSymmetricKey:   util.RandomString(32),
 		AccessTokenDuration: time.Minute,

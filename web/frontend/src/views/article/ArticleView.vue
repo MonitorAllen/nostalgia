@@ -5,6 +5,7 @@ import router from "@/router";
 import Divider from 'primevue/divider';
 import Button from 'primevue/button';
 import ConfirmDialog from 'primevue/confirmdialog';
+import Message from 'primevue/message';
 
 import {useToast} from "primevue/usetoast";
 import {useConfirm} from "primevue/useconfirm";
@@ -23,9 +24,10 @@ import date from '@/util/date'
 import type {Article, ArticleComments} from "@/types/article";
 import {useUserStore} from "@/store/module/user";
 import {useCommentStore} from "@/store/module/comment";
-import {getArticle, incrementArticleLikes, incrementArticleViews} from "@/api/article";
+import {getArticle, getArticleBySlug, incrementArticleLikes, incrementArticleViews} from "@/api/article";
 import {listComments} from "@/api/comment";
 import CommentItem from "@/components/article/CommentItem.vue";
+import {isUUID} from "@/util/validate";
 
 const userStore = useUserStore()
 const commentStore = useCommentStore()
@@ -33,7 +35,7 @@ const commentStore = useCommentStore()
 const toast = useToast()
 const confirm = useConfirm()
 
-const {id} = defineProps<{
+let {id} = defineProps<{
   id: string
 }>()
 
@@ -104,7 +106,7 @@ const deleteComment = (id: number) => {
     accept: () => {
       commentStore.deleteComment(id)
           .then(() => {
-            if(removeCommentFromTree(comments.value, id)) {
+            if (removeCommentFromTree(comments.value, id)) {
               toast.add({severity: 'success', summary: '成功', detail: '该评论已删除', life: 3000});
             }
           })
@@ -230,10 +232,9 @@ const checkValidView = async () => {
   }
 }
 
-const liked  = ref(false)
+const liked = ref(false)
 
 const checkValidLike = async () => {
-  // if (liked.value) return
   try {
     await incrementArticleLikes({id});
     article.value!.likes++
@@ -264,6 +265,24 @@ const checkValidLike = async () => {
   }
 }
 
+const daysDiff = (lastUpdated: string) => {
+  const now = new Date();
+  const last = new Date(lastUpdated);
+  const diffTime = Math.abs(now.getTime() - last.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+const isOutdated = ref(false)
+const checkOutdated = (checkOutdated: boolean, lastUpload: string) => {
+  if (checkOutdated) {
+    const diff = daysDiff(lastUpload);
+    if (diff > 60) {
+      isOutdated.value = true
+    }
+  }
+}
+
+
 onUpdated(() => {
   Prism.highlightAll();
 })
@@ -271,8 +290,17 @@ onUpdated(() => {
 onMounted(async () => {
   if (id != '') {
     try {
-      const [articleRes, commentRes] = await Promise.all([getArticle({id}), listComments({articleId: id})]);
+      let articleRes
+      if (isUUID(id)) {
+        articleRes = await getArticle({id})
+      } else {
+        articleRes = await getArticleBySlug({slug: id})
+        id = articleRes.data.article.id
+      }
       article.value = articleRes.data.article
+      checkOutdated(article.value.check_outdated, article.value.last_updated)
+
+      const commentRes = await listComments({articleId: id})
       comments.value = commentRes.data.comments === null ? [] : commentRes.data.comments
     } catch (error: any) {
       toast.add({
@@ -322,12 +350,17 @@ window.addEventListener('scroll', updateScrollProgress)
   <div class="reading-progress fixed top-0 left-0" :style="{width: scrollProgress + '%'}"></div>
 
   <div class="flex flex-column row-gap-3 justify-content-center w-11 md:w-10 lg:w-6 mx-auto" style="max-width: 700px">
+    <Message v-if="isOutdated" icon="pi pi-info-circle" severity="warn" :life="5000" closable
+             class="mt-4 justify-content-center">
+      该文章内容可能已经过时，请检查相关内容是否已经变更
+    </Message>
+
     <div class="article-container surface-0 w-full flex flex-column m-auto p-2 mt-3 line-height-3">
       <div class="flex flex-column align-items-center">
         <div>
           <h2 class="article-title text-green-600">{{ article?.title }}</h2>
         </div>
-        <div class="flex flex-row gap-3 justify-content-center">
+        <div class="flex flex-row gap-3 align-items-center justify-content-center text-900">
           <div class="flex align-items-center">
             <i class="pi pi-calendar" style="font-size: .8rem"></i>
             <div class="font-medium text-sm ml-1">{{ date.format(article?.created_at as string, 'YYYY-MM-DD') }}</div>
@@ -340,6 +373,10 @@ window.addEventListener('scroll', updateScrollProgress)
             <i class="pi pi-eye" style="font-size: .8rem;"></i>
             <div class="font-medium text-sm ml-1">{{ article?.views }}</div>
           </div>
+          <div class="flex align-items-center" v-if="article?.read_time != ''">
+            <i class="pi pi-clock" style="font-size: .8rem;"></i>
+            <div class="font-medium text-sm ml-1">{{ article?.read_time }}</div>
+          </div>
         </div>
       </div>
       <Divider/>
@@ -350,7 +387,8 @@ window.addEventListener('scroll', updateScrollProgress)
         {{ article?.summary }}
       </div>
       <Divider/>
-      <div class="w-full ck-content" style="overflow-wrap: break-word; word-break: break-word;" v-html="article?.content"></div>
+      <div class="w-full ck-content" style="overflow-wrap: break-word; word-break: break-word;"
+           v-html="article?.content"></div>
     </div>
     <div class="flex flex-column w-full bg-gray-50 border-1 border-gray-200 m-auto copyright-box">
       <div class="flex flex-row column-gap-1 p-2 align-items-center copyright-header">
@@ -359,7 +397,7 @@ window.addEventListener('scroll', updateScrollProgress)
       </div>
       <div class="flex flex-column p-2 row-gap-2">
         <div>
-          <strong>原文链接：</strong>{{articlePath}}
+          <strong>原文链接：</strong>{{ articlePath }}
         </div>
         <div>
           <strong>版权说明：</strong>本文采用

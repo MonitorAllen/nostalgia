@@ -47,10 +47,9 @@ func (q *Queries) CountArticles(ctx context.Context, arg CountArticlesParams) (i
 const countSearchArticles = `-- name: CountSearchArticles :one
 SELECT count(*)
 FROM articles a
-WHERE
-    (title || ' ' || summary || ' ' || content) &@~ $1::text
-    AND ($2::boolean IS NULL OR a.is_publish = $2)
-    AND a.deleted_at = '0001-01-01 00:00:00Z'
+WHERE (title || ' ' || summary || ' ' || content) &@~ $1::text
+  AND ($2::boolean IS NULL OR a.is_publish = $2)
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
 `
 
 type CountSearchArticlesParams struct {
@@ -67,15 +66,15 @@ func (q *Queries) CountSearchArticles(ctx context.Context, arg CountSearchArticl
 
 const createArticle = `-- name: CreateArticle :one
 INSERT INTO articles (id,
-                  title,
-                  summary,
-                  content,
-                  is_publish,
-                  owner,
-                  category_id
-)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id
+                      title,
+                      summary,
+                      content,
+                      is_publish,
+                      owner,
+                      category_id,
+                      cover)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time
 `
 
 type CreateArticleParams struct {
@@ -86,6 +85,7 @@ type CreateArticleParams struct {
 	IsPublish  bool      `json:"is_publish"`
 	Owner      uuid.UUID `json:"owner"`
 	CategoryID int64     `json:"category_id"`
+	Cover      string    `json:"cover"`
 }
 
 func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error) {
@@ -97,6 +97,7 @@ func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (A
 		arg.IsPublish,
 		arg.Owner,
 		arg.CategoryID,
+		arg.Cover,
 	)
 	var i Article
 	err := row.Scan(
@@ -112,12 +113,19 @@ func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (A
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.CategoryID,
+		&i.Slug,
+		&i.Cover,
+		&i.LastUpdated,
+		&i.CheckOutdated,
+		&i.ReadTime,
 	)
 	return i, err
 }
 
 const deleteArticle = `-- name: DeleteArticle :exec
-DELETE FROM articles WHERE id = $1
+DELETE
+FROM articles
+WHERE id = $1
 `
 
 func (q *Queries) DeleteArticle(ctx context.Context, id uuid.UUID) error {
@@ -126,29 +134,49 @@ func (q *Queries) DeleteArticle(ctx context.Context, id uuid.UUID) error {
 }
 
 const getArticle = `-- name: GetArticle :one
-SELECT
-a.id, a.title, a.summary, a.content, a.is_publish, a.views, a.likes, a.owner,
-a.created_at, a.updated_at, a.deleted_at, a.category_id, c.name as category_name
+SELECT a.id,
+       a.title,
+       a.summary,
+       a.content,
+       a.is_publish,
+       a.views,
+       a.likes,
+       a.cover,
+       a.slug,
+       a.check_outdated,
+       a.last_updated,
+       a.read_time,
+       a.owner,
+       a.created_at,
+       a.updated_at,
+       a.deleted_at,
+       a.category_id,
+       c.name as category_name
 FROM articles a
-LEFT OUTER JOIN categories c on c.id = a.category_id
+         LEFT JOIN categories c on c.id = a.category_id
 WHERE a.id = $1
 LIMIT 1
 `
 
 type GetArticleRow struct {
-	ID           uuid.UUID   `json:"id"`
-	Title        string      `json:"title"`
-	Summary      string      `json:"summary"`
-	Content      string      `json:"content"`
-	IsPublish    bool        `json:"is_publish"`
-	Views        int32       `json:"views"`
-	Likes        int32       `json:"likes"`
-	Owner        uuid.UUID   `json:"owner"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-	DeletedAt    time.Time   `json:"deleted_at"`
-	CategoryID   int64       `json:"category_id"`
-	CategoryName pgtype.Text `json:"category_name"`
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Summary       string      `json:"summary"`
+	Content       string      `json:"content"`
+	IsPublish     bool        `json:"is_publish"`
+	Views         int32       `json:"views"`
+	Likes         int32       `json:"likes"`
+	Cover         string      `json:"cover"`
+	Slug          pgtype.Text `json:"slug"`
+	CheckOutdated bool        `json:"check_outdated"`
+	LastUpdated   time.Time   `json:"last_updated"`
+	ReadTime      string      `json:"read_time"`
+	Owner         uuid.UUID   `json:"owner"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	DeletedAt     time.Time   `json:"deleted_at"`
+	CategoryID    int64       `json:"category_id"`
+	CategoryName  pgtype.Text `json:"category_name"`
 }
 
 func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error) {
@@ -162,6 +190,83 @@ func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, 
 		&i.IsPublish,
 		&i.Views,
 		&i.Likes,
+		&i.Cover,
+		&i.Slug,
+		&i.CheckOutdated,
+		&i.LastUpdated,
+		&i.ReadTime,
+		&i.Owner,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.CategoryID,
+		&i.CategoryName,
+	)
+	return i, err
+}
+
+const getArticleBySlug = `-- name: GetArticleBySlug :one
+SELECT a.id,
+       a.title,
+       a.summary,
+       a.content,
+       a.is_publish,
+       a.views,
+       a.likes,
+       a.cover,
+       a.slug,
+       a.check_outdated,
+       a.last_updated,
+       a.read_time,
+       a.owner,
+       a.created_at,
+       a.updated_at,
+       a.deleted_at,
+       a.category_id,
+       c.name as category_name
+FROM articles a
+         LEFT JOIN categories c on c.id = a.category_id
+WHERE a.slug = $1
+LIMIT 1
+`
+
+type GetArticleBySlugRow struct {
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Summary       string      `json:"summary"`
+	Content       string      `json:"content"`
+	IsPublish     bool        `json:"is_publish"`
+	Views         int32       `json:"views"`
+	Likes         int32       `json:"likes"`
+	Cover         string      `json:"cover"`
+	Slug          pgtype.Text `json:"slug"`
+	CheckOutdated bool        `json:"check_outdated"`
+	LastUpdated   time.Time   `json:"last_updated"`
+	ReadTime      string      `json:"read_time"`
+	Owner         uuid.UUID   `json:"owner"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	DeletedAt     time.Time   `json:"deleted_at"`
+	CategoryID    int64       `json:"category_id"`
+	CategoryName  pgtype.Text `json:"category_name"`
+}
+
+func (q *Queries) GetArticleBySlug(ctx context.Context, slug pgtype.Text) (GetArticleBySlugRow, error) {
+	row := q.db.QueryRow(ctx, getArticleBySlug, slug)
+	var i GetArticleBySlugRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Summary,
+		&i.Content,
+		&i.IsPublish,
+		&i.Views,
+		&i.Likes,
+		&i.Cover,
+		&i.Slug,
+		&i.CheckOutdated,
+		&i.LastUpdated,
+		&i.ReadTime,
 		&i.Owner,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -173,16 +278,41 @@ func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, 
 }
 
 const getArticleForUpdate = `-- name: GetArticleForUpdate :one
-SELECT
-    id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id
+SELECT id,
+       title,
+       summary,
+       content,
+       views,
+       likes,
+       is_publish,
+       owner,
+       created_at,
+       updated_at,
+       deleted_at,
+       category_id
 FROM articles
-WHERE id = $1 LIMIT 1
-FOR NO KEY UPDATE
+WHERE id = $1
+LIMIT 1 FOR NO KEY UPDATE
 `
 
-func (q *Queries) GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Article, error) {
+type GetArticleForUpdateRow struct {
+	ID         uuid.UUID `json:"id"`
+	Title      string    `json:"title"`
+	Summary    string    `json:"summary"`
+	Content    string    `json:"content"`
+	Views      int32     `json:"views"`
+	Likes      int32     `json:"likes"`
+	IsPublish  bool      `json:"is_publish"`
+	Owner      uuid.UUID `json:"owner"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	DeletedAt  time.Time `json:"deleted_at"`
+	CategoryID int64     `json:"category_id"`
+}
+
+func (q *Queries) GetArticleForUpdate(ctx context.Context, id uuid.UUID) (GetArticleForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, getArticleForUpdate, id)
-	var i Article
+	var i GetArticleForUpdateRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
@@ -201,7 +331,9 @@ func (q *Queries) GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Articl
 }
 
 const incrementArticleLikes = `-- name: IncrementArticleLikes :exec
-UPDATE articles SET likes = likes + 1 WHERE id = $1
+UPDATE articles
+SET likes = likes + 1
+WHERE id = $1
 `
 
 func (q *Queries) IncrementArticleLikes(ctx context.Context, id uuid.UUID) error {
@@ -210,7 +342,9 @@ func (q *Queries) IncrementArticleLikes(ctx context.Context, id uuid.UUID) error
 }
 
 const incrementArticleViews = `-- name: IncrementArticleViews :exec
-UPDATE articles SET views = views + 1 WHERE  id = $1
+UPDATE articles
+SET views = views + 1
+WHERE id = $1
 `
 
 func (q *Queries) IncrementArticleViews(ctx context.Context, id uuid.UUID) error {
@@ -219,9 +353,24 @@ func (q *Queries) IncrementArticleViews(ctx context.Context, id uuid.UUID) error
 }
 
 const listAllArticles = `-- name: ListAllArticles :many
-SELECT a.id, title, summary, views, likes, is_publish, owner, a.created_at, a.updated_at, deleted_at, c.name as category_name
+SELECT a.id,
+       title,
+       summary,
+       views,
+       likes,
+       is_publish,
+       a.cover,
+       a.slug,
+       a.check_outdated,
+       a.last_updated,
+       a.read_time,
+       owner,
+       a.created_at,
+       a.updated_at,
+       deleted_at,
+       c.name as category_name
 FROM articles a
-LEFT JOIN categories c on c.id = a.category_id
+         LEFT JOIN categories c on c.id = a.category_id
 ORDER BY a.created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -232,17 +381,22 @@ type ListAllArticlesParams struct {
 }
 
 type ListAllArticlesRow struct {
-	ID           uuid.UUID   `json:"id"`
-	Title        string      `json:"title"`
-	Summary      string      `json:"summary"`
-	Views        int32       `json:"views"`
-	Likes        int32       `json:"likes"`
-	IsPublish    bool        `json:"is_publish"`
-	Owner        uuid.UUID   `json:"owner"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-	DeletedAt    time.Time   `json:"deleted_at"`
-	CategoryName pgtype.Text `json:"category_name"`
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Summary       string      `json:"summary"`
+	Views         int32       `json:"views"`
+	Likes         int32       `json:"likes"`
+	IsPublish     bool        `json:"is_publish"`
+	Cover         string      `json:"cover"`
+	Slug          pgtype.Text `json:"slug"`
+	CheckOutdated bool        `json:"check_outdated"`
+	LastUpdated   time.Time   `json:"last_updated"`
+	ReadTime      string      `json:"read_time"`
+	Owner         uuid.UUID   `json:"owner"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	DeletedAt     time.Time   `json:"deleted_at"`
+	CategoryName  pgtype.Text `json:"category_name"`
 }
 
 func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error) {
@@ -261,6 +415,11 @@ func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams
 			&i.Views,
 			&i.Likes,
 			&i.IsPublish,
+			&i.Cover,
+			&i.Slug,
+			&i.CheckOutdated,
+			&i.LastUpdated,
+			&i.ReadTime,
 			&i.Owner,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -278,12 +437,27 @@ func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams
 }
 
 const listArticles = `-- name: ListArticles :many
-SELECT a.id, a.title, a.summary, a.views, a.likes, a.is_publish, a.owner, a.created_at, a.updated_at, a.deleted_at, c.name as category_name, u.username
+SELECT a.id,
+       a.title,
+       a.summary,
+       a.views,
+       a.likes,
+       a.is_publish,
+       a.cover,
+       a.slug,
+       a.check_outdated,
+       a.last_updated,
+       a.read_time,
+       a.owner,
+       a.created_at,
+       a.updated_at,
+       a.deleted_at,
+       c.name as category_name,
+       u.username
 FROM articles a
-LEFT JOIN categories c on c.id = a.category_id
-LEFT JOIN users u on a.owner = u.id
-WHERE
-    a.is_publish = COALESCE($3, a.is_publish)
+         LEFT JOIN categories c on c.id = a.category_id
+         LEFT JOIN users u on a.owner = u.id
+WHERE a.is_publish = COALESCE($3, a.is_publish)
   AND a.category_id = COALESCE($4, a.category_id)
 ORDER BY a.created_at DESC
 LIMIT $1 OFFSET $2
@@ -297,18 +471,23 @@ type ListArticlesParams struct {
 }
 
 type ListArticlesRow struct {
-	ID           uuid.UUID   `json:"id"`
-	Title        string      `json:"title"`
-	Summary      string      `json:"summary"`
-	Views        int32       `json:"views"`
-	Likes        int32       `json:"likes"`
-	IsPublish    bool        `json:"is_publish"`
-	Owner        uuid.UUID   `json:"owner"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-	DeletedAt    time.Time   `json:"deleted_at"`
-	CategoryName pgtype.Text `json:"category_name"`
-	Username     pgtype.Text `json:"username"`
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Summary       string      `json:"summary"`
+	Views         int32       `json:"views"`
+	Likes         int32       `json:"likes"`
+	IsPublish     bool        `json:"is_publish"`
+	Cover         string      `json:"cover"`
+	Slug          pgtype.Text `json:"slug"`
+	CheckOutdated bool        `json:"check_outdated"`
+	LastUpdated   time.Time   `json:"last_updated"`
+	ReadTime      string      `json:"read_time"`
+	Owner         uuid.UUID   `json:"owner"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	DeletedAt     time.Time   `json:"deleted_at"`
+	CategoryName  pgtype.Text `json:"category_name"`
+	Username      pgtype.Text `json:"username"`
 }
 
 func (q *Queries) ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error) {
@@ -332,6 +511,11 @@ func (q *Queries) ListArticles(ctx context.Context, arg ListArticlesParams) ([]L
 			&i.Views,
 			&i.Likes,
 			&i.IsPublish,
+			&i.Cover,
+			&i.Slug,
+			&i.CheckOutdated,
+			&i.LastUpdated,
+			&i.ReadTime,
 			&i.Owner,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -350,15 +534,30 @@ func (q *Queries) ListArticles(ctx context.Context, arg ListArticlesParams) ([]L
 }
 
 const searchArticles = `-- name: SearchArticles :many
-SELECT a.id, a.title, a.summary, a.views, a.likes, a.is_publish, a.owner,a.created_at, a.updated_at, a.deleted_at,
-       c.name as category_name, u.username, pgroonga_score(a.tableoid, a.ctid) AS score
+SELECT a.id,
+       a.title,
+       a.summary,
+       a.views,
+       a.likes,
+       a.is_publish,
+       a.cover,
+       a.slug,
+       a.check_outdated,
+       a.last_updated,
+       a.read_time,
+       a.owner,
+       a.created_at,
+       a.updated_at,
+       a.deleted_at,
+       c.name                             as category_name,
+       u.username,
+       pgroonga_score(a.tableoid, a.ctid) AS score
 FROM articles a
          LEFT JOIN categories c on c.id = a.category_id
          LEFT JOIN users u on a.owner = u.id
-WHERE
-    (title || ' ' || summary || ' ' || content) &@~ $3::text
-    AND ($4::boolean IS NULL OR a.is_publish = $4)
-    AND a.deleted_at = '0001-01-01 00:00:00Z'
+WHERE (title || ' ' || summary || ' ' || content) &@~ $3::text
+  AND ($4::boolean IS NULL OR a.is_publish = $4)
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
 ORDER BY score DESC, a.created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -371,19 +570,24 @@ type SearchArticlesParams struct {
 }
 
 type SearchArticlesRow struct {
-	ID           uuid.UUID   `json:"id"`
-	Title        string      `json:"title"`
-	Summary      string      `json:"summary"`
-	Views        int32       `json:"views"`
-	Likes        int32       `json:"likes"`
-	IsPublish    bool        `json:"is_publish"`
-	Owner        uuid.UUID   `json:"owner"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-	DeletedAt    time.Time   `json:"deleted_at"`
-	CategoryName pgtype.Text `json:"category_name"`
-	Username     pgtype.Text `json:"username"`
-	Score        interface{} `json:"score"`
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Summary       string      `json:"summary"`
+	Views         int32       `json:"views"`
+	Likes         int32       `json:"likes"`
+	IsPublish     bool        `json:"is_publish"`
+	Cover         string      `json:"cover"`
+	Slug          pgtype.Text `json:"slug"`
+	CheckOutdated bool        `json:"check_outdated"`
+	LastUpdated   time.Time   `json:"last_updated"`
+	ReadTime      string      `json:"read_time"`
+	Owner         uuid.UUID   `json:"owner"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
+	DeletedAt     time.Time   `json:"deleted_at"`
+	CategoryName  pgtype.Text `json:"category_name"`
+	Username      pgtype.Text `json:"username"`
+	Score         interface{} `json:"score"`
 }
 
 func (q *Queries) SearchArticles(ctx context.Context, arg SearchArticlesParams) ([]SearchArticlesRow, error) {
@@ -407,6 +611,11 @@ func (q *Queries) SearchArticles(ctx context.Context, arg SearchArticlesParams) 
 			&i.Views,
 			&i.Likes,
 			&i.IsPublish,
+			&i.Cover,
+			&i.Slug,
+			&i.CheckOutdated,
+			&i.LastUpdated,
+			&i.ReadTime,
 			&i.Owner,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -426,7 +635,9 @@ func (q *Queries) SearchArticles(ctx context.Context, arg SearchArticlesParams) 
 }
 
 const setArticleDefaultCategoryIdByCategoryId = `-- name: SetArticleDefaultCategoryIdByCategoryId :exec
-UPDATE articles SET category_id = 1 WHERE category_id = $1
+UPDATE articles
+SET category_id = 1
+WHERE category_id = $1
 `
 
 func (q *Queries) SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, categoryID int64) error {
@@ -436,25 +647,34 @@ func (q *Queries) SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, c
 
 const updateArticle = `-- name: UpdateArticle :one
 UPDATE articles
-SET
-    title = COALESCE($1, title),
-    summary = COALESCE($2, summary),
-    content = COALESCE($3, content),
-    is_publish = COALESCE($4, is_publish),
-    category_id = COALESCE($5, category_id),
-    updated_at = COALESCE($6, updated_at)
-WHERE id = $7
-RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id
+SET title          = COALESCE($1, title),
+    summary        = COALESCE($2, summary),
+    content        = COALESCE($3, content),
+    is_publish     = COALESCE($4, is_publish),
+    category_id    = COALESCE($5, category_id),
+    cover          = COALESCE($6, cover),
+    slug           = COALESCE($7, slug),
+    check_outdated = COALESCE($8, check_outdated),
+    last_updated   = COALESCE($9, last_updated),
+    read_time   = COALESCE($10, read_time),
+    updated_at     = COALESCE($11, updated_at)
+WHERE id = $12
+RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time
 `
 
 type UpdateArticleParams struct {
-	Title      pgtype.Text        `json:"title"`
-	Summary    pgtype.Text        `json:"summary"`
-	Content    pgtype.Text        `json:"content"`
-	IsPublish  pgtype.Bool        `json:"is_publish"`
-	CategoryID pgtype.Int8        `json:"category_id"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
-	ID         uuid.UUID          `json:"id"`
+	Title         pgtype.Text        `json:"title"`
+	Summary       pgtype.Text        `json:"summary"`
+	Content       pgtype.Text        `json:"content"`
+	IsPublish     pgtype.Bool        `json:"is_publish"`
+	CategoryID    pgtype.Int8        `json:"category_id"`
+	Cover         pgtype.Text        `json:"cover"`
+	Slug          pgtype.Text        `json:"slug"`
+	CheckOutdated pgtype.Bool        `json:"check_outdated"`
+	LastUpdated   pgtype.Timestamptz `json:"last_updated"`
+	ReadTime      pgtype.Text        `json:"read_time"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	ID            uuid.UUID          `json:"id"`
 }
 
 func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error) {
@@ -464,6 +684,11 @@ func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (A
 		arg.Content,
 		arg.IsPublish,
 		arg.CategoryID,
+		arg.Cover,
+		arg.Slug,
+		arg.CheckOutdated,
+		arg.LastUpdated,
+		arg.ReadTime,
 		arg.UpdatedAt,
 		arg.ID,
 	)
@@ -481,6 +706,11 @@ func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (A
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.CategoryID,
+		&i.Slug,
+		&i.Cover,
+		&i.LastUpdated,
+		&i.CheckOutdated,
+		&i.ReadTime,
 	)
 	return i, err
 }

@@ -31,7 +31,7 @@ type Server struct {
 }
 
 // NewServer creates a new HTTPS server and setup routing
-func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) (*Server, error) {
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService service.Redis) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -77,6 +77,7 @@ func (server *Server) setupRouter() {
 		public.GET("/users/contributions", server.contributions)
 
 		public.GET("/articles/:id", server.getArticle)
+		public.GET("/articles/slug/:slug", server.getArticleBySlug)
 		public.GET("/articles", server.listArticle)
 		public.PATCH("/articles/increment_likes", server.incrementArticleLikes)
 		public.PATCH("/articles/increment_views", server.incrementArticleViews)
@@ -96,7 +97,7 @@ func (server *Server) setupRouter() {
 		authRoutes.POST("/comments", server.createComment)
 		authRoutes.DELETE("/comments/:id", server.deleteComment)
 
-		authRoutes.POST("/upload/:id", server.uploadFile).Use(uploadFileMiddleware(server.config))
+		authRoutes.POST("/upload_file/", server.uploadFile).Use(uploadFileMiddleware(server.config))
 	}
 
 	server.router = router

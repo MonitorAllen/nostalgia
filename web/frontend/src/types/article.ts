@@ -7,6 +7,10 @@ export interface Article {
   likes: number
   is_publish: boolean
   cover: string
+  slug: string
+  check_outdated: boolean
+  last_updated: string
+  read_time: string
   owner: string
   created_at: string
   updated_at: string

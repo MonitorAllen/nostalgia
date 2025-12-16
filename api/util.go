@@ -4,66 +4,64 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/h2non/filetype"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
-type uploadFileRequest struct {
-	ID string `uri:"id"`
-}
-
 type uploadFileResponse struct {
 	Url      string `json:"url"`
+	Default  string `json:"default"`
 	Filename string `json:"filename"`
 }
 
 func (server *Server) uploadFile(ctx *gin.Context) {
-	var req uploadFileRequest
+	fileHeader := ctx.MustGet("file_header").(*multipart.FileHeader)
+	fileExt := ctx.MustGet("file_ext").(string)
 
-	_ = ctx.BindUri(&req)
+	articleID := ctx.PostForm("article_id")
+	uploadType := ctx.PostForm("upload_type")
 
-	uploadFile, err := ctx.FormFile("upload")
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error()}})
-		return
-	}
-
-	newFileName, err := uuid.NewRandom()
-	if err != nil {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "生成文件名失败"}})
-		return
-	}
-
-	openFile, err := uploadFile.Open()
-
-	head := make([]byte, 261)
-	_, err = openFile.Read(head)
-	if err != nil {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "解析文件失败"}})
-		return
-	}
-
-	kind, _ := filetype.Match(head)
-	saveFileName := fmt.Sprintf("%s.%s", newFileName.String(), kind.Extension)
-
-	filePath := ""
-	if req.ID != "" {
-		filePath = fmt.Sprintf("./resources/%s/%s", req.ID, saveFileName)
+	baseResourceDir := "./resources"
+	var folderPath string
+	if articleID != "" {
+		folderPath = filepath.Join(baseResourceDir, articleID)
 	} else {
-		filePath = fmt.Sprintf("./temp/upload/%s", saveFileName)
+		folderPath = filepath.Join(baseResourceDir, "temp")
 	}
 
-	err = ctx.SaveUploadedFile(uploadFile, filePath)
-	if err != nil {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "文件保存失败"}})
+	if err := os.MkdirAll(folderPath, 0755); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("创建目录失败：%v, folder: %s", err, folderPath)))
 		return
 	}
 
-	filePath = strings.TrimLeft(filePath, ".")
+	var saveFileName string
+
+	if uploadType == "cover" {
+		saveFileName = fmt.Sprintf("cover.%s", fileExt)
+	} else {
+		newUUID, err := uuid.NewUUID()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("生成文件名失败")))
+		}
+		saveFileName = fmt.Sprintf("%s.%s", newUUID.String(), fileExt)
+	}
+
+	fullSavePath := filepath.Join(folderPath, saveFileName)
+
+	if err := ctx.SaveUploadedFile(fileHeader, fullSavePath); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("文件保存失败")))
+		return
+	}
+
+	relativePath := "/" + filepath.ToSlash(fullSavePath)
+	relativePath = strings.Replace(relativePath, "/./", "/", 1)
 
 	resp := uploadFileResponse{
-		Url:      fmt.Sprintf("http://%s%s", "172.19.228.63:8080", filePath),
+		Url:      relativePath,
+		Default:  relativePath,
 		Filename: saveFileName,
 	}
 

@@ -56,9 +56,9 @@ UPLOAD_FILE_SIZE_LIMIT=5242880
 UPLOAD_FILE_ALLOWED_MIME=image/jpeg,image/png
 HTTP_PROXY_ADDR=http://host.docker.internal:10808
 DEFAULT_USER_ID=uuid
-DEFAULT_USERNAME=Allen
+DEFAULT_USERNAME=username
 DEFAULT_USER_PASSWORD=123456
-DEFAULT_USER_FULLNAME=MonitorAllen
+DEFAULT_USER_FULLNAME=fullname
 DEFAULT_USER_EMAIL=xxx@qq.com
 ```
 
@@ -81,7 +81,7 @@ docker compose up --build
 #### 默认服务端口：
 
 | 服务           | 端口   |
-| ------------ | ---- |
+|--------------|------|
 | Gin API      | 8080 |
 | gRPC         | 9090 |
 | gRPC-Gateway | 9091 |
@@ -92,7 +92,7 @@ docker compose up --build
 #### 接口入口说明（本地docker环境）
 
 | 功能               | 地址示例                                                                               |
-| ---------------- | ---------------------------------------------------------------------------------- |
+|------------------|------------------------------------------------------------------------------------|
 | 前台博客首页           | [http://localhost/](http://localhost/)                                             |
 | 后台管理系统（Vue）      | [http://localhost/backend/](http://localhost/backend/)                             |
 | 静态资源访问           | [http://localhost/resources/{id}/xxx.jpg](http://localhost/resources/{id}/xxx.jpg) |
@@ -115,7 +115,7 @@ cd nostalgia
 
 ```bash
 make redis # 默认镜像为 redis:7-alpine，可在 Makefile 中自行调整
-make postgres # 默认镜像为 postgres:12-alpine
+make postgres # 默认镜像为 groonga/pgroonga:3.2.3-alpine-16
 make create_db # 创建数据库
 make migrateup # 数据库迁移
 make server # 启动 API 服务

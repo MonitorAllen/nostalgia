@@ -1,21 +1,7 @@
 import axiosInstance from '@/config/axios'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-
-export interface Article {
-    id: string
-    title: string
-    summary: string
-    content?: string
-    likes: number
-    views: number
-    is_publish: boolean
-    created_at: string
-    updated_at: string
-    owner: string
-    category_id: string
-    category_name: string
-}
+import type {Article} from "@/types/article";
 
 export const useArticleStore = defineStore('article', () => {
     const articles = ref<Article[]>([])

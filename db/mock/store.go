@@ -11,6 +11,7 @@ import (
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
+	pgtype "github.com/jackc/pgx/v5/pgtype"
 )
 
 // MockStore is a mock of Store interface.
@@ -389,11 +390,26 @@ func (mr *MockStoreMockRecorder) GetArticle(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArticle", reflect.TypeOf((*MockStore)(nil).GetArticle), arg0, arg1)
 }
 
+// GetArticleBySlug mocks base method.
+func (m *MockStore) GetArticleBySlug(arg0 context.Context, arg1 pgtype.Text) (db.GetArticleBySlugRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetArticleBySlug", arg0, arg1)
+	ret0, _ := ret[0].(db.GetArticleBySlugRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetArticleBySlug indicates an expected call of GetArticleBySlug.
+func (mr *MockStoreMockRecorder) GetArticleBySlug(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArticleBySlug", reflect.TypeOf((*MockStore)(nil).GetArticleBySlug), arg0, arg1)
+}
+
 // GetArticleForUpdate mocks base method.
-func (m *MockStore) GetArticleForUpdate(arg0 context.Context, arg1 uuid.UUID) (db.Article, error) {
+func (m *MockStore) GetArticleForUpdate(arg0 context.Context, arg1 uuid.UUID) (db.GetArticleForUpdateRow, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetArticleForUpdate", arg0, arg1)
-	ret0, _ := ret[0].(db.Article)
+	ret0, _ := ret[0].(db.GetArticleForUpdateRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
