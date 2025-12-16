@@ -32,17 +32,21 @@ func convertInitSysMenu(sysMenus []db.ListInitSysMenusRow) []*pb.InitSysMenu {
 
 func convertArticle(article db.ListAllArticlesRow) *pb.Article {
 	return &pb.Article{
-		Id:           article.ID.String(),
-		Title:        article.Title,
-		Summary:      &article.Summary,
-		IsPublish:    &article.IsPublish,
-		Views:        &article.Views,
-		Likes:        &article.Likes,
-		CreatedAt:    timestamppb.New(article.CreatedAt),
-		UpdatedAt:    timestamppb.New(article.UpdatedAt),
-		DeletedAt:    timestamppb.New(article.DeletedAt),
-		Owner:        article.Owner.String(),
-		CategoryName: article.CategoryName.String,
+		Id:            article.ID.String(),
+		Title:         article.Title,
+		Summary:       &article.Summary,
+		IsPublish:     &article.IsPublish,
+		Views:         &article.Views,
+		Likes:         &article.Likes,
+		Slug:          article.Slug.String,
+		CheckOutdated: &article.CheckOutdated,
+		ReadTime:      article.ReadTime,
+		LastUpdated:   timestamppb.New(article.LastUpdated),
+		CreatedAt:     timestamppb.New(article.CreatedAt),
+		UpdatedAt:     timestamppb.New(article.UpdatedAt),
+		DeletedAt:     timestamppb.New(article.DeletedAt),
+		Owner:         article.Owner.String(),
+		CategoryName:  article.CategoryName.String,
 	}
 }
 
@@ -79,15 +83,21 @@ func convertOnlyArticle(article db.Article, needContent bool) *pb.Article {
 
 func convertArticleWithCategory(article db.GetArticleRow, needContent bool) *pb.Article {
 	pbArticle := &pb.Article{
-		Id:           article.ID.String(),
-		Title:        article.Title,
-		Summary:      &article.Summary,
-		Views:        &article.Views,
-		Likes:        &article.Likes,
-		CreatedAt:    timestamppb.New(article.CreatedAt),
-		UpdatedAt:    timestamppb.New(article.UpdatedAt),
-		Owner:        article.Owner.String(),
-		CategoryName: article.CategoryName.String,
+		Id:            article.ID.String(),
+		Title:         article.Title,
+		Summary:       &article.Summary,
+		Views:         &article.Views,
+		Likes:         &article.Likes,
+		IsPublish:     &article.IsPublish,
+		Slug:          article.Slug.String,
+		CheckOutdated: &article.CheckOutdated,
+		ReadTime:      article.ReadTime,
+		LastUpdated:   timestamppb.New(article.LastUpdated),
+		CreatedAt:     timestamppb.New(article.CreatedAt),
+		UpdatedAt:     timestamppb.New(article.UpdatedAt),
+		Owner:         article.Owner.String(),
+		CategoryId:    article.CategoryID,
+		CategoryName:  article.CategoryName.String,
 	}
 	if needContent {
 		pbArticle.Content = &article.Content

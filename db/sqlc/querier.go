@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -32,7 +33,8 @@ type Querier interface {
 	GetAdmin(ctx context.Context, username string) (Admin, error)
 	GetAdminById(ctx context.Context, id int64) (Admin, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error)
-	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (Article, error)
+	GetArticleBySlug(ctx context.Context, slug pgtype.Text) (GetArticleBySlugRow, error)
+	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (GetArticleForUpdateRow, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetComment(ctx context.Context, id int64) (Comment, error)

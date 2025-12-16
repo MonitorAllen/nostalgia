@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog"
 	"net"
 	"net/http"
 	"os"
@@ -32,7 +33,6 @@ import (
 	_ "github.com/lib/pq"
 	fs2 "github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -59,14 +59,7 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot load config:")
 	}
 
-	// 开发环境下，日志输出控制台
-	if config.Environment == "development" {
-		log.Logger = zerolog.New(os.Stdout).
-			With().
-			Timestamp().
-			Logger().
-			Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
+	setupLogger(config)
 
 	// 系统信号监听
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
@@ -105,6 +98,21 @@ func main() {
 	err = waitGroup.Wait()
 	if err != nil {
 		log.Fatal().Err(err).Msg("error from wait group")
+	}
+}
+
+func setupLogger(config util.Config) {
+	// 开启调用者定位
+	log.Logger = log.With().Caller().Logger()
+
+	// 开发环境下，日志输出控制台
+	if config.Environment == "development" {
+		log.Logger = log.Output(
+			zerolog.ConsoleWriter{
+				Out:        os.Stderr,
+				TimeFormat: time.RFC3339,
+			},
+		)
 	}
 }
 

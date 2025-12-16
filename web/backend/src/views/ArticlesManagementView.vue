@@ -1,98 +1,122 @@
 <template>
-    <div class="flex flex-column w-full shadow-1 border-round px-3 pt-2">
-      <div class="flex justify-content-between align-items-center mb-2">
-        <h1 class="text-xl font-medium m-0">文章管理</h1>
-        <router-link :to="{name: 'editor'}" target="_blank">
-          <Button label="新建文章" icon="pi pi-plus" size="small" severity="primary"/>
-        </router-link>
-      </div>
-      <div class="flex flex-column h-full">
-        <DataTable
-          :value="articles"
-          size="small"
-          showGridlines
-          stripedRows
-          responsiveLayout="scroll"
-          class="p-datatable-sm mb-2">
-          <Column field="title" header="标题" style="min-width: 140px;"></Column>
-          <Column field="summary" header="摘要" style="min-width: 120px;">
-            <template #body="slotProps">
-              <div class="">{{ slotProps.data.summary.length > 50 ? slotProps.data.summary.substring(0, 30) + '...' : slotProps.data.summary }}</div>
-            </template>
-          </Column>
-          <Column field="likes" header="点赞" style="width: 50px; min-width: 50px;"></Column>
-          <Column field="views" header="浏览量" style="width: 65px; min-width: 65px;"></Column>
-          <Column field="category_name" header="分类" style="width: 65px; min-width: 65px;"></Column>
-          <Column field="is_publish" header="是否发布" style="width: 80px; min-width: 80px;">
-            <template #body="slotProps">
-              <Tag :value="slotProps.data.is_publish ? '已发布' : '未发布'" :severity="getStatusSeverity(slotProps.data.is_publish)" />
-            </template>
-          </Column>
-          <Column field="created_at" header="创建时间" style="width: 172px; min-width: 172px">
-            <template #body="slotProps">
-              {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm:ss') }}
-            </template>
-          </Column>
-          <Column field="updated_at" header="更新时间" style="width: 172px; min-width: 172px;">
-            <template #body="slotProps">
-              {{ format(slotProps.data.updated_at, 'YYYY-MM-DD HH:mm:ss') }}
-            </template>
-          </Column>
-          <Column header="操作" :exportable="false" style="width: 15rem; min-width:15rem">
-            <template #body="slotProps">
-              <Button label="编辑信息" size="small" severity="info" class="mr-2" @click="editArticle(slotProps.index, slotProps.data.id)"/>
-              <router-link :to="{name: 'editor', params: { id: slotProps.data.id }}" target="_blank" class="mr-2">
-                <Button label="编辑内容" size="small" severity="info" />
-              </router-link>
-              <Button label="删除" size="small" severity="danger" @click="deleteRecord(slotProps.data.id)"/>
-            </template>
-          </Column>
-        </DataTable>
-
-        <Paginator
-          :rows="limit"
-          :totalRecords="count"
-          :first="first"
-          template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          :rowsPerPageOptions="[10,20,50]"
-          currentPageReportTemplate="显示第 {first} 到 {last} 条记录，共 {totalRecords} 条"
-          @page="onPage"
-        />
-      </div>
+  <div class="flex flex-column w-full shadow-1 border-round px-3 pt-2">
+    <div class="flex justify-content-between align-items-center mb-2">
+      <h1 class="text-xl font-medium m-0">文章管理</h1>
+      <router-link :to="{name: 'editor'}" target="_blank">
+        <Button label="新建文章" icon="pi pi-plus" size="small" severity="primary"/>
+      </router-link>
     </div>
+    <div class="flex flex-column h-full">
+      <DataTable
+        :value="articles"
+        size="small"
+        showGridlines
+        stripedRows
+        responsiveLayout="scroll"
+        class="p-datatable-sm mb-2">
+        <Column field="title" header="标题" style="min-width: 180px;"></Column>
+        <Column field="summary" header="摘要" style="min-width: 140px;">
+          <template #body="slotProps">
+            <div class="">{{
+                slotProps.data.summary.length > 50 ? slotProps.data.summary.substring(0, 20) + '...' : slotProps.data.summary
+              }}
+            </div>
+          </template>
+        </Column>
+        <Column field="slug" header="Slug" style="min-width: 140px;"></Column>
+        <Column field="likes" header="点赞" style="width: 50px; min-width: 50px;"></Column>
+        <Column field="views" header="浏览量" style="width: 65px; min-width: 65px;"></Column>
+        <Column field="category_name" header="分类" style="width: 65px; min-width: 65px;"></Column>
+        <Column field="is_publish" header="是否发布" style="width: 80px; min-width: 80px;">
+          <template #body="slotProps">
+            <Tag :value="slotProps.data.is_publish ? '已发布' : '未发布'"
+                 :severity="getStatusSeverity(slotProps.data.is_publish)"/>
+          </template>
+        </Column>
+        <Column field="check_outdated" header="检查时效" style="width: 80px; min-width: 65px;">
+          <template #body="slotProps">
+            <Tag :value="slotProps.data.check_outdated ? '检查' : '忽略'"
+                 :severity="getStatusSeverity(slotProps.data.check_outdated)"/>
+          </template>
+        </Column>
+        <Column field="created_at" header="创建时间" style="width: 172px; min-width: 172px">
+          <template #body="slotProps">
+            {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm') }}
+          </template>
+        </Column>
+        <Column field="updated_at" header="更新时间" style="width: 172px; min-width: 172px;">
+          <template #body="slotProps">
+            {{ format(slotProps.data.updated_at, 'YYYY-MM-DD HH:mm') }}
+          </template>
+        </Column>
+        <Column header="操作" :exportable="false" style="width: 15rem; min-width:15rem">
+          <template #body="slotProps">
+            <Button label="编辑信息" size="small" severity="info" class="mr-2"
+                    @click="editArticle(slotProps.index, slotProps.data.id)"/>
+            <router-link :to="{name: 'editor', params: { id: slotProps.data.id }}" target="_blank"
+                         class="mr-2">
+              <Button label="编辑内容" size="small" severity="info"/>
+            </router-link>
+            <Button label="删除" size="small" severity="danger"
+                    @click="deleteRecord(slotProps.data.id)"/>
+          </template>
+        </Column>
+      </DataTable>
 
-    <Dialog v-model:visible="visible" @after-hide="onDialogHide" modal header="编辑文章信息" :style="{ width: '45rem' }">
-      <Form :initialValues="formInitialValues" @submit="onUpdateArticle" class="flex flex-column">
-        <InputText type="hidden" name="id"></InputText>
-        <div class="flex items-center gap-4 mb-4">
-            <label for="title" class="font-semibold w-24">标题</label>
-            <InputText id="title" name="title" class="flex-auto"/>
-        </div>
-        <div class="flex flex-row gap-4 mb-4">
-            <label for="summary" class="font-semibold w-24">摘要</label>
-            <Textarea id="summary" name="summary" autoResize class="flex-auto"/>
-        </div>
-        <div class="flex flex-row justify-content-between gap-4 mb-4">
-          <label for="category" class="font-semibold w-24">分类</label>
-          <Select id="category" name="category_id" v-model="selectedCategory" :options="categories" optionLabel="name" optionValue="id"
-          class="flex-auto"/>
-        </div>
-        <div class="flex gap-4 mb-8">
-            <label for="is_publish" class="font-semibold w-24">发布</label>
-            <ToggleSwitch id="is_publish" name="is_publish"/>
-        </div>
-        <div class="flex justify-content-end gap-2">
-            <Button type="button" label="取消" severity="secondary" @click="visible = false"></Button>
-            <Button type="submit" label="保存"></Button>
-        </div>
-      </Form>
-    </Dialog>
+      <Paginator
+        :rows="limit"
+        :totalRecords="count"
+        :first="first"
+        template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+        :rowsPerPageOptions="[10,20,50]"
+        currentPageReportTemplate="显示第 {first} 到 {last} 条记录，共 {totalRecords} 条"
+        @page="onPage"
+      />
+    </div>
+  </div>
 
-    <ConfirmDialog></ConfirmDialog>
+  <Dialog v-model:visible="visible" @after-hide="onDialogHide" modal header="编辑文章信息"
+          :style="{ width: '45rem' }">
+    <Form :initialValues="formInitialValues" @submit="onUpdateArticle" class="flex flex-column">
+      <InputText type="hidden" name="id"></InputText>
+      <div class="flex items-center gap-4 mb-4">
+        <label for="title" class="font-semibold w-24">标题</label>
+        <InputText id="title" name="title" class="flex-auto"/>
+      </div>
+      <div class="flex flex-row gap-4 mb-4">
+        <label for="summary" class="font-semibold w-24">摘要</label>
+        <Textarea id="summary" name="summary" autoResize class="flex-auto"/>
+      </div>
+      <div class="flex flex-row gap-4 mb-4">
+        <label for="slug" class="font-semibold w-24">短标识</label>
+        <InputText id="slug" name="slug" class="flex-auto"/>
+      </div>
+      <div class="flex flex-row justify-content-between gap-4 mb-4">
+        <label for="category" class="font-semibold w-24">分类</label>
+        <Select id="category" name="category_id" v-model="selectedCategory" :options="categories"
+                optionLabel="name" optionValue="id"
+                class="flex-auto"/>
+      </div>
+      <div class="flex gap-4 mb-4">
+        <label for="is_publish" class="font-semibold w-24">发布</label>
+        <ToggleSwitch id="is_publish" name="is_publish"/>
+      </div>
+      <div class="flex gap-4 mb-4">
+        <label for="check_outdated" class="font-semibold w-24">检查时效</label>
+        <ToggleSwitch id="check_outdated" name="check_outdated"/>
+      </div>
+      <div class="flex justify-content-end gap-2 mt-4">
+        <Button type="button" label="取消" severity="secondary" @click="visible = false"></Button>
+        <Button type="submit" label="保存"></Button>
+      </div>
+    </Form>
+  </Dialog>
+
+  <ConfirmDialog></ConfirmDialog>
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -104,14 +128,15 @@ import Textarea from 'primevue/textarea';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Select from 'primevue/select';
 import {Form, type FormSubmitEvent} from '@primevue/forms';
-import { useConfirm } from "primevue/useconfirm";
-import { type Article } from '@/stores/article'
-import { useToast } from 'primevue/usetoast'
+import {useConfirm} from "primevue/useconfirm";
+import {type Article} from '@/types/article'
+import {useToast} from 'primevue/usetoast'
 import ConfirmDialog from 'primevue/confirmdialog';
 import format from '@/util/date'
 import {
   deleteArticle,
-  fetchArticleById, listAllArticles,
+  fetchArticleById,
+  listAllArticles,
   updateArticle,
   type UpdateArticleRequest
 } from '@/api/articles'
@@ -131,13 +156,18 @@ const fetchAllArticles = async (page: number, limit: number) => {
     articles.value = resp.data.articles
     count.value = parseInt(resp.data.count)
   } catch (error: any) {
-    toast.add({ severity: 'error', summary: '错误', detail: '获取文章列表失败: ' + error.response.data.error, life: 2500})
+    toast.add({
+      severity: 'error',
+      summary: '错误',
+      detail: '获取文章列表失败: ' + error.response.data.error,
+      life: 3000
+    })
   }
 }
 
 const first = ref(0)
 
-onMounted( () => {
+onMounted(() => {
   fetchAllArticles(page.value, limit.value)
 })
 
@@ -153,7 +183,7 @@ const getStatusSeverity = (status: boolean) => {
     case true:
       return 'success'
     case false:
-      return 'danger'
+      return 'secondary'
     default:
       return 'info'
   }
@@ -167,26 +197,36 @@ const formInitialValues = computed(() => {
     id: article.value.id,
     title: article.value.title || '',
     summary: article.value.summary || '',
-    is_publish: article.value.is_publish || false,
+    is_publish: article.value.is_publish,
+    slug: article.value.slug || '',
+    check_outdated: article.value.check_outdated,
   }
 })
 
 const visible = ref(false)
 const article = ref<Article | null>(null)
 const categories = ref<Category[]>([])
-const selectedCategory = ref('')
+const selectedCategory = ref(0)
 const editingIndex = ref(-1)
 
 const editArticle = async (index: number, id: string) => {
   try {
-    const [articleRes, categoryRes] = await Promise.all([fetchArticleById({id, needContent:false}), listAllCategories()]);
+    const [articleRes, categoryRes] = await Promise.all([fetchArticleById({
+      id,
+      needContent: false
+    }), listAllCategories()]);
     categories.value = categoryRes.data.categories
     article.value = articleRes.data.article
     selectedCategory.value = articleRes.data.article.category_id
     visible.value = true
     editingIndex.value = index
   } catch (error: any) {
-    toast.add({severity: 'error', summary: '错误', detail: '获取文章信息失败: ' + error.response?.data?.message, life: 2500})
+    toast.add({
+      severity: 'error',
+      summary: '错误',
+      detail: '获取文章信息失败: ' + error.response?.data?.message,
+      life: 3000
+    })
   }
 }
 
@@ -196,20 +236,26 @@ const onUpdateArticle = async (e: FormSubmitEvent<Record<string, any>>) => {
   try {
     await updateArticle(values as UpdateArticleRequest)
     if (editingIndex.value != -1) {
-        toast.add({severity: 'success', summary: '成功', detail: '保存文章成功', life: 2500})
+      await fetchAllArticles(page.value, limit.value)
+      toast.add({severity: 'success', summary: '成功', detail: '保存文章成功', life: 3000})
     }
   } catch (error: any) {
-    toast.add({severity: 'error', summary: '错误', detail: '保存文章失败: ' + error.response?.data?.message, life: 2500})
+    toast.add({
+      severity: 'error',
+      summary: '错误',
+      detail: '保存文章失败: ' + error.response?.data?.message,
+      life: 3000
+    })
   } finally {
     visible.value = false
     editingIndex.value = -1
     article.value = null
-    selectedCategory.value = ''
+    selectedCategory.value = 0
   }
 }
 
 const onDialogHide = () => {
-  selectedCategory.value = ''
+  selectedCategory.value = 0
 }
 
 const confirm = useConfirm();
@@ -230,7 +276,12 @@ const deleteRecord = (id: string) => {
         toast.add({severity: 'success', summary: '成功', detail: '删除成功', life: 3000});
         await fetchAllArticles(page.value, limit.value)
       } catch (error: any) {
-        toast.add({severity: 'error', summary: '失败', detail: '删除失败: ' + error.response.data.error, life: 3000});
+        toast.add({
+          severity: 'error',
+          summary: '失败',
+          detail: '删除失败: ' + error.response.data.error,
+          life: 3000
+        });
       }
     }
   });

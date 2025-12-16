@@ -13,14 +13,14 @@
           responsiveLayout="scroll"
           class="p-datatable-sm mb-2">
           <Column field="name" header="名称" style="min-width: 140px;"></Column>
-          <Column field="created_at" header="创建时间" style="width: 172px; min-width: 172px">
+          <Column field="created_at" header="创建时间" style="width: 180px; min-width: 172px">
             <template #body="slotProps">
-              {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm:ss') }}
+              {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm') }}
             </template>
           </Column>
-          <Column field="updated_at" header="更新时间" style="width: 172px; min-width: 172px;">
+          <Column field="updated_at" header="更新时间" style="width: 180px; min-width: 172px;">
             <template #body="slotProps">
-              {{ format(slotProps.data.updated_at, 'YYYY-MM-DD HH:mm:ss') }}
+              {{ format(slotProps.data.updated_at, 'YYYY-MM-DD HH:mm') }}
             </template>
           </Column>
           <Column header="操作" :exportable="false" style="width: 15rem; min-width:15rem">

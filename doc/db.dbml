@@ -1,153 +1,166 @@
-Project Nostalgia {
-  database_type: 'PostgreSQL'
-  Note: '''
-    # Nostalgia Database
-  '''
-}
-
-Table users as U {
-  Note: '用户表'
-  id uuid [pk, note: '主键ID']
-  username varchar [unique, not null, note: '用户名']
-  hashed_password varchar [not null]
-  full_name varchar [not null, note: '全名']
-  email varchar [unique, not null, note: '邮箱']
-  is_email_verified boolean [not null, default: false, note: '邮箱是否验证']
-  about varchar [not null, default: '', note: '介绍']
-  role varchar [not null, default: 'visitor']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
-  deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '删除时间']
-}
-
-Table articles as A {
-  Note: '文章表'
-  id uuid [pk, note: '主键ID']
-  title varchar [not null, note: '标题']
-  summary varchar [not null, default: '', note: '摘要']
-  content text [not null, note: '内容']
-  views int [not null, default: 0, note: '浏览量']
-  likes int [not null, default: 0, note: '点赞数']
-  is_publish boolean [not null, default: false, note: '是否发布']
-  owner uuid [ref: > U.id, not null, note: '拥有者']
-  category_id bigint [ref: > CG.id, not null, note: '分类ID']
-  created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
-  deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '删除时间']
-
-  indexes {
-    (is_publish, created_at)
-    (category_id, is_publish, created_at)
-  }
-}
-
-Table categories as CG {
-  Note: '文章分类表'
-  id bigserial [pk]
-  name varchar [unique, not null, default: '', note: '分类名称']
-  is_system bool [not null, default: false, note: '是否为系统分类']
-  created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `now()`]
-}
-
-Table comments as C {
-  Note: '文章评论表'
-  id bigserial [pk, note: '主键ID']
-  content varchar [not null, note: '评论内容']
-  article_id uuid [not null, note: '文章ID']
-  parent_id int [not null, default: 0, note: '父评论ID']
-  from_user_id uuid [not null, note: '评论人ID']
-  to_user_id uuid [not null, note: '被评论人ID']
-  created_at timestamptz [not null, default: `now()`]
-  deleted_at timestamptz [not null, default: '0001-01-01 00:00:00Z']
-}
-
-// 删除文章时，自动删除评论
-Ref: C.article_id > A.id [delete: cascade]
-
-Table tags as T {
-  Note: '标签表'
-  id bigserial [pk, note: '主键ID']
-  name varchar [not null, note: '名称']
-  article_id uuid [not null, note: '文章ID']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-}
-
-// 删除文章时，自动删除文章标签
-Ref: T.article_id > A.id [delete: cascade]
-
-Table sessions {
-  Note: '用户会话表'
-  id uuid [pk, note: '主键ID']
-  username varchar [ref: > U.id, not null, note: '用户名']
-  refresh_token varchar [not null, note: '刷新token']
-  user_agent varchar [not null, note: '用户浏览器']
-  client_ip varchar [not null, note: '用户IP']
-  is_blocked boolean [not null, default: false, note: '是否阻止登陆']
-  expires_at timestamptz [not null, note: '到期时间']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-}
-
-TABLE verify_emails {
-  Note: '邮箱验证表'
-  id          bigserial [pk, note: '主键ID']
-  user_id     varchar     [ref: > U.id, not null, note: '用户ID']
-  email       varchar     [not null, note: '用户邮箱']
-  secret_code varchar     [not null, note: '验证密钥']
-  is_used     bool        [not null, default: false, note: '是否使用']
-  created_at   timestamptz [not null, default: `now()`, note: '创建时间']
-  expired_at  timestamptz [not null, default: `now() + interval '15 minutes'`, note: '到期时间']
-}
-
-Table roles as R {
-  Note: '角色表'
-  id bigserial [pk, note: '主键ID']
-  role_name varchar [unique, not null, note: '角色名称']
-  description varchar [not null, default: '', note: '角色描述']
-  is_system bool [not null, default: false, note: '是否为系统角色']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
-}
-
-Table admins as AD {
+Table "admins" {
+  "id" int8 [pk, not null, increment, note: '主键ID']
+  "username" varchar [unique, not null, note: '管理员名称']
+  "hashed_password" varchar [not null, note: '密码']
+  "is_active" bool [not null, default: false, note: '是否激活，默认：否']
+  "role_id" int8 [not null, default: 2, note: '角色ID，默认：2']
+  "created_at" timestamptz [not null, default: `now()`, note: '创建时间']
+  "updated_at" timestamptz [not null, default: '0001-01-01 00:00:00+00', note: '更新时间']
   Note: '管理员账号表'
-  id bigserial [pk, note: '主键ID']
-  username varchar [unique, not null, note: '管理员名称']
-  hashed_password varchar [not null, note: '密码']
-  is_active bool [not null, default: false, note: '是否激活，默认：否']
-  role_id bigint [ref: > R.id, not null, default: 2, note: '角色ID，默认：2']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: '更新时间']
 }
 
-Table sys_menus as SM {
-  Note: '后台系统菜单表'
-  id bigserial [pk, note: '主键ID']
-  name varchar [not null, note: '菜单名称']
-  path varchar [not null, default: '', note: '菜单路径']
-  icon varchar [not null, default: '', note: '菜单图标']
-  is_active bool [not null, default: false, note: '是否激活，默认：否']
-  type int [not null, default: 2, note: '1：目录；2：菜单；3：按钮（事件）']
-  sort int [not null, default: 0, note: '排序编号']
-  parent_id bigint [ref: > id, default: null, note: '父菜单ID']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-  updated_at timestamptz [not null, default: '0001-01-01 00:00:00Z']
+Table "articles" {
+  "id" uuid [pk, not null]
+  "title" varchar [not null, note: '标题']
+  "summary" varchar [not null, default: '', note: '摘要']
+  "content" text [not null, note: '内容']
+  "views" int4 [not null, default: 0, note: '浏览量']
+  "likes" int4 [not null, default: 0, note: '点赞数']
+  "is_publish" bool [not null, default: false, note: '是否发布']
+  "owner" uuid [not null, note: '拥有者']
+  "created_at" timestamptz [not null, default: `now()`]
+  "updated_at" timestamptz [not null, default: '0001-01-01 00:00:00+00']
+  "deleted_at" timestamptz [not null, default: '0001-01-01 00:00:00+00']
+  "category_id" int8 [not null, default: 1]
+  "cover" varchar [not null, default: '']
+  "last_updated" timestamptz [default: `now()`]
 
-  indexes {
-    // 同一父ID下菜单名唯一
-    (name, parent_id) [unique]
+  Indexes {
+    (category_id, is_publish, created_at) [type: btree, name: "articles_category_id_is_publish_created_at_idx"]
+    (is_publish, created_at) [type: btree, name: "articles_is_publish_created_at_idx"]
   }
 }
 
-Table role_permissions as RP {
+Table "categories" {
+  "id" int8 [pk, not null, increment]
+  "name" varchar [unique, not null, default: '', note: '分类名称']
+  "is_system" bool [not null, default: false, note: '是否为系统分类']
+  "created_at" timestamptz [not null, default: `now()`]
+  "updated_at" timestamptz [not null, default: `now()`]
+  Note: '文章分类表'
+}
+
+Table "comments" {
+  "id" int8 [pk, not null, increment]
+  "content" varchar [not null, note: '评论内容']
+  "article_id" uuid [not null, note: '文章ID']
+  "parent_id" int8 [not null, default: 0, note: '父评论ID']
+  "likes" int4 [not null, default: 0]
+  "from_user_id" uuid [not null, note: '评论人ID']
+  "to_user_id" uuid [not null, note: '被评论人ID']
+  "created_at" timestamptz [not null, default: `now()`]
+  "deleted_at" timestamptz [not null, default: '0001-01-01 00:00:00+00']
+}
+
+Table "role_permissions" {
+  "id" int8 [pk, not null, increment, note: '主键ID']
+  "role_id" int8 [not null, note: '角色ID']
+  "menu_id" int8 [not null, note: '菜单ID']
+  "created_by" int8 [not null, note: '创建人ID']
+  "created_at" timestamptz [not null, default: `now()`, note: '创建时间']
+
+  Indexes {
+    (role_id, menu_id) [type: btree, name: "role_permissions_role_id_menu_id_idx"]
+  }
   Note: '角色权限表'
-  id bigserial [pk, note: '主键ID']
-  role_id bigint [ref: > R.id, not null, note: '角色ID']
-  menu_id bigint [ref: > SM.id, not null, note: '菜单ID']
-  created_by bigint [ref: > AD.id, not null, note: '创建人ID']
-  created_at timestamptz [not null, default: `now()`, note: '创建时间']
-
-  indexes {
-    (role_id, menu_id) [unique]
-  }
 }
+
+Table "roles" {
+  "id" int8 [pk, not null, increment, note: '主键ID']
+  "role_name" varchar [unique, not null, note: '角色名称']
+  "description" text [not null, default: '', note: '角色描述']
+  "is_system" bool [not null, default: false, note: '是否为系统角色']
+  "created_at" timestamptz [not null, default: `now()`, note: '创建时间']
+  Note: '角色表'
+}
+
+Table "schema_migrations" {
+  "version" int8 [pk, not null]
+  "dirty" bool [not null]
+}
+
+Table "sessions" {
+  "id" uuid [pk, not null]
+  "user_id" uuid [not null]
+  "refresh_token" varchar [not null]
+  "user_agent" varchar [not null]
+  "client_ip" varchar [not null]
+  "is_blocked" bool [not null, default: false]
+  "expires_at" timestamptz [not null]
+  "created_at" timestamptz [not null, default: `now()`]
+}
+
+Table "sys_menus" {
+  "id" int8 [pk, not null, increment, note: '主键ID']
+  "name" varchar [not null, note: '菜单名称']
+  "path" varchar [not null, default: '', note: '菜单路径']
+  "icon" varchar [not null, default: '', note: '菜单图标']
+  "is_active" bool [not null, default: false, note: '是否激活，默认：否']
+  "type" int4 [not null, default: 2, note: '1：目录；2：菜单；3：按钮（事件）']
+  "sort" int4 [not null, default: 0, note: '排序编号']
+  "parent_id" int8 [note: '父菜单ID']
+  "created_at" timestamptz [not null, default: `now()`, note: '创建时间']
+  "updated_at" timestamptz [not null, default: '0001-01-01 00:00:00+00']
+
+  Indexes {
+    (name, parent_id) [type: btree, name: "sys_menus_name_parent_id_idx"]
+  }
+  Note: '后台系统菜单表'
+}
+
+Table "tags" {
+  "id" int8 [pk, not null, increment]
+  "name" varchar [not null, note: '名称']
+  "article_id" uuid [not null, note: '文章ID']
+  "created_at" timestamptz [not null, default: `now()`]
+}
+
+Table "users" {
+  "id" uuid [pk, not null]
+  "username" varchar [unique, not null]
+  "hashed_password" varchar [not null]
+  "full_name" varchar [not null]
+  "email" varchar [unique, not null]
+  "is_email_verified" bool [not null, default: false]
+  "about" varchar [not null, default: '', note: '介绍']
+  "role" varchar [not null, default: 'visitor']
+  "created_at" timestamptz [not null, default: `now()`]
+  "updated_at" timestamptz [not null, default: '0001-01-01 00:00:00+00']
+  "deleted_at" timestamptz [not null, default: '0001-01-01 00:00:00+00']
+}
+
+Table "verify_emails" {
+  "id" int8 [pk, not null, increment]
+  "user_id" uuid [not null]
+  "email" varchar [not null]
+  "secret_code" varchar [not null]
+  "is_used" bool [not null, default: false]
+  "created_at" timestamptz [not null, default: `now()`]
+  "expired_at" timestamptz [not null, default: `(now() + '00:15:00'::interval)`]
+}
+
+Ref "admins_role_id_fkey":"roles"."id" < "admins"."role_id"
+
+Ref "articles_category_id_fkey":"categories"."id" < "articles"."category_id"
+
+Ref "articles_owner_fkey":"users"."id" < "articles"."owner"
+
+Ref "comments_article_id_fkey":"articles"."id" < "comments"."article_id"
+
+Ref "comments_from_user_id_fkey":"users"."id" < "comments"."from_user_id"
+
+Ref "comments_to_user_id_fkey":"users"."id" < "comments"."to_user_id"
+
+Ref "role_permissions_created_by_fkey":"admins"."id" < "role_permissions"."created_by"
+
+Ref "role_permissions_menu_id_fkey":"sys_menus"."id" < "role_permissions"."menu_id"
+
+Ref "role_permissions_role_id_fkey":"roles"."id" < "role_permissions"."role_id"
+
+Ref "sessions_user_id_fkey":"users"."id" < "sessions"."user_id"
+
+Ref "sys_menus_parent_id_fkey":"sys_menus"."id" < "sys_menus"."parent_id"
+
+Ref "tags_article_id_fkey":"articles"."id" < "tags"."article_id"
+
+Ref "verify_emails_user_id_fkey":"users"."id" < "verify_emails"."user_id"

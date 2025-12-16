@@ -1,4 +1,4 @@
-import type { Article } from "@/stores/article";
+import type {Article} from "@/types/article";
 import type {ApiSuccessResponse} from "@/types/api.ts";
 import http from "@/util/http.ts";
 import type {AxiosResponse} from "axios";
@@ -12,31 +12,34 @@ export interface FetchArticleByIdResponse {
   article: Article
 }
 
-export async function fetchArticleById (req: FetchArticleByIdRequest): Promise<ApiSuccessResponse<FetchArticleByIdResponse>> {
-    return http.get(`/articles/${req.id}/${req.needContent}`, {skipAuth: false})
+export async function fetchArticleById(req: FetchArticleByIdRequest): Promise<ApiSuccessResponse<FetchArticleByIdResponse>> {
+  return http.get(`/articles/${req.id}/${req.needContent}`, {skipAuth: false})
 }
 
 export interface UpdateArticleRequest {
-    id: string
-    title: string
-    summary: string
-    content?: string
-    is_publish: boolean
-    category_id: number
+  id: string
+  title: string
+  summary: string
+  content?: string
+  is_publish: boolean
+  category_id: number
+  cover: string
+  slug: string
+  check_outdated: boolean
 }
 
 export interface UpdateArticleResponse {
   article: Article
 }
 
-export async function updateArticle   (req: UpdateArticleRequest): Promise<ApiSuccessResponse<UpdateArticleResponse>> {
-    return  http.patch('/articles', req)
+export async function updateArticle(req: UpdateArticleRequest): Promise<ApiSuccessResponse<UpdateArticleResponse>> {
+  return http.patch('/articles', req)
 }
 
 export interface CreateArticleRequest {
-    title: string
-    summary: string
-    is_publish: boolean
+  title: string
+  summary: string
+  is_publish: boolean
 }
 
 export interface CreateArticleResponse {
@@ -44,15 +47,15 @@ export interface CreateArticleResponse {
 }
 
 export async function createArticle(req: CreateArticleRequest): Promise<AxiosResponse<CreateArticleResponse>> {
-    return http.post('/articles', req)
+  return http.post('/articles', req)
 }
 
 export interface DeleteArticleRequest {
   id: string
 }
 
-export async function deleteArticle (req: DeleteArticleRequest): Promise<AxiosResponse> {
-    return http.delete(`/articles/${req.id}`)
+export async function deleteArticle(req: DeleteArticleRequest): Promise<AxiosResponse> {
+  return http.delete(`/articles/${req.id}`)
 }
 
 export interface ListAllArticleRequest {

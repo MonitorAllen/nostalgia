@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
+	"regexp"
 	"slices"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
@@ -34,6 +38,11 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	dbArticle, err := server.store.GetArticle(ctx, articleId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "文章不存在")
+	}
+
 	arg := db.UpdateArticleTxParams{
 		UpdateArticleParams: db.UpdateArticleParams{
 			ID: articleId,
@@ -57,6 +66,22 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 				Int64: req.GetCategoryId(),
 				Valid: req.CategoryId != nil,
 			},
+			Cover: pgtype.Text{
+				String: req.GetCover(),
+				Valid:  req.Cover != nil,
+			},
+			Slug: pgtype.Text{
+				String: req.GetSlug(),
+				Valid:  *req.Slug != "",
+			},
+			CheckOutdated: pgtype.Bool{
+				Bool:  req.GetCheckOutdated(),
+				Valid: req.CheckOutdated != nil,
+			},
+			LastUpdated: pgtype.Timestamptz{
+				Time:  time.Now(),
+				Valid: true,
+			},
 			UpdatedAt: pgtype.Timestamptz{
 				Time:  time.Now(),
 				Valid: true,
@@ -73,6 +98,9 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 			}
 
 			for _, fileName := range folderFiles {
+				if strings.Split(fileName, ".")[0] == "cover" {
+					continue
+				}
 				if !slices.Contains(contentFileNames, fileName) {
 					err := os.Remove(fmt.Sprintf("%s/%s", resourcePath, fileName))
 					if err != nil {
@@ -85,12 +113,23 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 		},
 	}
 
+	arg.ReadTime = pgtype.Text{
+		String: calculateReadTime(req.GetContent()),
+		Valid:  true,
+	}
+
 	result, err := server.store.UpdateArticleTx(ctx, arg)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, "article not found")
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update article: %v", err)
+	}
+
+	// 删除缓存
+	_ = server.redisService.Del(fmt.Sprintf("%s%s", "cache:article:id:", dbArticle.ID))
+	if &dbArticle.Slug != nil {
+		_ = server.redisService.Del(fmt.Sprintf("%s%s", "cache:article:slug:", dbArticle.Slug.String))
 	}
 
 	resp := &pb.UpdateArticleResponse{
@@ -106,4 +145,22 @@ func validateUpdateArticleRequest(req *pb.UpdateArticleRequest) (violations []*e
 	}
 
 	return
+}
+
+func calculateReadTime(htmlContent string) string {
+	// 1. 去除 HTML 标签
+	re := regexp.MustCompile(`<[^>]*>`)
+	plainText := re.ReplaceAllString(htmlContent, "")
+
+	// 2. 计算字数 (按 Rune 计算，支持中文)
+	wordCount := utf8.RuneCountInString(plainText)
+
+	// 3. 阅读速度：中文约 400 字/分钟，代码/英文混合可适当调整
+	readSpeed := 400.0
+	minutes := math.Ceil(float64(wordCount) / readSpeed)
+
+	if minutes < 1 {
+		return "1 分钟"
+	}
+	return fmt.Sprintf("%.0f 分钟", minutes)
 }

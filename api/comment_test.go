@@ -19,7 +19,7 @@ import (
 
 func TestCreateCommentAPI(t *testing.T) {
 	user, _ := randomUser(t)
-	article := randomArticle(t, user.ID)
+	article := randomArticle(t, user.ID, true)
 
 	content := "大佬666！"
 

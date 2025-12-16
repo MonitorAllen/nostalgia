@@ -36,6 +36,8 @@ func (server *Server) CreateArticle(ctx context.Context, req *pb.CreateArticleRe
 		return nil, status.Errorf(codes.Internal, "failed to parse default user ID: %v", err)
 	}
 
+	defaultCover := "/images/go.png"
+
 	arg := db.CreateArticleParams{
 		ID:         aritcleID,
 		Title:      title,
@@ -44,6 +46,7 @@ func (server *Server) CreateArticle(ctx context.Context, req *pb.CreateArticleRe
 		IsPublish:  isPublish,
 		Owner:      defaultUserID,
 		CategoryID: 1,
+		Cover:      defaultCover,
 	}
 
 	article, err := server.store.CreateArticle(ctx, arg)
