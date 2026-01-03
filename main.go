@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"net"
 	"net/http"
 	"os"
@@ -16,7 +16,6 @@ import (
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	_ "github.com/MonitorAllen/nostalgia/doc/statik"
 	"github.com/MonitorAllen/nostalgia/gapi"
-	"github.com/MonitorAllen/nostalgia/internal/service"
 	"github.com/MonitorAllen/nostalgia/mail"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -33,6 +32,7 @@ import (
 	_ "github.com/lib/pq"
 	fs2 "github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -59,7 +59,14 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot load config:")
 	}
 
-	setupLogger(config)
+	// 开发环境下，日志输出控制台
+	if config.Environment == "development" {
+		log.Logger = zerolog.New(os.Stdout).
+			With().
+			Timestamp().
+			Logger().
+			Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
 
 	// 系统信号监听
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
@@ -86,33 +93,18 @@ func main() {
 
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 
-	redisService := service.NewRedisService(config)
+	redisCache := cache.NewRedisCache(config)
 
 	waitGroup, ctx := errgroup.WithContext(ctx)
 
 	runTaskProcessor(ctx, waitGroup, config, redisOpt, store)
-	runGatewayServer(ctx, waitGroup, config, store, taskDistributor, redisService)
-	runGrpcServer(ctx, waitGroup, config, store, taskDistributor, redisService)
-	runGinServer(ctx, waitGroup, config, store, taskDistributor, redisService)
+	runGatewayServer(ctx, waitGroup, config, store, taskDistributor, redisCache)
+	runGrpcServer(ctx, waitGroup, config, store, taskDistributor, redisCache)
+	runGinServer(ctx, waitGroup, config, store, taskDistributor, redisCache)
 
 	err = waitGroup.Wait()
 	if err != nil {
 		log.Fatal().Err(err).Msg("error from wait group")
-	}
-}
-
-func setupLogger(config util.Config) {
-	// 开启调用者定位
-	log.Logger = log.With().Caller().Logger()
-
-	// 开发环境下，日志输出控制台
-	if config.Environment == "development" {
-		log.Logger = log.Output(
-			zerolog.ConsoleWriter{
-				Out:        os.Stderr,
-				TimeFormat: time.RFC3339,
-			},
-		)
 	}
 }
 
@@ -149,8 +141,8 @@ func runTaskProcessor(ctx context.Context, waitGroup *errgroup.Group, config uti
 	})
 }
 
-func runGrpcServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) {
-	server, err := gapi.NewServer(config, store, taskDistributor, redisService)
+func runGrpcServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, cache cache.Cache) {
+	server, err := gapi.NewServer(config, store, taskDistributor, cache)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server:")
 	}
@@ -192,8 +184,8 @@ func runGrpcServer(ctx context.Context, waitGroup *errgroup.Group, config util.C
 	})
 }
 
-func runGatewayServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) {
-	server, err := gapi.NewServer(config, store, taskDistributor, redisService)
+func runGatewayServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, cache cache.Cache) {
+	server, err := gapi.NewServer(config, store, taskDistributor, cache)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server:")
 	}
@@ -275,8 +267,8 @@ func runGatewayServer(ctx context.Context, waitGroup *errgroup.Group, config uti
 	})
 }
 
-func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService *service.RedisService) {
-	server, err := api.NewServer(config, store, taskDistributor, redisService)
+func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, taskDistributor worker.TaskDistributor, cache cache.Cache) {
+	server, err := api.NewServer(config, store, taskDistributor, cache)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server:")
 	}
@@ -323,7 +315,7 @@ func ensureDefaultUserExists(ctx context.Context, store db.Store, config util.Co
 		return nil
 	}
 
-	if err != db.ErrRecordNotFound {
+	if !errors.Is(err, db.ErrRecordNotFound) {
 		return fmt.Errorf("failed to check default user: %w", err)
 	}
 

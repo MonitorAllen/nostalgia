@@ -2,8 +2,8 @@ package gapi
 
 import (
 	"context"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/pb"
-	"strconv"
 )
 
 func (server *Server) LogoutAdmin(ctx context.Context, req *pb.LogoutAdminRequest) (*pb.LogoutAdminResponse, error) {
@@ -12,7 +12,7 @@ func (server *Server) LogoutAdmin(ctx context.Context, req *pb.LogoutAdminReques
 		return nil, unauthenticatedError(err)
 	}
 
-	_ = server.redisService.Del(adminSessionKey + strconv.FormatInt(accessPayload.AdminID, 10))
+	_ = server.cache.Del(ctx, cache.GetAdminSessionKey(accessPayload.AdminID))
 
 	return &pb.LogoutAdminResponse{}, nil
 }

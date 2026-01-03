@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"math"
 	"os"
 	"regexp"
@@ -127,9 +128,9 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 	}
 
 	// 删除缓存
-	_ = server.redisService.Del(fmt.Sprintf("%s%s", "cache:article:id:", dbArticle.ID))
+	_ = server.cache.Del(ctx, cache.GetArticleIDKey(dbArticle.ID))
 	if &dbArticle.Slug != nil {
-		_ = server.redisService.Del(fmt.Sprintf("%s%s", "cache:article:slug:", dbArticle.Slug.String))
+		_ = server.cache.Del(ctx, cache.GetArticleSlugKey(dbArticle.Slug.String))
 	}
 
 	resp := &pb.UpdateArticleResponse{

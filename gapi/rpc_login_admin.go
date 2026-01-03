@@ -2,9 +2,9 @@ package gapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"strconv"
 )
 
 const (
@@ -68,14 +67,9 @@ func (server *Server) LoginAdmin(ctx context.Context, req *pb.LoginAdminRequest)
 		IsBlocked:    false,
 	}
 
-	bytesPayload, err := json.Marshal(adminSession)
+	err = server.cache.Set(ctx, cache.GetAdminSessionKey(admin.ID), adminSession, server.config.RefreshTokenDuration)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal access payload")
-	}
-
-	err = server.redisService.Set(adminSessionKey+strconv.FormatInt(accessPayload.AdminID, 10), string(bytesPayload), server.config.RefreshTokenDuration)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to set session")
+		return nil, status.Errorf(codes.Internal, "缓存会话失败")
 	}
 
 	resp := &pb.LoginAdminResponse{

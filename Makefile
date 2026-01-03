@@ -45,7 +45,7 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/MonitorAllen/nostalgia/db/sqlc Store
 	mockgen -package mockwk -destination worker/mock/distributor.go github.com/MonitorAllen/nostalgia/worker TaskDistributor
-	mockgen -package mockservice -destination internal/service/mock/redis_service.go github.com/MonitorAllen/nostalgia/internal/service Redis
+	mockgen -package mockcache -destination internal/cache/mock/redis.go github.com/MonitorAllen/nostalgia/internal/cache Cache
 
 swag:
 	rm -f doc/swagger/*.swagger.json

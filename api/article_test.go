@@ -7,14 +7,15 @@ import (
 	"fmt"
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	mockservice "github.com/MonitorAllen/nostalgia/internal/service/mock"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
+	mockcache "github.com/MonitorAllen/nostalgia/internal/cache/mock"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	redis2 "github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
@@ -174,32 +175,32 @@ func TestGetArticleAPI(t *testing.T) {
 	unpublishedArticle := article
 	unpublishedArticle.IsPublish = false
 
-	cacheKey := fmt.Sprintf("%s%s", articleIDKey, article.ID.String())
-	marshalArticle, err := json.Marshal(article)
-	require.NoError(t, err)
+	var cacheArticle db.GetArticleRow
+	cacheKey := cache.GetArticleIDKey(article.ID)
+	unpublishedCacheKey := cache.GetArticleIDKey(unpublishedArticle.ID)
 
 	testCases := []struct {
 		name          string
 		articleID     string
-		buildStubs    func(store *mockdb.MockStore, redis *mockservice.MockRedis)
+		buildStubs    func(store *mockdb.MockStore, cache *mockcache.MockCache)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name:      "OK",
 			articleID: article.ID.String(),
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(cacheKey)).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(&cacheArticle)).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticle(gomock.Any(), gomock.Eq(article.ID)).
 					Times(1).
 					Return(article, nil)
 
-				redis.EXPECT().
-					Set(gomock.Eq(cacheKey), gomock.Eq(string(marshalArticle)), time.Duration(0)).
+				cache.EXPECT().
+					Set(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(article), time.Duration(0)).
 					Times(1).
 					Return(nil)
 			},
@@ -211,30 +212,30 @@ func TestGetArticleAPI(t *testing.T) {
 		{
 			name:      "OK_CacheHit",
 			articleID: article.ID.String(),
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(cacheKey)).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(&cacheArticle)).
 					Times(1).
-					Return(string(marshalArticle), nil)
+					Return(true, nil)
 
 				store.EXPECT().GetArticle(gomock.Any(), gomock.Eq(article.ID)).Times(0)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchGetArticleRow(t, recorder.Body, article)
+				requireBodyMatchGetArticleRow(t, recorder.Body, cacheArticle)
 			},
 		},
 		{
 			name:      "BadRequest",
 			articleID: "not-uuid",
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().Get(gomock.Any()).Times(0)
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 				store.EXPECT().GetArticle(gomock.Any(), gomock.Any()).Times(0)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -243,18 +244,18 @@ func TestGetArticleAPI(t *testing.T) {
 		{
 			name:      "InternalError",
 			articleID: article.ID.String(),
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(cacheKey)).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(&db.GetArticleRow{})).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticle(gomock.Any(), gomock.Eq(article.ID)).
 					Times(1).
 					Return(db.GetArticleRow{}, sql.ErrConnDone)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -263,18 +264,18 @@ func TestGetArticleAPI(t *testing.T) {
 		{
 			name:      "NotFound",
 			articleID: article.ID.String(),
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(cacheKey)).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(&db.GetArticleRow{})).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticle(gomock.Any(), gomock.Eq(article.ID)).
 					Times(1).
 					Return(db.GetArticleRow{}, db.ErrRecordNotFound)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -283,18 +284,18 @@ func TestGetArticleAPI(t *testing.T) {
 		{
 			name:      "Forbidden",
 			articleID: unpublishedArticle.ID.String(),
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(cacheKey)).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(unpublishedCacheKey), gomock.Eq(&db.GetArticleRow{})).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticle(gomock.Any(), gomock.Eq(unpublishedArticle.ID)).
 					Times(1).
 					Return(unpublishedArticle, nil)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -310,11 +311,11 @@ func TestGetArticleAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			redis := mockservice.NewMockRedis(ctrl)
-			tc.buildStubs(store, redis)
+			redisCache := mockcache.NewMockCache(ctrl)
+			tc.buildStubs(store, redisCache)
 
 			// start test server and send request
-			server := newTestServer(t, store, nil, redis)
+			server := newTestServer(t, store, nil, redisCache)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/api/articles/%s", tc.articleID)
@@ -671,33 +672,32 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 	unpublishedArticle := getArticleBySlugRow
 	unpublishedArticle.IsPublish = false
 
-	marshaledArticle, err := json.Marshal(getArticleBySlugRow)
-	require.NoError(t, err)
-
+	var cacheArticle db.GetArticleBySlugRow
 	slug := getArticleBySlugRow.Slug.String
+	articleSlugKey := cache.GetArticleSlugKey(slug)
 
 	testCases := []struct {
 		name          string
 		slug          string
-		buildStubs    func(store *mockdb.MockStore, redis *mockservice.MockRedis)
+		buildStubs    func(store *mockdb.MockStore, cache *mockcache.MockCache)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
 			slug: slug,
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(fmt.Sprintf("%s%s", articleSlugKey, slug))).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&cacheArticle)).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticleBySlug(gomock.Any(), gomock.Eq(getArticleBySlugRow.Slug)).
 					Times(1).
 					Return(getArticleBySlugRow, nil)
 
-				redis.EXPECT().
-					Set(gomock.Eq(fmt.Sprintf("%s%s", articleSlugKey, slug)), gomock.Eq(string(marshaledArticle)), time.Duration(0)).
+				cache.EXPECT().
+					Set(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(getArticleBySlugRow), time.Duration(0)).
 					Times(1).
 					Return(nil)
 			},
@@ -709,30 +709,30 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 		{
 			name: "OK_CacheHit",
 			slug: slug,
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(fmt.Sprintf("%s%s", articleSlugKey, slug))).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&cacheArticle)).
 					Times(1).
-					Return(string(marshaledArticle), nil)
+					Return(true, nil)
 
 				store.EXPECT().GetArticleBySlug(gomock.Any(), gomock.Any()).Times(0)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchGetArticleBySlugRow(t, recorder.Body, getArticleBySlugRow)
+				requireBodyMatchGetArticleBySlugRow(t, recorder.Body, cacheArticle)
 			},
 		},
 		{
 			name: "BadRequest",
 			slug: "bad",
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().Get(gomock.Any()).Times(0)
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
 				store.EXPECT().GetArticleBySlug(gomock.Any(), gomock.Any()).Times(0)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -741,18 +741,18 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 		{
 			name: "InternalError",
 			slug: slug,
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(fmt.Sprintf("%s%s", articleSlugKey, slug))).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&db.GetArticleBySlugRow{})).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticleBySlug(gomock.Any(), gomock.Eq(getArticleBySlugRow.Slug)).
 					Times(1).
 					Return(db.GetArticleBySlugRow{}, sql.ErrConnDone)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -761,18 +761,18 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 		{
 			name: "NotFound",
 			slug: slug,
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(fmt.Sprintf("%s%s", articleSlugKey, slug))).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&db.GetArticleBySlugRow{})).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticleBySlug(gomock.Any(), gomock.Eq(getArticleBySlugRow.Slug)).
 					Times(1).
 					Return(db.GetArticleBySlugRow{}, db.ErrRecordNotFound)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -781,18 +781,18 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 		{
 			name: "Forbidden",
 			slug: slug,
-			buildStubs: func(store *mockdb.MockStore, redis *mockservice.MockRedis) {
-				redis.EXPECT().
-					Get(gomock.Eq(fmt.Sprintf("%s%s", articleSlugKey, slug))).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&db.GetArticleBySlugRow{})).
 					Times(1).
-					Return("", redis2.Nil)
+					Return(false, redis.Nil)
 
 				store.EXPECT().
 					GetArticleBySlug(gomock.Any(), gomock.Eq(getArticleBySlugRow.Slug)).
 					Times(1).
 					Return(unpublishedArticle, nil)
 
-				redis.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -808,11 +808,11 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
-			redis := mockservice.NewMockRedis(ctrl)
-			tc.buildStubs(store, redis)
+			redisCache := mockcache.NewMockCache(ctrl)
+			tc.buildStubs(store, redisCache)
 
 			// start test server and send request
-			server := newTestServer(t, store, nil, redis)
+			server := newTestServer(t, store, nil, redisCache)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/api/articles/slug/%s", tc.slug)

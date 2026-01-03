@@ -2,11 +2,10 @@ package gapi
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 )
 
 func (server *Server) AdminInfo(ctx context.Context, req *pb.AdminInfoRequest) (*pb.AdminInfoResponse, error) {
@@ -15,19 +14,16 @@ func (server *Server) AdminInfo(ctx context.Context, req *pb.AdminInfoRequest) (
 		return nil, unauthenticatedError(err)
 	}
 
-	adminSessionStr, err := server.redisService.Get(adminSessionKey + strconv.FormatInt(accessPayload.AdminID, 10))
+	expired, err := server.cache.IsExpired(ctx, cache.GetAdminSessionKey(accessPayload.AdminID))
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.Internal, "获取会话失败")
 	}
 
-	var adminSession AdminSession
-
-	err = json.Unmarshal([]byte(adminSessionStr), &adminSession)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "cannot get admin session: %v", err)
+	if expired {
+		return nil, status.Errorf(codes.Unauthenticated, "会话过期，请重新登录")
 	}
 
-	getAdmin, err := server.store.GetAdmin(ctx, adminSession.Payload.Username)
+	getAdmin, err := server.store.GetAdmin(ctx, accessPayload.Username)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "cannot get admin: %v", err)
 	}

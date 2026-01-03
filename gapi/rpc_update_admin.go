@@ -2,6 +2,7 @@ package gapi
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
@@ -49,7 +50,7 @@ func (server *Server) UpdateAdmin(ctx context.Context, req *pb.UpdateAdminReques
 
 		getAdmin, err := server.store.GetAdminById(ctx, req.GetId())
 		if err != nil {
-			if err == db.ErrRecordNotFound {
+			if errors.Is(err, db.ErrRecordNotFound) {
 				return nil, status.Errorf(codes.NotFound, "failed to fetch admin: %v", err)
 			}
 
