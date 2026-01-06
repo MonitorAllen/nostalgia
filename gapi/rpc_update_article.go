@@ -77,7 +77,7 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 			},
 			Slug: pgtype.Text{
 				String: req.GetSlug(),
-				Valid:  *req.Slug != "",
+				Valid:  req.Slug != nil,
 			},
 			CheckOutdated: pgtype.Bool{
 				Bool:  req.GetCheckOutdated(),
