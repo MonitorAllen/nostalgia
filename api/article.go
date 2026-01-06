@@ -1,21 +1,19 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-ego/gse"
-	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"net/http"
-	"os"
-	"slices"
 	"strings"
 	"time"
 
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
+	"github.com/go-ego/gse"
+	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
-	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -23,54 +21,8 @@ import (
 
 var segmenter gse.Segmenter
 
-var (
-	articleIDKey   = "cache:article:id:"
-	articleSlugKey = "cache:article:slug:"
-)
-
 func init() {
 	segmenter.LoadDict()
-}
-
-type createArticleRequest struct {
-	Title     string `json:"title" binding:"required"`
-	Summary   string `json:"summary"`
-	Content   string `json:"content"`
-	IsPublish bool   `json:"is_publish"`
-}
-
-func (server *Server) createArticle(ctx *gin.Context) {
-	var req createArticleRequest
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-
-	articleID, err := uuid.NewRandom()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateArticleParams{
-		ID:        articleID,
-		Title:     req.Title,
-		Summary:   req.Summary,
-		Content:   req.Content,
-		IsPublish: req.IsPublish,
-		Owner:     authPayload.UserID,
-	}
-
-	article, err := server.store.CreateArticle(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, article)
 }
 
 type getArticleRequest struct {
@@ -96,24 +48,22 @@ func (server *Server) getArticle(ctx *gin.Context) {
 	}
 
 	var article db.GetArticleRow
+	cacheKey := key.GetArticleIDKey(articleID)
 
-	cacheArticle, err := server.redisService.Get(fmt.Sprintf("%s%s", articleIDKey, articleID.String()))
+	ok, err := server.cache.Get(ctx, cacheKey, &article)
 	if err != nil && !errors.Is(err, redis.Nil) {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	} else {
-		if !errors.Is(err, redis.Nil) {
-			err = json.Unmarshal([]byte(cacheArticle), &article)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-				return
-			}
+		log.Error().
+			Err(err).
+			Str("key", cacheKey).
+			Str("module", "article").
+			Str("action", "cache_get").
+			Str("article_id", req.ID).
+			Msg("根据 ID 获取文章缓存失败，降级为仅数据库")
+	}
 
-			if article.ID.String() != "" {
-				ctx.JSON(http.StatusOK, getArticleResponse{article})
-				return
-			}
-		}
+	if ok {
+		ctx.JSON(http.StatusOK, getArticleResponse{article})
+		return
 	}
 
 	article, err = server.store.GetArticle(ctx, articleID)
@@ -132,14 +82,14 @@ func (server *Server) getArticle(ctx *gin.Context) {
 		return
 	}
 
-	bytes, err := json.Marshal(article)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	if err := server.redisService.Set(fmt.Sprintf("%s%s", articleIDKey, article.ID.String()), string(bytes), 0); err != nil {
-		log.Warn().Msgf("redis set error: %v", err)
+	if err := server.cache.Set(ctx, cacheKey, article, 0); err != nil {
+		log.Error().
+			Err(err).
+			Str("key", cacheKey).
+			Str("module", "article").
+			Str("action", "cache_set").
+			Str("article_id", req.ID).
+			Msg("根据 ID 设置文章缓存失败")
 	}
 
 	ctx.JSON(http.StatusOK, getArticleResponse{Article: article})
@@ -209,88 +159,6 @@ func (server *Server) listArticle(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-type updateArticleRequest struct {
-	ID            uuid.UUID `json:"id" binding:"required"`
-	Title         string    `json:"title"`
-	Summary       string    `json:"summary"`
-	Content       string    `json:"content"`
-	IsPublish     *bool     `json:"is_publish"`
-	Owner         uuid.UUID `json:"owner" binding:"required"`
-	NeedSaveFiles []string  `json:"need_save_files"`
-}
-
-func (server *Server) updateArticle(ctx *gin.Context) {
-	var req updateArticleRequest
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-
-	if authPayload.UserID != req.Owner {
-		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("this article doesn't belong to the authenticated user")))
-		return
-	}
-
-	arg := db.UpdateArticleTxParams{
-		UpdateArticleParams: db.UpdateArticleParams{
-			ID: req.ID,
-			Title: pgtype.Text{
-				String: req.Title,
-				Valid:  req.Title != "",
-			},
-			Summary: pgtype.Text{
-				String: req.Summary,
-				Valid:  req.Summary != "",
-			},
-			Content: pgtype.Text{
-				String: req.Content,
-				Valid:  req.Content != "",
-			},
-			IsPublish: pgtype.Bool{
-				Bool:  *req.IsPublish,
-				Valid: req.IsPublish != nil,
-			},
-		},
-		AfterUpdate: func(article db.Article) error {
-			// 同步文章的文件列表，确保不会存在冗余文件
-			contentFileNames := util.ExtractFileNames(article.Content)
-
-			resourcePath := fmt.Sprintf("./resources/%s", article.ID.String())
-			folderFiles, err := util.ListFiles(resourcePath)
-			if err != nil {
-				return err
-			}
-
-			for _, fileName := range folderFiles {
-				if !slices.Contains(contentFileNames, fileName) {
-					err := os.Remove(fmt.Sprintf("%s/%s", resourcePath, fileName))
-					if err != nil {
-						return err
-					}
-				}
-			}
-
-			return nil
-		},
-	}
-
-	article, err := server.store.UpdateArticleTx(ctx, arg)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, article)
-}
-
 type incrementArticleLikesRequest struct {
 	ID uuid.UUID `json:"id" binding:"required,uuid"`
 }
@@ -302,44 +170,38 @@ func (server *Server) incrementArticleLikes(ctx *gin.Context) {
 		return
 	}
 
-	// 验证唯一标识（已登陆用 userID，为登陆用 IP+UA）
-	var userKey string
+	// 验证唯一标识（已登陆用 userID，为登陆用 IP）
+	var cacheKey string
+	var ttl time.Duration
+
 	authPayload, exists := ctx.Get(authorizationPayloadKey)
 	if exists {
 		user := authPayload.(*token.Payload)
-		userKey = fmt.Sprintf("uid:%s", user.UserID.String())
+		cacheKey = key.GetArticleLikeOnceUserIDKey(req.ID, user.UserID)
+		ttl = 0
 	} else {
 		ip := ctx.ClientIP()
-		ua := ctx.Request.UserAgent()
-		userKey = fmt.Sprintf("guest:%s:%s", ip, ua)
+		cacheKey = key.GetArticleLikeOnceGuestKey(req.ID, ip)
+		ttl = time.Hour * 24 * 7
 	}
 
-	redisKey := fmt.Sprintf("articles:likes:%s:%s", req.ID, userKey)
-
-	set, err := server.redisService.SetNX(ctx, redisKey, 1, time.Hour*12)
+	ok, err := server.cache.SetNX(ctx, cacheKey, 1, ttl)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-
-	if set {
-		err = server.store.IncrementArticleLikes(ctx, req.ID)
-		if err != nil {
-			if errors.Is(err, db.ErrRecordNotFound) {
-				ctx.JSON(http.StatusNotFound, errorResponse(err))
-				return
-			}
-
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-	} else {
+	if !ok {
 		// 如果已经处理过则告知请求冲突，不需要+1
 		ctx.JSON(http.StatusConflict, nil)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{})
+	if err = server.store.IncrementArticleLikes(ctx, req.ID); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, nil)
 }
 
 type incrementArticleViewsRequest struct {
@@ -353,43 +215,34 @@ func (server *Server) incrementArticleViews(ctx *gin.Context) {
 		return
 	}
 
-	// 验证唯一标识（已登陆用 userID，为登陆用 IP+UA）
-	var userKey string
+	// 验证唯一标识（已登陆用 userID，为登陆用 IP）
+	var cacheKey string
+
 	authPayload, exists := ctx.Get(authorizationPayloadKey)
 	if exists {
 		user := authPayload.(*token.Payload)
-		userKey = fmt.Sprintf("uid:%s", user.UserID.String())
+		cacheKey = key.GetArticleViewOnceUserIDKey(req.ID, user.UserID)
 	} else {
 		ip := ctx.ClientIP()
-		ua := ctx.Request.UserAgent()
-		userKey = fmt.Sprintf("guest:%s:%s", ip, ua)
+		cacheKey = key.GetArticleViewOnceGuestKey(req.ID, ip)
 	}
 
-	redisKey := fmt.Sprintf("articles:views:%s:%s", req.ID, userKey)
-
-	set, err := server.redisService.SetNX(ctx, redisKey, 1, time.Hour*12)
+	ok, err := server.cache.SetNX(ctx, cacheKey, 1, time.Hour*24)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-
-	if set {
-		err = server.store.IncrementArticleViews(ctx, req.ID)
-		if err != nil {
-			if errors.Is(err, db.ErrRecordNotFound) {
-				ctx.JSON(http.StatusNotFound, errorResponse(err))
-				return
-			}
-
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-	} else {
+	if !ok {
 		ctx.JSON(http.StatusConflict, nil)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{})
+	if err = server.store.IncrementArticleViews(ctx, req.ID); err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, nil)
 }
 
 type searchArticlesRequest struct {
@@ -477,9 +330,9 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 
 	var article db.GetArticleBySlugRow
 
-	cacheKey := fmt.Sprintf("%s%s", articleSlugKey, req.Slug)
+	cacheKey := key.GetArticleSlugKey(req.Slug)
 
-	cacheArticle, err := server.redisService.Get(cacheKey)
+	ok, err := server.cache.Get(ctx, cacheKey, &article)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
@@ -488,19 +341,11 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 			Str("action", "cache_get").
 			Str("article_slug", req.Slug).
 			Msg("获取文章缓存失败，降级为仅数据库")
-	} else {
-		if !errors.Is(err, redis.Nil) {
-			err = json.Unmarshal([]byte(cacheArticle), &article)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-				return
-			}
+	}
 
-			if article.ID.String() != "" {
-				ctx.JSON(http.StatusOK, getArticleBySlugResponse{article})
-				return
-			}
-		}
+	if ok {
+		ctx.JSON(http.StatusOK, getArticleBySlugResponse{article})
+		return
 	}
 
 	article, err = server.store.GetArticleBySlug(ctx, pgtype.Text{
@@ -522,20 +367,14 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 		return
 	}
 
-	bytes, err := json.Marshal(article)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	if err := server.redisService.Set(cacheKey, string(bytes), 0); err != nil {
+	if err := server.cache.Set(ctx, cacheKey, article, 7*24*time.Hour); err != nil {
 		log.Error().
-			Err(err). // 1. 记录错误堆栈
-			Str("module", "article"). // 2. 模块：文章模块
-			Str("action", "cache_set"). // 3. 动作：写入缓存
-			Str("key", cacheKey). // 4. 上下文：具体的 Redis Key
+			Err(err).                      // 1. 记录错误堆栈
+			Str("module", "article").      // 2. 模块：文章模块
+			Str("action", "cache_set").    // 3. 动作：写入缓存
+			Str("key", cacheKey).          // 4. 上下文：具体的 Redis Key
 			Str("article_slug", req.Slug). // 5. 业务ID：关联的文章ID
-			Msg("未能设置文章缓存，降级为仅数据库") // 6. 消息：简明扼要
+			Msg("未能设置文章缓存，降级为仅数据库")        // 6. 消息：简明扼要
 	}
 
 	ctx.JSON(http.StatusOK, getArticleBySlugResponse{Article: article})

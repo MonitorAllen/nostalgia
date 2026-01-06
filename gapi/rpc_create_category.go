@@ -2,7 +2,9 @@ package gapi
 
 import (
 	"context"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +17,14 @@ func (server *Server) CreateCategory(ctx context.Context, res *pb.CreateCategory
 		return nil, unauthenticatedError(err)
 	}
 
-	category, err := server.store.CreateCategory(ctx, res.GetName())
+	arg := db.CreateCategoryTxParams{
+		Name: res.GetName(),
+		AfterCreate: func() error {
+			return server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, key.CategoryAllKey)
+		},
+	}
+
+	result, err := server.store.CreateCategoryTx(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
 			return nil, status.Errorf(codes.AlreadyExists, "Duplicate category name.")
@@ -25,10 +34,10 @@ func (server *Server) CreateCategory(ctx context.Context, res *pb.CreateCategory
 
 	resp := &pb.CreateCategoryResponse{
 		Category: &pb.Category{
-			Id:        category.ID,
-			Name:      category.Name,
-			CreatedAt: timestamppb.New(category.CreatedAt),
-			UpdatedAt: timestamppb.New(category.UpdatedAt),
+			Id:        result.Category.ID,
+			Name:      result.Category.Name,
+			CreatedAt: timestamppb.New(result.Category.CreatedAt),
+			UpdatedAt: timestamppb.New(result.Category.UpdatedAt),
 		},
 	}
 

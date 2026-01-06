@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/MonitorAllen/nostalgia/worker"
@@ -18,8 +20,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
-
-const DATA_USER_CONTRIBUTIONS = "user:contributions"
 
 type createUserRequest struct {
 	Username string `json:"username" binding:"required,alphanum"`
@@ -78,8 +78,8 @@ func (server *Server) createUser(ctx *gin.Context) {
 			taskPayload := &worker.PayloadSendVerifyEmail{UserID: user.ID}
 			opts := []asynq.Option{
 				asynq.MaxRetry(5),
-				asynq.Timeout(5), // 谷歌API部分CDN无法连接，避免长时间等待
-				asynq.ProcessIn(10 * time.Second),
+				asynq.Timeout(5 * time.Second), // 谷歌API部分CDN无法连接，避免长时间等待
+				asynq.ProcessIn(2 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
 			return server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
@@ -320,20 +320,20 @@ func contributionResponse(contributions githubContributions) githubContributions
 
 func (server *Server) contributions(ctx *gin.Context) {
 	// 先在 redis 获取
-	contributionsJsonStr, err := server.redisService.Get(DATA_USER_CONTRIBUTIONS)
+	var contributions githubContributions
+	userContributionsKey := key.GetUserContributionsKey()
+	ok, err := server.cache.Get(ctx, userContributionsKey, &contributions)
 	if err != nil && !errors.Is(err, redis.Nil) {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+		log.Error().
+			Err(err).
+			Str("key", userContributionsKey).
+			Str("module", "user").
+			Str("action", "cache_get").
+			Msg("获取用户 github 活动数据失败")
 	}
 
-	if contributionsJsonStr != "" {
-		var contributions githubContributions
-		err := json.Unmarshal([]byte(contributionsJsonStr), &contributions)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-		ctx.JSON(http.StatusOK, contributions)
+	if ok {
+		ctx.JSON(http.StatusOK, contributionResponse(contributions))
 		return
 	}
 
@@ -378,7 +378,6 @@ func (server *Server) contributions(ctx *gin.Context) {
 		return
 	}
 
-	var contributions githubContributions
 	err = json.Unmarshal(body, &contributions)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -387,16 +386,14 @@ func (server *Server) contributions(ctx *gin.Context) {
 
 	contributions = contributionResponse(contributions)
 
-	contributionsBytes, err := json.Marshal(contributions)
+	err = server.cache.Set(ctx, userContributionsKey, contributions, 12*time.Hour)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	err = server.redisService.Set(DATA_USER_CONTRIBUTIONS, string(contributionsBytes), 12*time.Hour)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+		log.Error().
+			Err(err).
+			Str("key", userContributionsKey).
+			Str("module", "user").
+			Str("action", "cache_set").
+			Msg("设置用户 github 活动数据缓存失败")
 	}
 
 	ctx.JSON(http.StatusOK, contributions)

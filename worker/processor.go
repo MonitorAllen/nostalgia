@@ -2,7 +2,9 @@ package worker
 
 import (
 	"context"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/mail"
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
@@ -13,11 +15,13 @@ type TaskProcessor interface {
 	Start() error
 	Shutdown()
 	ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error
+	ProcessTaskDelayDeleteCache(ctx context.Context, task *asynq.Task) error
 }
 
 type RedisTaskProcessor struct {
 	server *asynq.Server
 	store  db.Store
+	cache  cache.Cache
 	mailer mail.EmailSender
 }
 
@@ -26,7 +30,7 @@ const (
 	QueueDefault  = "default"
 )
 
-func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer mail.EmailSender) TaskProcessor {
+func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, cache cache.Cache, mailer mail.EmailSender) TaskProcessor {
 	logger := NewLogger()
 	redis.SetLogger(logger)
 
@@ -48,6 +52,7 @@ func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer
 	return &RedisTaskProcessor{
 		server: server,
 		store:  store,
+		cache:  cache,
 		mailer: mailer,
 	}
 }
@@ -56,6 +61,7 @@ func (processor *RedisTaskProcessor) Start() error {
 	mux := asynq.NewServeMux()
 
 	mux.HandleFunc(TaskSendVerifyEmail, processor.ProcessTaskSendVerifyEmail)
+	mux.HandleFunc(TaskDelayDeleteCache, processor.ProcessTaskDelayDeleteCache)
 
 	return processor.server.Start(mux)
 }

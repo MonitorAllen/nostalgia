@@ -14,9 +14,7 @@ import (
 )
 
 const countArticlesByCategoryID = `-- name: CountArticlesByCategoryID :one
-SELECT count(*)
-FROM articles
-WHERE category_id = $1
+SELECT count(*) FROM articles WHERE category_id = $1
 `
 
 func (q *Queries) CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error) {
@@ -27,8 +25,7 @@ func (q *Queries) CountArticlesByCategoryID(ctx context.Context, categoryID int6
 }
 
 const countCategories = `-- name: CountCategories :one
-SELECT count(*)
-FROM categories
+SELECT count(*) FROM categories
 `
 
 func (q *Queries) CountCategories(ctx context.Context) (int64, error) {
@@ -39,9 +36,7 @@ func (q *Queries) CountCategories(ctx context.Context) (int64, error) {
 }
 
 const createCategory = `-- name: CreateCategory :one
-INSERT INTO categories (name)
-VALUES ($1)
-RETURNING id, name, is_system, created_at, updated_at
+INSERT INTO categories (name) VALUES ($1) RETURNING id, name, is_system, created_at, updated_at
 `
 
 func (q *Queries) CreateCategory(ctx context.Context, name string) (Category, error) {
@@ -58,9 +53,7 @@ func (q *Queries) CreateCategory(ctx context.Context, name string) (Category, er
 }
 
 const deleteCategory = `-- name: DeleteCategory :exec
-DELETE
-FROM categories
-WHERE id = $1 AND is_system = false
+DELETE FROM categories WHERE id = $1 AND is_system = false
 `
 
 func (q *Queries) DeleteCategory(ctx context.Context, id int64) error {
@@ -103,9 +96,7 @@ func (q *Queries) GetCategoryByName(ctx context.Context, name string) (Category,
 }
 
 const listAllCategories = `-- name: ListAllCategories :many
-SELECT id, name, is_system, created_at, updated_at
-FROM categories
-ORDER BY created_at DESC
+SELECT id, name, is_system, created_at, updated_at FROM categories ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAllCategories(ctx context.Context) ([]Category, error) {
@@ -135,26 +126,18 @@ func (q *Queries) ListAllCategories(ctx context.Context) ([]Category, error) {
 }
 
 const listArticlesByCategoryID = `-- name: ListArticlesByCategoryID :many
-SELECT a.id,
-       a.title,
-       a.summary,
-       a.views,
-       a.likes,
-       a.is_publish,
-       a.owner,
-       a.category_id,
-       a.created_at,
-       a.updated_at,
-       a.deleted_at,
-       c.name,
-       u.username
-FROM articles a
-         LEFT JOIN categories c on a.category_id = c.id
-         LEFT JOIN users u on a.owner = u.id
-WHERE category_id = $1
-  AND is_publish = true
+SELECT a.id, a.title, a.summary, a.views, a.likes, a.is_publish, a.owner, a.category_id, a.created_at, a.updated_at, a.deleted_at, c.name, u.username
+FROM
+    articles a
+    LEFT JOIN categories c on a.category_id = c.id
+    LEFT JOIN users u on a.owner = u.id
+WHERE
+    category_id = $1
+    AND is_publish = true
 ORDER BY a.created_at DESC
-LIMIT $2 OFFSET $3
+LIMIT $2
+OFFSET
+    $3
 `
 
 type ListArticlesByCategoryIDParams struct {
@@ -216,16 +199,12 @@ func (q *Queries) ListArticlesByCategoryID(ctx context.Context, arg ListArticles
 const listCategoriesCountArticles = `-- name: ListCategoriesCountArticles :many
 SELECT c.id, c.name, c.is_system, count(a.id) AS article_count, c.created_at, c.updated_at
 FROM categories c
-         LEFT JOIN articles a on a.category_id = c.id AND a.is_publish = true
-GROUP BY c.id
-ORDER BY article_count DESC
-LIMIT $1 OFFSET $2
+    LEFT JOIN articles a on a.category_id = c.id
+    AND a.is_publish = true
+GROUP BY
+    c.id
+ORDER BY article_count DESC, c.created_at DESC
 `
-
-type ListCategoriesCountArticlesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
-}
 
 type ListCategoriesCountArticlesRow struct {
 	ID           int64     `json:"id"`
@@ -236,8 +215,8 @@ type ListCategoriesCountArticlesRow struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-func (q *Queries) ListCategoriesCountArticles(ctx context.Context, arg ListCategoriesCountArticlesParams) ([]ListCategoriesCountArticlesRow, error) {
-	rows, err := q.db.Query(ctx, listCategoriesCountArticles, arg.Limit, arg.Offset)
+func (q *Queries) ListCategoriesCountArticles(ctx context.Context) ([]ListCategoriesCountArticlesRow, error) {
+	rows, err := q.db.Query(ctx, listCategoriesCountArticles)
 	if err != nil {
 		return nil, err
 	}
@@ -265,10 +244,11 @@ func (q *Queries) ListCategoriesCountArticles(ctx context.Context, arg ListCateg
 
 const updateCategory = `-- name: UpdateCategory :one
 UPDATE categories
-set name      = $1,
-    updated_at=now()
-WHERE id = $2
-RETURNING id, name, is_system, created_at, updated_at
+set
+    name = $1,
+    updated_at = now()
+WHERE
+    id = $2 RETURNING id, name, is_system, created_at, updated_at
 `
 
 type UpdateCategoryParams struct {

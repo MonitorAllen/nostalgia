@@ -3,56 +3,43 @@ package gapi
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"errors"
+	"testing"
+	"time"
+
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	mockservice "github.com/MonitorAllen/nostalgia/internal/service/mock"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
+	mockcache "github.com/MonitorAllen/nostalgia/internal/cache/mock"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func TestAdminInfo(t *testing.T) {
 	admin := randomAdmin(t)
 	payload := token.AdminPayload{
-		ID:       uuid.New(),
-		AdminID:  admin.ID,
-		Username: admin.Username,
-		RoleID:   admin.RoleID,
-		IssuedAt: time.Now(),
-		ExpireAt: time.Now().Add(time.Hour),
+		AdminID: admin.ID,
 	}
 
-	adminSession := AdminSession{
-		Payload: &payload,
-	}
-
-	sessionBytes, err := json.Marshal(adminSession)
-	require.NoError(t, err)
+	cacheKey := key.GetAdminSessionKey(payload.AdminID)
 
 	testCases := []struct {
 		name          string
-		buildStubs    func(store *mockdb.MockStore, redisService *mockservice.MockRedis)
+		buildStubs    func(store *mockdb.MockStore, cache *mockcache.MockCache)
 		buildContext  func(t *testing.T, tokenMaker token.Maker) context.Context
 		checkResponse func(t *testing.T, res *pb.AdminInfoResponse, err error)
 	}{
 		{
 			name: "OK",
-			buildStubs: func(store *mockdb.MockStore, redisService *mockservice.MockRedis) {
-				key := adminSessionKey + strconv.FormatInt(payload.AdminID, 10)
-				redisService.EXPECT().
-					Get(key).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					IsExpired(gomock.Any(), gomock.Eq(cacheKey)).
 					Times(1).
-					Return(string(sessionBytes), nil)
+					Return(false, nil)
 
 				store.EXPECT().
 					GetAdmin(gomock.Any(), gomock.Eq(admin.Username)).
@@ -71,8 +58,8 @@ func TestAdminInfo(t *testing.T) {
 			},
 		},
 		{
-			name: "Unauthenticated",
-			buildStubs: func(store *mockdb.MockStore, redisService *mockservice.MockRedis) {
+			name: "Unauthenticated_NoToken",
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
 				// 无需调用 redis/store
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
@@ -85,12 +72,15 @@ func TestAdminInfo(t *testing.T) {
 			},
 		},
 		{
-			name: "RedisNotFound",
-			buildStubs: func(store *mockdb.MockStore, redisService *mockservice.MockRedis) {
-				redisService.EXPECT().
-					Get(gomock.Any()).
+			name: "Unauthenticated_SessionExpired",
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					IsExpired(gomock.Any(), gomock.Eq(cacheKey)).
 					Times(1).
-					Return("", errors.New("redis key not found"))
+					Return(true, nil)
+
+				store.EXPECT().
+					GetAdmin(gomock.Any(), gomock.Any()).Times(0)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
 				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
@@ -102,29 +92,12 @@ func TestAdminInfo(t *testing.T) {
 			},
 		},
 		{
-			name: "RedisUnmarshalError",
-			buildStubs: func(store *mockdb.MockStore, redisService *mockservice.MockRedis) {
-				redisService.EXPECT().
-					Get(gomock.Any()).
-					Times(1).
-					Return("not-json", nil)
-			},
-			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
-			},
-			checkResponse: func(t *testing.T, res *pb.AdminInfoResponse, err error) {
-				require.Error(t, err)
-				require.Equal(t, codes.Internal, status.Code(err))
-				require.Nil(t, res)
-			},
-		},
-		{
 			name: "DBError",
-			buildStubs: func(store *mockdb.MockStore, redisService *mockservice.MockRedis) {
-				redisService.EXPECT().
-					Get(gomock.Any()).
+			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
+				cache.EXPECT().
+					IsExpired(gomock.Any(), cacheKey).
 					Times(1).
-					Return(string(sessionBytes), nil)
+					Return(false, nil)
 
 				store.EXPECT().
 					GetAdmin(gomock.Any(), gomock.Eq(admin.Username)).
@@ -148,11 +121,11 @@ func TestAdminInfo(t *testing.T) {
 			t.Cleanup(ctrl.Finish)
 
 			store := mockdb.NewMockStore(ctrl)
-			redisService := mockservice.NewMockRedis(ctrl)
+			redisCache := mockcache.NewMockCache(ctrl)
 
-			tc.buildStubs(store, redisService)
+			tc.buildStubs(store, redisCache)
 
-			server := newTestServer(t, store, nil, redisService)
+			server := newTestServer(t, store, nil, redisCache)
 
 			ctx := tc.buildContext(t, server.tokenMaker)
 

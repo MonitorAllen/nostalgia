@@ -1,7 +1,7 @@
-import type {ApiSuccessResponse} from "@/types/api.ts";
-import type {Category} from "@/types/category.ts";
+import type { ApiSuccessResponse } from "@/types/api.ts";
+import type { Category } from "@/types/category.ts";
 import http from "@/util/http.ts";
-import type {AxiosResponse} from "axios";
+import type { AxiosResponse } from "axios";
 
 export interface CreateCategoryRequest {
   name: string
@@ -23,18 +23,13 @@ export async function listAllCategories(): Promise<ApiSuccessResponse<ListAllCat
   return http.get('/category/all')
 }
 
-export interface ListCategoriesRequest {
-  page: number
-  limit: number
-}
-
 export interface ListCategoriesResponse {
   categories: Category[]
   count: string
 }
 
-export async function listCategories(req: ListCategoriesRequest): Promise<AxiosResponse<ListCategoriesResponse>> {
-  return http.get(`/category?page=${req.page}&limit=${req.limit}`)
+export async function listCategories(): Promise<AxiosResponse<ListCategoriesResponse>> {
+  return http.get(`/category`)
 }
 
 export interface UpdateCategoryRequest {

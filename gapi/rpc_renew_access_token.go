@@ -2,9 +2,8 @@ package gapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"strconv"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"time"
 
 	"github.com/MonitorAllen/nostalgia/pb"
@@ -17,22 +16,18 @@ import (
 func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessTokenRequest) (*pb.RenewAccessTokenResponse, error) {
 	refreshPayload, err := server.tokenMaker.VerifyAdminToken(req.RefreshToken)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to marshal access payload")
+		return nil, status.Errorf(codes.Internal, err.Error())
 
 	}
 
-	session, err := server.redisService.Get(adminSessionKey + strconv.FormatInt(refreshPayload.AdminID, 10))
+	adminSessionKey := key.GetAdminSessionKey(refreshPayload.AdminID)
+	var adminSession AdminSession
+	_, err = server.cache.Get(ctx, adminSessionKey, &adminSession)
 	if err != nil {
-		if errors.Is(redis.Nil, err) {
+		if errors.Is(err, redis.Nil) {
 			return nil, status.Error(codes.Unauthenticated, "session has expired")
 		}
 		return nil, status.Error(codes.Internal, "cannot fetch session")
-	}
-
-	var adminSession AdminSession
-	err = json.Unmarshal([]byte(session), &adminSession)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "cannot unmarshal session")
 	}
 
 	// 检查session状态
@@ -63,12 +58,7 @@ func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessT
 	adminSession.UserAgent = metadata.UserAgent
 	adminSession.ClientIp = metadata.ClientIP
 
-	sessionBytes, err := json.Marshal(adminSession)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	err = server.redisService.Set(adminSessionKey+strconv.FormatInt(accessPayload.AdminID, 10), string(sessionBytes), server.config.RefreshTokenDuration)
+	err = server.cache.Set(ctx, adminSessionKey, adminSession, server.config.RefreshTokenDuration)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

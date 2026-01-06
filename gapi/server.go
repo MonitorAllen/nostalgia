@@ -3,7 +3,7 @@ package gapi
 import (
 	"fmt"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	"github.com/MonitorAllen/nostalgia/internal/service"
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -17,11 +17,11 @@ type Server struct {
 	store           db.Store
 	tokenMaker      token.Maker
 	taskDistributor worker.TaskDistributor
-	redisService    service.Redis
+	cache           cache.Cache
 }
 
 // NewServer creates a new gRPC server
-func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService service.Redis) (*Server, error) {
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, cache cache.Cache) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -31,7 +31,7 @@ func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDi
 		store:           store,
 		tokenMaker:      tokenMaker,
 		taskDistributor: taskDistributor,
-		redisService:    redisService,
+		cache:           cache,
 	}
 
 	return server, nil

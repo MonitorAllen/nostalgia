@@ -3,9 +3,10 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/MonitorAllen/nostalgia/internal/service"
 	"net/http"
 	"time"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
@@ -27,12 +28,12 @@ type Server struct {
 	tokenMaker      token.Maker
 	router          *gin.Engine
 	taskDistributor worker.TaskDistributor
-	redisService    service.Redis
+	cache           cache.Cache
 }
 
 // NewServer creates a new HTTPS server and setup routing
-func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, redisService service.Redis) (*Server, error) {
-	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor, cache cache.Cache) (*Server, error) {
+	tokenMaker, err := token.NewJWTMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
@@ -41,7 +42,7 @@ func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDi
 		store:           store,
 		tokenMaker:      tokenMaker,
 		taskDistributor: taskDistributor,
-		redisService:    redisService,
+		cache:           cache,
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -91,9 +92,6 @@ func (server *Server) setupRouter() {
 
 	authRoutes := router.Group("/api").Use(authMiddleware(server.tokenMaker))
 	{
-		authRoutes.POST("/articles", server.createArticle)
-		authRoutes.PUT("/articles", server.updateArticle)
-
 		authRoutes.POST("/comments", server.createComment)
 		authRoutes.DELETE("/comments/:id", server.deleteComment)
 
@@ -141,7 +139,6 @@ func (server *Server) Start(address string, config util.Config) error {
 
 	server.server = srv
 	return srv.ListenAndServe()
-	//return server.router.Run(address)
 }
 
 func (server *Server) Shutdown(ctx context.Context) error {
@@ -154,8 +151,8 @@ func (server *Server) Shutdown(ctx context.Context) error {
 	_, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	if err := server.redisService.Close(); err != nil {
-		log.Error().Err(err).Msg("failed to shutdown redis service")
+	if err := server.cache.Close(); err != nil {
+		log.Error().Err(err).Msg("failed to shutdown cache service")
 	}
 
 	return nil

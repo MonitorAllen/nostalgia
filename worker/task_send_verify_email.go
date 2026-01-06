@@ -25,7 +25,7 @@ func (distributor *RedisTaskDistributor) DistributeTaskSendVerifyEmail(
 ) error {
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("falied to marshal task payload: %w", err)
+		return fmt.Errorf("failed to marshal task payload: %w", err)
 	}
 	task := asynq.NewTask(TaskSendVerifyEmail, jsonPayload, opts...)
 	info, err := distributor.client.EnqueueContext(ctx, task)
@@ -69,10 +69,6 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 	err = processor.mailer.SendEmail(subject, content, to, nil, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to send verify email: %w", err)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to create verify email: %w", err)
 	}
 
 	log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).

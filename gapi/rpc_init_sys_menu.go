@@ -2,13 +2,12 @@ package gapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 	"time"
 )
 
@@ -20,19 +19,16 @@ func (server *Server) InitSysMenu(ctx context.Context, _ *pb.InitSysMenuRequest)
 		return nil, unauthenticatedError(err)
 	}
 
+	adminMenuKey := key.GetAdminMenuKey(accessPayload.RoleID)
+
 	// 从 redis 中获取
-	menuStr, err := server.redisService.Get(adminInitMenuKey + strconv.FormatInt(accessPayload.RoleID, 10))
+	var treeInitSysMenuList []*pb.InitSysMenu
+	ok, err := server.cache.Get(ctx, adminMenuKey, &treeInitSysMenuList)
 	if err != nil && !errors.Is(redis.Nil, err) {
 		return nil, status.Errorf(codes.Internal, "get admin init menu: %v", err)
 	}
 
-	var treeInitSysMenuList []*pb.InitSysMenu
-	if menuStr != "" {
-		err = json.Unmarshal([]byte(menuStr), &treeInitSysMenuList)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "cannot unmarshal menu: %v", err)
-		}
-
+	if ok {
 		return &pb.InitSysMenuResponse{
 			InitSysMenu: treeInitSysMenuList,
 		}, nil
@@ -47,12 +43,7 @@ func (server *Server) InitSysMenu(ctx context.Context, _ *pb.InitSysMenuRequest)
 
 	treeInitSysMenuList = buildMenuTree(initSysMenuList)
 
-	menuBytes, err := json.Marshal(&treeInitSysMenuList)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "can not marshal init system menu: %v", err)
-	}
-
-	err = server.redisService.Set(adminInitMenuKey+strconv.FormatInt(accessPayload.RoleID, 10), string(menuBytes), time.Hour*12)
+	err = server.cache.Set(ctx, adminMenuKey, treeInitSysMenuList, time.Hour*12)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "can not cache init system menu: %v", err)
 	}
