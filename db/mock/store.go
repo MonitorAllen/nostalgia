@@ -172,6 +172,21 @@ func (mr *MockStoreMockRecorder) CreateCategory(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategory", reflect.TypeOf((*MockStore)(nil).CreateCategory), arg0, arg1)
 }
 
+// CreateCategoryTx mocks base method.
+func (m *MockStore) CreateCategoryTx(arg0 context.Context, arg1 db.CreateCategoryTxParams) (db.CreateCategoryTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCategoryTx", arg0, arg1)
+	ret0, _ := ret[0].(db.CreateCategoryTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCategoryTx indicates an expected call of CreateCategoryTx.
+func (mr *MockStoreMockRecorder) CreateCategoryTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCategoryTx", reflect.TypeOf((*MockStore)(nil).CreateCategoryTx), arg0, arg1)
+}
+
 // CreateComment mocks base method.
 func (m *MockStore) CreateComment(arg0 context.Context, arg1 db.CreateCommentParams) (db.Comment, error) {
 	m.ctrl.T.Helper()
@@ -290,7 +305,7 @@ func (mr *MockStoreMockRecorder) DeleteCategory(arg0, arg1 interface{}) *gomock.
 }
 
 // DeleteCategoryTx mocks base method.
-func (m *MockStore) DeleteCategoryTx(arg0 context.Context, arg1 int64) error {
+func (m *MockStore) DeleteCategoryTx(arg0 context.Context, arg1 db.DeleteCategoryTxParams) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteCategoryTx", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -599,18 +614,18 @@ func (mr *MockStoreMockRecorder) ListArticlesByCategoryID(arg0, arg1 interface{}
 }
 
 // ListCategoriesCountArticles mocks base method.
-func (m *MockStore) ListCategoriesCountArticles(arg0 context.Context, arg1 db.ListCategoriesCountArticlesParams) ([]db.ListCategoriesCountArticlesRow, error) {
+func (m *MockStore) ListCategoriesCountArticles(arg0 context.Context) ([]db.ListCategoriesCountArticlesRow, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListCategoriesCountArticles", arg0, arg1)
+	ret := m.ctrl.Call(m, "ListCategoriesCountArticles", arg0)
 	ret0, _ := ret[0].([]db.ListCategoriesCountArticlesRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListCategoriesCountArticles indicates an expected call of ListCategoriesCountArticles.
-func (mr *MockStoreMockRecorder) ListCategoriesCountArticles(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) ListCategoriesCountArticles(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCategoriesCountArticles", reflect.TypeOf((*MockStore)(nil).ListCategoriesCountArticles), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCategoriesCountArticles", reflect.TypeOf((*MockStore)(nil).ListCategoriesCountArticles), arg0)
 }
 
 // ListCommentsByArticleID mocks base method.
@@ -730,6 +745,21 @@ func (m *MockStore) UpdateCategory(arg0 context.Context, arg1 db.UpdateCategoryP
 func (mr *MockStoreMockRecorder) UpdateCategory(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCategory", reflect.TypeOf((*MockStore)(nil).UpdateCategory), arg0, arg1)
+}
+
+// UpdateCategoryTx mocks base method.
+func (m *MockStore) UpdateCategoryTx(arg0 context.Context, arg1 db.UpdateCategoryTxParams) (db.UpdateCategoryTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCategoryTx", arg0, arg1)
+	ret0, _ := ret[0].(db.UpdateCategoryTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateCategoryTx indicates an expected call of UpdateCategoryTx.
+func (mr *MockStoreMockRecorder) UpdateCategoryTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCategoryTx", reflect.TypeOf((*MockStore)(nil).UpdateCategoryTx), arg0, arg1)
 }
 
 // UpdateUser mocks base method.

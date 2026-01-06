@@ -33,3 +33,5 @@ postgres_data
 
 # Ignore env files containing sensitive data
 /resources/
+
+.agent

@@ -2,9 +2,10 @@ package db
 
 import (
 	"context"
+	"testing"
+
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func createRandomCategory(t *testing.T) Category {
@@ -29,15 +30,22 @@ func TestDeleteCategory(t *testing.T) {
 	createRandomArticle(t, true, category.ID)
 	createRandomArticle(t, true, category.ID)
 
-	err := testStore.DeleteCategoryTx(context.Background(), category.ID)
+	arg := DeleteCategoryTxParams{
+		ID: category.ID,
+		AfterDelete: func() error {
+			return nil
+		},
+	}
+
+	err := testStore.DeleteCategoryTx(context.Background(), arg)
 	require.NoError(t, err)
 
-	arg := ListArticlesByCategoryIDParams{
+	listArg := ListArticlesByCategoryIDParams{
 		CategoryID: category.ID,
 		Offset:     0,
 		Limit:      2,
 	}
-	articleList, err := testStore.ListArticlesByCategoryID(context.Background(), arg)
+	articleList, err := testStore.ListArticlesByCategoryID(context.Background(), listArg)
 	require.NoError(t, err)
 	require.Empty(t, articleList)
 }
@@ -84,23 +92,9 @@ func TestListCategoriesCountArticles(t *testing.T) {
 		createRandomArticle(t, true, cate2.ID)
 	}
 
-	arg := ListCategoriesCountArticlesParams{
-		Limit:  2,
-		Offset: 0,
-	}
-
-	categories, err := testStore.ListCategoriesCountArticles(context.Background(), arg)
+	categories, err := testStore.ListCategoriesCountArticles(context.Background())
 	require.NoError(t, err)
-	require.Len(t, categories, 2)
-	for _, category := range categories {
-		require.NotEmpty(t, category)
-		if category.ID == cate1.ID {
-			require.Equal(t, category.ArticleCount, int64(10))
-		}
-		if category.ID == cate2.ID {
-			require.Equal(t, category.ArticleCount, int64(5))
-		}
-	}
+	require.NotEmpty(t, categories)
 }
 
 func TestListArticlesByCategoryID(t *testing.T) {

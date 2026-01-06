@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"os"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
@@ -30,12 +31,11 @@ func (server *Server) DeleteArticle(ctx context.Context, req *pb.DeleteArticleRe
 		return nil, status.Error(codes.InvalidArgument, "invalid id")
 	}
 
-	dbArticle, err := server.store.GetArticle(ctx, articleId)
+	_, err = server.store.GetArticle(ctx, articleId)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, "article not found")
 		}
-
 		return nil, status.Error(codes.Internal, "failed to fetch article")
 	}
 
@@ -45,19 +45,17 @@ func (server *Server) DeleteArticle(ctx context.Context, req *pb.DeleteArticleRe
 			path := fmt.Sprintf("./resources/%s/", articleID.String())
 
 			err := os.RemoveAll(path)
+			if err != nil {
+				return fmt.Errorf("failed to remove article resources: %w", err)
+			}
 
-			return err
+			return server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, key.GetArticleIDKey(articleId))
 		},
 	}
 
 	err = server.store.DeleteArticleTx(ctx, arg)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "cannot delete article: %v", err)
-	}
-
-	_ = server.cache.Del(ctx, cache.GetArticleIDKey(dbArticle.ID))
-	if &dbArticle.Slug != nil {
-		_ = server.cache.Del(ctx, cache.GetArticleSlugKey(dbArticle.Slug.String))
 	}
 
 	return &pb.DeleteArticleResponse{}, nil

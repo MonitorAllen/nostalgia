@@ -3,16 +3,15 @@ package api
 import (
 	"errors"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 	"net/http"
+	"time"
 )
 
 var AllCategoriesKey = "categories:all"
-
-type listCategoriesRequest struct {
-	Limit int32 `form:"limit" binding:"required"`
-	Page  int32 `form:"page" binding:"required"`
-}
 
 type listCategoriesResponse struct {
 	Categories []db.ListCategoriesCountArticlesRow `json:"categories"`
@@ -20,32 +19,40 @@ type listCategoriesResponse struct {
 }
 
 func (server *Server) listCategories(ctx *gin.Context) {
-	var req listCategoriesRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+	var resp listCategoriesResponse
+	ok, err := server.cache.Get(ctx, key.CategoryAllKey, &resp)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		log.Error().
+			Err(err).
+			Str("key", key.CategoryAllKey).
+			Str("module", "category").
+			Str("action", "cache_get").
+			Msg("获取分类缓存失败，降级为仅数据库")
+	}
+	if ok {
+		ctx.JSON(http.StatusOK, resp)
 		return
 	}
 
-	arg := db.ListCategoriesCountArticlesParams{
-		Limit:  req.Limit,
-		Offset: (req.Page - 1) * req.Limit,
-	}
-
-	categories, err := server.store.ListCategoriesCountArticles(ctx, arg)
+	categories, err := server.store.ListCategoriesCountArticles(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	count, err := server.store.CountCategories(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
+	count := len(categories)
 
-	resp := listCategoriesResponse{
-		categories,
-		count,
+	resp.Categories = categories
+	resp.Count = int64(count)
+
+	err = server.cache.Set(ctx, key.CategoryAllKey, resp, 7*24*time.Hour)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("key", key.CategoryAllKey).
+			Str("module", "category").
+			Str("action", "cache_set").
+			Msg("设置分类缓存失败，降级为仅数据库")
 	}
 
 	ctx.JSON(http.StatusOK, resp)

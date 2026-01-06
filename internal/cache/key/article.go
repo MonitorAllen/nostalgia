@@ -1,13 +1,15 @@
-package cache
+package key
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
 )
 
 const (
-	ArticleIDKey   = "cache:article:%s"
-	ArticleSlugKey = "cache:article:%s"
+	ArticleIDKey      = "cache:article:%s"
+	ArticleSlugKey    = "cache:article:%s"
+	ArticleCommentKey = "cache:article:comment:%s"
 
 	ArticleLikeOnceUserIDKey = "idempotency:article:like:%s:%s"
 	ArticleViewOnceUserIDKey = "idempotency:article:view:%s:%s"

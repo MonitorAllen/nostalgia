@@ -5,168 +5,23 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	mockcache "github.com/MonitorAllen/nostalgia/internal/cache/mock"
-	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
-	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"reflect"
-	"testing"
-	"time"
 )
-
-type eqCreateArticleParamsMatcher struct {
-	arg  db.CreateArticleParams
-	user db.User
-}
-
-func (expected eqCreateArticleParamsMatcher) Matches(x interface{}) bool {
-	actualArg, ok := x.(db.CreateArticleParams)
-	if !ok {
-		return false
-	}
-
-	expected.arg.ID = actualArg.ID
-	if !reflect.DeepEqual(expected.arg, actualArg) {
-		return false
-	}
-
-	return true
-}
-
-func (expected eqCreateArticleParamsMatcher) String() string {
-	return fmt.Sprintf("matches arg %v", expected.arg)
-}
-
-func EqCreateArticleParams(arg db.CreateArticleParams, user db.User) gomock.Matcher {
-	return eqCreateArticleParamsMatcher{arg, user}
-}
-
-func TestCreateArticleAPI(t *testing.T) {
-	user, _ := randomUser(t)
-
-	article := randomArticle(t, user.ID, false)
-
-	testCases := []struct {
-		name          string
-		body          gin.H
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
-		buildStubs    func(store *mockdb.MockStore)
-		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-	}{
-		{
-			name: "OK",
-			body: gin.H{
-				"title":      article.Title,
-				"summary":    article.Summary,
-				"content":    article.Content,
-				"is_publish": article.IsPublish,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Username, user.Role, time.Minute)
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				arg := db.CreateArticleParams{
-					Title:     article.Title,
-					Summary:   article.Summary,
-					Content:   article.Content,
-					IsPublish: article.IsPublish,
-					Owner:     article.Owner,
-				}
-				store.EXPECT().
-					CreateArticle(gomock.Any(), EqCreateArticleParams(arg, user)).
-					Times(1).
-					Return(article, nil)
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchArticle(t, recorder.Body, article)
-			},
-		},
-		{
-			name: "BadRequest",
-			body: gin.H{
-				"summary":    article.Summary,
-				"content":    article.Content,
-				"is_publish": article.IsPublish,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Username, user.Role, time.Minute)
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					CreateArticle(gomock.Any(), gomock.Any()).
-					Times(0)
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusBadRequest, recorder.Code)
-			},
-		},
-		{
-			name: "InternalError",
-			body: gin.H{
-				"title":      article.Title,
-				"summary":    article.Summary,
-				"content":    article.Content,
-				"is_publish": article.IsPublish,
-			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.ID, user.Username, user.Role, time.Minute)
-			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					CreateArticle(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(db.Article{}, sql.ErrConnDone)
-			},
-			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			store := mockdb.NewMockStore(ctrl)
-			tc.buildStubs(store)
-
-			// start test server and send request
-			server := newTestServer(t, store, nil, nil)
-			recorder := httptest.NewRecorder()
-
-			// Marshal body data to JSON
-			data, err := json.Marshal(tc.body)
-			require.NoError(t, err)
-
-			url := "/api/articles"
-
-			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-			require.NoError(t, err)
-
-			tc.setupAuth(t, request, server.tokenMaker)
-
-			server.router.ServeHTTP(recorder, request)
-
-			// check response
-			tc.checkResponse(t, recorder)
-		})
-	}
-}
 
 func TestGetArticleAPI(t *testing.T) {
 	user, _ := randomUser(t)
@@ -176,8 +31,8 @@ func TestGetArticleAPI(t *testing.T) {
 	unpublishedArticle.IsPublish = false
 
 	var cacheArticle db.GetArticleRow
-	cacheKey := cache.GetArticleIDKey(article.ID)
-	unpublishedCacheKey := cache.GetArticleIDKey(unpublishedArticle.ID)
+	cacheKey := key.GetArticleIDKey(article.ID)
+	unpublishedCacheKey := key.GetArticleIDKey(unpublishedArticle.ID)
 
 	testCases := []struct {
 		name          string
@@ -674,7 +529,7 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 
 	var cacheArticle db.GetArticleBySlugRow
 	slug := getArticleBySlugRow.Slug.String
-	articleSlugKey := cache.GetArticleSlugKey(slug)
+	articleSlugKey := key.GetArticleSlugKey(slug)
 
 	testCases := []struct {
 		name          string
@@ -697,7 +552,7 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 					Return(getArticleBySlugRow, nil)
 
 				cache.EXPECT().
-					Set(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(getArticleBySlugRow), time.Duration(0)).
+					Set(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(getArticleBySlugRow), time.Duration(7*24*time.Hour)).
 					Times(1).
 					Return(nil)
 			},
@@ -868,22 +723,6 @@ func requireBodyMatchArticles(t *testing.T, body *bytes.Buffer, listArticlesRow 
 	err = json.Unmarshal(data, &gotArticles)
 	require.NoError(t, err)
 	require.Equal(t, listArticlesRow, gotArticles.Articles)
-}
-
-func requireBodyMatchArticle(t *testing.T, body *bytes.Buffer, article db.Article) {
-	data, err := io.ReadAll(body)
-	require.NoError(t, err)
-
-	var gotArticle db.Article
-	err = json.Unmarshal(data, &gotArticle)
-	require.NoError(t, err)
-
-	require.Equal(t, article.ID.String(), gotArticle.ID.String())
-	require.Equal(t, article.Title, gotArticle.Title)
-	require.Equal(t, article.Content, gotArticle.Content)
-	require.Equal(t, article.IsPublish, gotArticle.IsPublish)
-	require.Equal(t, article.Owner, gotArticle.Owner)
-
 }
 
 func randomArticle(t *testing.T, owner uuid.UUID, isPublish bool) db.Article {

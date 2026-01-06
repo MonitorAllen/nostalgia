@@ -3,7 +3,7 @@ package gapi
 import (
 	"context"
 	"errors"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"time"
 
 	"github.com/MonitorAllen/nostalgia/pb"
@@ -20,7 +20,7 @@ func (server *Server) RenewAccessToken(ctx context.Context, req *pb.RenewAccessT
 
 	}
 
-	adminSessionKey := cache.GetAdminSessionKey(refreshPayload.AdminID)
+	adminSessionKey := key.GetAdminSessionKey(refreshPayload.AdminID)
 	var adminSession AdminSession
 	_, err = server.cache.Get(ctx, adminSessionKey, &adminSession)
 	if err != nil {

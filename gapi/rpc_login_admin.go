@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -67,7 +67,7 @@ func (server *Server) LoginAdmin(ctx context.Context, req *pb.LoginAdminRequest)
 		IsBlocked:    false,
 	}
 
-	err = server.cache.Set(ctx, cache.GetAdminSessionKey(admin.ID), adminSession, server.config.RefreshTokenDuration)
+	err = server.cache.Set(ctx, key.GetAdminSessionKey(admin.ID), adminSession, server.config.RefreshTokenDuration)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "缓存会话失败")
 	}

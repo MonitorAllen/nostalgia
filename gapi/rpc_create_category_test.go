@@ -3,18 +3,49 @@ package gapi
 import (
 	"context"
 	"database/sql"
+	"testing"
+	"time"
+
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
+	mockwk "github.com/MonitorAllen/nostalgia/worker/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"testing"
-	"time"
 )
+
+// eqCreateCategoryTxParamsMatcher 自定义 Matcher
+// 在参数匹配时执行 AfterCreate 回调
+type eqCreateCategoryTxParamsMatcher struct {
+	expectedName string
+}
+
+func (m eqCreateCategoryTxParamsMatcher) Matches(x interface{}) bool {
+	actualArg, ok := x.(db.CreateCategoryTxParams)
+	if !ok {
+		return false
+	}
+
+	if actualArg.Name != m.expectedName {
+		return false
+	}
+
+	// 执行 AfterCreate 回调（触发 taskDistributor 调用）
+	return actualArg.AfterCreate() == nil
+}
+
+func (m eqCreateCategoryTxParamsMatcher) String() string {
+	return "matches CreateCategoryTxParams and executes AfterCreate"
+}
+
+func EqCreateCategoryTxParams(name string) gomock.Matcher {
+	return eqCreateCategoryTxParamsMatcher{expectedName: name}
+}
 
 func TestCreateCategory(t *testing.T) {
 	admin := randomAdmin(t)
@@ -24,7 +55,7 @@ func TestCreateCategory(t *testing.T) {
 	testCases := []struct {
 		name          string
 		req           *pb.CreateCategoryRequest
-		buildStubs    func(store *mockdb.MockStore)
+		buildStubs    func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor)
 		buildContext  func(t *testing.T, tokenMaker token.Maker) context.Context
 		checkResponse func(t *testing.T, res *pb.CreateCategoryResponse, err error)
 	}{
@@ -33,11 +64,18 @@ func TestCreateCategory(t *testing.T) {
 			req: &pb.CreateCategoryRequest{
 				Name: category.Name,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					CreateCategory(gomock.Any(), gomock.Eq(category.Name)).
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
+				// Mock TaskDistributor
+				taskDistributor.EXPECT().
+					DistributeTaskDelayDeleteCacheDefault(gomock.Any(), gomock.Eq(key.CategoryAllKey)).
 					Times(1).
-					Return(category, nil)
+					Return(nil)
+
+				// 使用自定义 Matcher 执行 AfterCreate 回调
+				store.EXPECT().
+					CreateCategoryTx(gomock.Any(), EqCreateCategoryTxParams(category.Name)).
+					Times(1).
+					Return(db.CreateCategoryTxResult{Category: category}, nil)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
 				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
@@ -55,8 +93,10 @@ func TestCreateCategory(t *testing.T) {
 			req: &pb.CreateCategoryRequest{
 				Name: category.Name,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
 				// 无需调用 store
+				store.EXPECT().CreateCategoryTx(gomock.Any(), gomock.Any()).Times(0)
+				taskDistributor.EXPECT().DistributeTaskDelayDeleteCacheDefault(gomock.Any(), gomock.Any()).Times(0)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
 				return context.Background() // 未带 token
@@ -73,11 +113,13 @@ func TestCreateCategory(t *testing.T) {
 			req: &pb.CreateCategoryRequest{
 				Name: category.Name,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
+				taskDistributor.EXPECT().DistributeTaskDelayDeleteCacheDefault(gomock.Any(), gomock.Any()).Times(0)
+
 				store.EXPECT().
-					CreateCategory(gomock.Any(), gomock.Eq(category.Name)).
+					CreateCategoryTx(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.Category{}, db.ErrUniqueViolation)
+					Return(db.CreateCategoryTxResult{}, db.ErrUniqueViolation)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
 				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
@@ -94,11 +136,13 @@ func TestCreateCategory(t *testing.T) {
 			req: &pb.CreateCategoryRequest{
 				Name: category.Name,
 			},
-			buildStubs: func(store *mockdb.MockStore) {
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
+				taskDistributor.EXPECT().DistributeTaskDelayDeleteCacheDefault(gomock.Any(), gomock.Any()).Times(0)
+
 				store.EXPECT().
-					CreateCategory(gomock.Any(), gomock.Eq(category.Name)).
+					CreateCategoryTx(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.Category{}, sql.ErrConnDone)
+					Return(db.CreateCategoryTxResult{}, sql.ErrConnDone)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
 				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
@@ -114,14 +158,16 @@ func TestCreateCategory(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			t.Cleanup(ctrl.Finish)
+			storeCtrl := gomock.NewController(t)
+			defer storeCtrl.Finish()
+			store := mockdb.NewMockStore(storeCtrl)
 
-			store := mockdb.NewMockStore(ctrl)
+			taskCtrl := gomock.NewController(t)
+			taskDistributor := mockwk.NewMockTaskDistributor(taskCtrl)
 
-			tc.buildStubs(store)
+			tc.buildStubs(store, taskDistributor)
 
-			server := newTestServer(t, store, nil, nil)
+			server := newTestServer(t, store, taskDistributor, nil)
 
 			ctx := tc.buildContext(t, server.tokenMaker)
 

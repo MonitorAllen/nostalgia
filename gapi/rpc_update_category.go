@@ -2,7 +2,9 @@ package gapi
 
 import (
 	"context"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -16,11 +18,16 @@ func (server *Server) UpdateCategory(ctx context.Context, res *pb.UpdateCategory
 		return nil, unauthenticatedError(err)
 	}
 
-	arg := db.UpdateCategoryParams{
-		ID:   res.GetId(),
-		Name: res.GetName(),
+	arg := db.UpdateCategoryTxParams{
+		UpdateCategoryParams: db.UpdateCategoryParams{
+			ID:   res.GetId(),
+			Name: res.GetName(),
+		},
+		AfterUpdate: func() error {
+			return server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, key.CategoryAllKey)
+		},
 	}
-	category, err := server.store.UpdateCategory(ctx, arg)
+	result, err := server.store.UpdateCategoryTx(ctx, arg)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, "Category not found")
@@ -33,10 +40,10 @@ func (server *Server) UpdateCategory(ctx context.Context, res *pb.UpdateCategory
 
 	resp := &pb.UpdateCategoryResponse{
 		Category: &pb.Category{
-			Id:        category.ID,
-			Name:      category.Name,
-			CreatedAt: timestamppb.New(category.CreatedAt),
-			UpdatedAt: timestamppb.New(category.UpdatedAt),
+			Id:        result.Category.ID,
+			Name:      result.Category.Name,
+			CreatedAt: timestamppb.New(result.Category.CreatedAt),
+			UpdatedAt: timestamppb.New(result.Category.UpdatedAt),
 		},
 	}
 

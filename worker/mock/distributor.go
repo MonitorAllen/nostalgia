@@ -36,6 +36,44 @@ func (m *MockTaskDistributor) EXPECT() *MockTaskDistributorMockRecorder {
 	return m.recorder
 }
 
+// DistributeTaskDelayDeleteCache mocks base method.
+func (m *MockTaskDistributor) DistributeTaskDelayDeleteCache(arg0 context.Context, arg1 *worker.PayloadDelayDeleteCache, arg2 ...asynq.Option) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DistributeTaskDelayDeleteCache", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DistributeTaskDelayDeleteCache indicates an expected call of DistributeTaskDelayDeleteCache.
+func (mr *MockTaskDistributorMockRecorder) DistributeTaskDelayDeleteCache(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DistributeTaskDelayDeleteCache", reflect.TypeOf((*MockTaskDistributor)(nil).DistributeTaskDelayDeleteCache), varargs...)
+}
+
+// DistributeTaskDelayDeleteCacheDefault mocks base method.
+func (m *MockTaskDistributor) DistributeTaskDelayDeleteCacheDefault(arg0 context.Context, arg1 ...string) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DistributeTaskDelayDeleteCacheDefault", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DistributeTaskDelayDeleteCacheDefault indicates an expected call of DistributeTaskDelayDeleteCacheDefault.
+func (mr *MockTaskDistributorMockRecorder) DistributeTaskDelayDeleteCacheDefault(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DistributeTaskDelayDeleteCacheDefault", reflect.TypeOf((*MockTaskDistributor)(nil).DistributeTaskDelayDeleteCacheDefault), varargs...)
+}
+
 // DistributeTaskSendVerifyEmail mocks base method.
 func (m *MockTaskDistributor) DistributeTaskSendVerifyEmail(arg0 context.Context, arg1 *worker.PayloadSendVerifyEmail, arg2 ...asynq.Option) error {
 	m.ctrl.T.Helper()

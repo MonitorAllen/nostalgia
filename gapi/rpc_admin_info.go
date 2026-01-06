@@ -2,7 +2,7 @@ package gapi
 
 import (
 	"context"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,7 +14,7 @@ func (server *Server) AdminInfo(ctx context.Context, req *pb.AdminInfoRequest) (
 		return nil, unauthenticatedError(err)
 	}
 
-	expired, err := server.cache.IsExpired(ctx, cache.GetAdminSessionKey(accessPayload.AdminID))
+	expired, err := server.cache.IsExpired(ctx, key.GetAdminSessionKey(accessPayload.AdminID))
 	if err != nil {
 		return nil, status.Error(codes.Internal, "获取会话失败")
 	}

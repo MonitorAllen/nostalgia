@@ -2,7 +2,7 @@ package gapi
 
 import (
 	"context"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 )
 
@@ -12,7 +12,7 @@ func (server *Server) LogoutAdmin(ctx context.Context, req *pb.LogoutAdminReques
 		return nil, unauthenticatedError(err)
 	}
 
-	_ = server.cache.Del(ctx, cache.GetAdminSessionKey(accessPayload.AdminID))
+	_ = server.cache.Del(ctx, key.GetAdminSessionKey(accessPayload.AdminID))
 
 	return &pb.LogoutAdminResponse{}, nil
 }

@@ -3,7 +3,7 @@ package gapi
 import (
 	"context"
 	"errors"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc/codes"
@@ -19,7 +19,7 @@ func (server *Server) InitSysMenu(ctx context.Context, _ *pb.InitSysMenuRequest)
 		return nil, unauthenticatedError(err)
 	}
 
-	adminMenuKey := cache.GetAdminMenuKey(accessPayload.RoleID)
+	adminMenuKey := key.GetAdminMenuKey(accessPayload.RoleID)
 
 	// 从 redis 中获取
 	var treeInitSysMenuList []*pb.InitSysMenu

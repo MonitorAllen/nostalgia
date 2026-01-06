@@ -3,34 +3,29 @@ package gapi
 import (
 	"context"
 	"database/sql"
+	"testing"
+	"time"
+
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	mockcache "github.com/MonitorAllen/nostalgia/internal/cache/mock"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"testing"
-	"time"
 )
 
 func TestAdminInfo(t *testing.T) {
 	admin := randomAdmin(t)
 	payload := token.AdminPayload{
-		ID:       uuid.New(),
-		AdminID:  admin.ID,
-		Username: admin.Username,
-		RoleID:   admin.RoleID,
-		IssuedAt: time.Now(),
-		ExpireAt: time.Now().Add(time.Hour),
+		AdminID: admin.ID,
 	}
 
-	cacheKey := cache.GetAdminSessionKey(payload.AdminID)
+	cacheKey := key.GetAdminSessionKey(payload.AdminID)
 
 	testCases := []struct {
 		name          string

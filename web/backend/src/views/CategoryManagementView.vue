@@ -7,12 +7,17 @@
       <div class="flex flex-column h-full">
         <DataTable
           :value="categories"
+          :rows="limit"
+          :rowsPerPageOptions="[15,30,50]"
+          :totalRecords="count"
+          paginator
           size="small"
           showGridlines
           stripedRows
           responsiveLayout="scroll"
           class="p-datatable-sm mb-2">
           <Column field="name" header="名称" style="min-width: 140px;"></Column>
+          <Column field="article_count" header="文章数量" style="min-width: 140px;"></Column>
           <Column field="created_at" header="创建时间" style="width: 180px; min-width: 172px">
             <template #body="slotProps">
               {{ format(slotProps.data.created_at, 'YYYY-MM-DD HH:mm') }}
@@ -30,16 +35,6 @@
             </template>
           </Column>
         </DataTable>
-
-        <Paginator
-          :rows="limit"
-          :totalRecords="count"
-          :first="first"
-          template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-          :rowsPerPageOptions="[10,20,50]"
-          currentPageReportTemplate="显示第 {first} 到 {last} 条记录，共 {totalRecords} 条"
-          @page="onPage"
-        />
       </div>
     </div>
 
@@ -94,18 +89,19 @@ import {
   type UpdateCategoryRequest
 } from "@/api/category.ts";
 import type {Category} from "@/types/category.ts";
+import { wait } from '@/util/wait'
 
 const toast = useToast()
 
 const categories = ref<Category[]>([])
 const page = ref(1)
-const limit = ref(10)
+const limit = ref(15)
 const count = ref(0)
 const first = ref(0)
 
-const fetchCategories = async (page: number, limit: number) => {
+const fetchCategories = async () => {
   try {
-    const resp = await listCategories({page, limit})
+    const resp = await listCategories()
     categories.value = resp.data.categories
     count.value = parseInt(resp.data.count)
   } catch (error: any) {
@@ -114,15 +110,8 @@ const fetchCategories = async (page: number, limit: number) => {
 }
 
 onMounted( () => {
-  fetchCategories(page.value, limit.value)
+  fetchCategories()
 })
-
-const onPage = (event: PageState) => {
-  first.value = event.first
-  page.value = event.page + 1
-  limit.value = event.rows
-  fetchCategories(page.value, limit.value)
-}
 
 const editCategoryDialogVisible = ref(false)
 const category = ref<Category | null>(null)
@@ -151,7 +140,8 @@ const onUpdateCategory = async (e: FormSubmitEvent<Record<string, any>>) => {
     if (editingIndex.value != -1) {
         toast.add({severity: 'success', summary: '成功', detail: '修改分类成功', life: 2500})
     }
-    await fetchCategories(1, limit.value)
+    await wait(500)
+    await fetchCategories()
   } catch (error: any) {
     toast.add({severity: 'error', summary: '错误', detail: '修改分类失败: ' + error.response?.data?.message, life: 2500})
   } finally {
@@ -177,7 +167,9 @@ const onDeleteCategory = (id: number) => {
       try {
         await deleteCategory({id})
         toast.add({severity: 'success', summary: '成功', detail: '删除分类成功', life: 3000});
-        await fetchCategories(page.value, limit.value)
+        
+        await wait(500)
+        await fetchCategories()
       } catch (error: any) {
         toast.add({severity: 'error', summary: '失败', detail: '删除分类失败: ' + error.response.data.message, life: 3000});
       }
@@ -194,7 +186,9 @@ const onCreateCategory = async () => {
   }
   try {
     await createCategory({name: createCategoryName.value})
-    await fetchCategories(1, limit.value)
+
+    await wait(500)
+    await fetchCategories()
     toast.add({severity: 'success', summary: '成功', detail: '新增分类成功', life: 3000});
   } catch (error: any) {
     toast.add({severity: 'error', summary: '失败', detail: '新增分类失败: ' + error.response.data.message, life: 3000});

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -77,8 +78,8 @@ func (server *Server) createUser(ctx *gin.Context) {
 			taskPayload := &worker.PayloadSendVerifyEmail{UserID: user.ID}
 			opts := []asynq.Option{
 				asynq.MaxRetry(5),
-				asynq.Timeout(5), // 谷歌API部分CDN无法连接，避免长时间等待
-				asynq.ProcessIn(10 * time.Second),
+				asynq.Timeout(5 * time.Second), // 谷歌API部分CDN无法连接，避免长时间等待
+				asynq.ProcessIn(2 * time.Second),
 				asynq.Queue(worker.QueueCritical),
 			}
 			return server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
@@ -320,7 +321,7 @@ func contributionResponse(contributions githubContributions) githubContributions
 func (server *Server) contributions(ctx *gin.Context) {
 	// 先在 redis 获取
 	var contributions githubContributions
-	userContributionsKey := cache.GetUserContributionsKey()
+	userContributionsKey := key.GetUserContributionsKey()
 	ok, err := server.cache.Get(ctx, userContributionsKey, &contributions)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().

@@ -3,9 +3,10 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"net/http"
 	"time"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
@@ -91,9 +92,6 @@ func (server *Server) setupRouter() {
 
 	authRoutes := router.Group("/api").Use(authMiddleware(server.tokenMaker))
 	{
-		authRoutes.POST("/articles", server.createArticle)
-		authRoutes.PUT("/articles", server.updateArticle)
-
 		authRoutes.POST("/comments", server.createComment)
 		authRoutes.DELETE("/comments/:id", server.deleteComment)
 

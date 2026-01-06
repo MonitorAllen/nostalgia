@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"math"
 	"os"
 	"regexp"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
@@ -39,9 +40,12 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	dbArticle, err := server.store.GetArticle(ctx, articleId)
+	_, err = server.store.GetArticle(ctx, articleId)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "文章不存在")
+		if errors.Is(err, db.ErrRecordNotFound) {
+			return nil, status.Error(codes.NotFound, "article not found")
+		}
+		return nil, status.Error(codes.Internal, "failed to fetch article")
 	}
 
 	arg := db.UpdateArticleTxParams{
@@ -110,7 +114,13 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 				}
 			}
 
-			return nil
+			keys := []string{
+				key.GetArticleIDKey(article.ID),
+			}
+			if article.Slug.Valid {
+				keys = append(keys, key.GetArticleSlugKey(article.Slug.String))
+			}
+			return server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, keys...)
 		},
 	}
 
@@ -125,12 +135,6 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 			return nil, status.Error(codes.NotFound, "article not found")
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update article: %v", err)
-	}
-
-	// 删除缓存
-	_ = server.cache.Del(ctx, cache.GetArticleIDKey(dbArticle.ID))
-	if &dbArticle.Slug != nil {
-		_ = server.cache.Del(ctx, cache.GetArticleSlugKey(dbArticle.Slug.String))
 	}
 
 	resp := &pb.UpdateArticleResponse{

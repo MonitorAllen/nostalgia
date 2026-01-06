@@ -1,4 +1,4 @@
-package cache
+package key
 
 const (
 	UserContributionsKey = "cache:user:contributions"

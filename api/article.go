@@ -3,19 +3,17 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/MonitorAllen/nostalgia/internal/cache"
-	"github.com/go-ego/gse"
-	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"net/http"
-	"os"
-	"slices"
 	"strings"
 	"time"
 
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
+	"github.com/go-ego/gse"
+	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
+
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/token"
-	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -25,47 +23,6 @@ var segmenter gse.Segmenter
 
 func init() {
 	segmenter.LoadDict()
-}
-
-type createArticleRequest struct {
-	Title     string `json:"title" binding:"required"`
-	Summary   string `json:"summary"`
-	Content   string `json:"content"`
-	IsPublish bool   `json:"is_publish"`
-}
-
-func (server *Server) createArticle(ctx *gin.Context) {
-	var req createArticleRequest
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-
-	articleID, err := uuid.NewRandom()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateArticleParams{
-		ID:        articleID,
-		Title:     req.Title,
-		Summary:   req.Summary,
-		Content:   req.Content,
-		IsPublish: req.IsPublish,
-		Owner:     authPayload.UserID,
-	}
-
-	article, err := server.store.CreateArticle(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, article)
 }
 
 type getArticleRequest struct {
@@ -91,7 +48,7 @@ func (server *Server) getArticle(ctx *gin.Context) {
 	}
 
 	var article db.GetArticleRow
-	cacheKey := cache.GetArticleIDKey(articleID)
+	cacheKey := key.GetArticleIDKey(articleID)
 
 	ok, err := server.cache.Get(ctx, cacheKey, &article)
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -202,88 +159,6 @@ func (server *Server) listArticle(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-type updateArticleRequest struct {
-	ID            uuid.UUID `json:"id" binding:"required"`
-	Title         string    `json:"title"`
-	Summary       string    `json:"summary"`
-	Content       string    `json:"content"`
-	IsPublish     *bool     `json:"is_publish"`
-	Owner         uuid.UUID `json:"owner" binding:"required"`
-	NeedSaveFiles []string  `json:"need_save_files"`
-}
-
-func (server *Server) updateArticle(ctx *gin.Context) {
-	var req updateArticleRequest
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-
-	if authPayload.UserID != req.Owner {
-		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("this article doesn't belong to the authenticated user")))
-		return
-	}
-
-	arg := db.UpdateArticleTxParams{
-		UpdateArticleParams: db.UpdateArticleParams{
-			ID: req.ID,
-			Title: pgtype.Text{
-				String: req.Title,
-				Valid:  req.Title != "",
-			},
-			Summary: pgtype.Text{
-				String: req.Summary,
-				Valid:  req.Summary != "",
-			},
-			Content: pgtype.Text{
-				String: req.Content,
-				Valid:  req.Content != "",
-			},
-			IsPublish: pgtype.Bool{
-				Bool:  *req.IsPublish,
-				Valid: req.IsPublish != nil,
-			},
-		},
-		AfterUpdate: func(article db.Article) error {
-			// 同步文章的文件列表，确保不会存在冗余文件
-			contentFileNames := util.ExtractFileNames(article.Content)
-
-			resourcePath := fmt.Sprintf("./resources/%s", article.ID.String())
-			folderFiles, err := util.ListFiles(resourcePath)
-			if err != nil {
-				return err
-			}
-
-			for _, fileName := range folderFiles {
-				if !slices.Contains(contentFileNames, fileName) {
-					err := os.Remove(fmt.Sprintf("%s/%s", resourcePath, fileName))
-					if err != nil {
-						return err
-					}
-				}
-			}
-
-			return nil
-		},
-	}
-
-	article, err := server.store.UpdateArticleTx(ctx, arg)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, article)
-}
-
 type incrementArticleLikesRequest struct {
 	ID uuid.UUID `json:"id" binding:"required,uuid"`
 }
@@ -302,11 +177,11 @@ func (server *Server) incrementArticleLikes(ctx *gin.Context) {
 	authPayload, exists := ctx.Get(authorizationPayloadKey)
 	if exists {
 		user := authPayload.(*token.Payload)
-		cacheKey = cache.GetArticleLikeOnceUserIDKey(req.ID, user.UserID)
+		cacheKey = key.GetArticleLikeOnceUserIDKey(req.ID, user.UserID)
 		ttl = 0
 	} else {
 		ip := ctx.ClientIP()
-		cacheKey = cache.GetArticleLikeOnceGuestKey(req.ID, ip)
+		cacheKey = key.GetArticleLikeOnceGuestKey(req.ID, ip)
 		ttl = time.Hour * 24 * 7
 	}
 
@@ -346,10 +221,10 @@ func (server *Server) incrementArticleViews(ctx *gin.Context) {
 	authPayload, exists := ctx.Get(authorizationPayloadKey)
 	if exists {
 		user := authPayload.(*token.Payload)
-		cacheKey = cache.GetArticleLikeOnceUserIDKey(req.ID, user.UserID)
+		cacheKey = key.GetArticleViewOnceUserIDKey(req.ID, user.UserID)
 	} else {
 		ip := ctx.ClientIP()
-		cacheKey = cache.GetArticleLikeOnceGuestKey(req.ID, ip)
+		cacheKey = key.GetArticleViewOnceGuestKey(req.ID, ip)
 	}
 
 	ok, err := server.cache.SetNX(ctx, cacheKey, 1, time.Hour*24)
@@ -455,7 +330,7 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 
 	var article db.GetArticleBySlugRow
 
-	cacheKey := cache.GetArticleSlugKey(req.Slug)
+	cacheKey := key.GetArticleSlugKey(req.Slug)
 
 	ok, err := server.cache.Get(ctx, cacheKey, &article)
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -492,7 +367,7 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 		return
 	}
 
-	if err := server.cache.Set(ctx, cacheKey, article, 0); err != nil {
+	if err := server.cache.Set(ctx, cacheKey, article, 7*24*time.Hour); err != nil {
 		log.Error().
 			Err(err).                      // 1. 记录错误堆栈
 			Str("module", "article").      // 2. 模块：文章模块
