@@ -1,20 +1,44 @@
-<script setup lang="ts">
-import Toast from 'primevue/toast'
-</script>
-
 <template>
-  <Toast />
-  <router-view />
+  <el-config-provider :locale="locale" :size="assemblySize" :button="buttonConfig">
+    <router-view></router-view>
+  </el-config-provider>
 </template>
 
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
+<script setup lang="ts">
+import { onMounted, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { getBrowserLang } from '@/utils'
+import { useTheme } from '@/hooks/useTheme'
+import { ElConfigProvider } from 'element-plus'
+import { LanguageType } from './stores/interface'
+import { useGlobalStore } from '@/stores/modules/global'
+import en from 'element-plus/es/locale/lang/en'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
-#app {
-  height: 100%;
-}
-</style>
+const globalStore = useGlobalStore()
+
+// init theme
+const { initTheme } = useTheme()
+initTheme()
+
+// init language
+const i18n = useI18n()
+onMounted(() => {
+  const language = globalStore.language ?? getBrowserLang()
+  i18n.locale.value = language
+  globalStore.setGlobalState('language', language as LanguageType)
+})
+
+// element language
+const locale = computed(() => {
+  if (globalStore.language == 'zh') return zhCn
+  if (globalStore.language == 'en') return en
+  return getBrowserLang() == 'zh' ? zhCn : en
+})
+
+// element assemblySize
+const assemblySize = computed(() => globalStore.assemblySize)
+
+// element button config
+const buttonConfig = reactive({ autoInsertSpace: false })
+</script>

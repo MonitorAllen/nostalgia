@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 40" height="40">
+    <!-- 图标部分：完全复刻的快门 N -->
+    <g transform="translate(0, -5) scale(0.5)">
+        <!-- 外圈 -->
+        <circle cx="50" cy="50" r="48" fill="none" stroke="#20c997" stroke-width="2" stroke-linecap="round" />
+
+        <!-- 快门叶片 1 (右上) -->
+        <polygon points="50,15 85,35 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+        <!-- 快门叶片 2 (右) -->
+        <polygon points="85,35 85,65 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+        <!-- 快门叶片 3 (右下) -->
+        <polygon points="85,65 50,85 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+        <!-- 快门叶片 4 (左下) -->
+        <polygon points="50,85 15,65 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+        <!-- 快门叶片 5 (左) -->
+        <polygon points="15,65 15,35 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+        <!-- 快门叶片 6 (左上) -->
+        <polygon points="15,35 50,15 50,50" fill="white" stroke="#20c997" stroke-width="1.5" />
+
+        <!-- 中心 N 字 - 左竖 -->
+        <path d="M35 30 V70" fill="none" stroke="#20c997" stroke-width="5" stroke-linecap="round" />
+
+        <!-- 中心 N 字 - 右竖 -->
+        <path d="M65 30 V70" fill="none" stroke="#20c997" stroke-width="5" stroke-linecap="round" />
+
+        <!-- 中心 N 字 - 对角线 -->
+        <path d="M35 70 L65 30" fill="none" stroke="#20c997" stroke-width="5" stroke-linecap="round" />
+    </g>
+
+    <!-- 文字部分：保留打字机风格 -->
+    <text x="60" y="30" font-family="Courier New, Courier, monospace" font-weight="bold" font-size="28" fill="#334155" letter-spacing="-0.5">Nostalgia</text>
+
+    <!-- 绿色光标块 -->
+    <rect x="220" y="10" width="12" height="24" fill="#20c997" opacity="0.6">
+        <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1s" repeatCount="indefinite" />
+    </rect>
+</svg>
