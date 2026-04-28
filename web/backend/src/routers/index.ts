@@ -9,8 +9,8 @@ import NProgress from '@/config/nprogress'
 const mode = import.meta.env.VITE_ROUTER_MODE
 
 const routerMode = {
-  hash: () => createWebHashHistory(),
-  history: () => createWebHistory(),
+  hash: () => createWebHashHistory(import.meta.env.VITE_PUBLIC_PATH),
+  history: () => createWebHistory(import.meta.env.VITE_PUBLIC_PATH),
 }
 
 /**
