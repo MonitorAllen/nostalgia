@@ -797,7 +797,7 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/CreateCategory", runtime.WithHTTPPathPattern("/v1/category"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/CreateCategory", runtime.WithHTTPPathPattern("/v1/categories"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -817,7 +817,7 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/DeleteCategory", runtime.WithHTTPPathPattern("/v1/category/{id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/DeleteCategory", runtime.WithHTTPPathPattern("/v1/categories/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -831,13 +831,13 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Nostalgia_DeleteCategory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPut, pattern_Nostalgia_UpdateCategory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_Nostalgia_UpdateCategory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/UpdateCategory", runtime.WithHTTPPathPattern("/v1/category"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/UpdateCategory", runtime.WithHTTPPathPattern("/v1/categories"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -857,7 +857,7 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/ListCategories", runtime.WithHTTPPathPattern("/v1/category"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/ListCategories", runtime.WithHTTPPathPattern("/v1/categories"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -877,7 +877,7 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/ListAllCategories", runtime.WithHTTPPathPattern("/v1/category/all"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/ListAllCategories", runtime.WithHTTPPathPattern("/v1/categories/all"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1156,7 +1156,7 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/CreateCategory", runtime.WithHTTPPathPattern("/v1/category"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/CreateCategory", runtime.WithHTTPPathPattern("/v1/categories"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1173,7 +1173,7 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/DeleteCategory", runtime.WithHTTPPathPattern("/v1/category/{id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/DeleteCategory", runtime.WithHTTPPathPattern("/v1/categories/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1186,11 +1186,11 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Nostalgia_DeleteCategory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPut, pattern_Nostalgia_UpdateCategory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPatch, pattern_Nostalgia_UpdateCategory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/UpdateCategory", runtime.WithHTTPPathPattern("/v1/category"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/UpdateCategory", runtime.WithHTTPPathPattern("/v1/categories"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1207,7 +1207,7 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/ListCategories", runtime.WithHTTPPathPattern("/v1/category"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/ListCategories", runtime.WithHTTPPathPattern("/v1/categories"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1224,7 +1224,7 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/ListAllCategories", runtime.WithHTTPPathPattern("/v1/category/all"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/ListAllCategories", runtime.WithHTTPPathPattern("/v1/categories/all"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1254,11 +1254,11 @@ var (
 	pattern_Nostalgia_GetArticle_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "articles", "id", "need_content"}, ""))
 	pattern_Nostalgia_UpdateArticle_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
 	pattern_Nostalgia_UploadFile_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "util", "upload_file"}, ""))
-	pattern_Nostalgia_CreateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
-	pattern_Nostalgia_DeleteCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "category", "id"}, ""))
-	pattern_Nostalgia_UpdateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
-	pattern_Nostalgia_ListCategories_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "category"}, ""))
-	pattern_Nostalgia_ListAllCategories_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "category", "all"}, ""))
+	pattern_Nostalgia_CreateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "categories"}, ""))
+	pattern_Nostalgia_DeleteCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "categories", "id"}, ""))
+	pattern_Nostalgia_UpdateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "categories"}, ""))
+	pattern_Nostalgia_ListCategories_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "categories"}, ""))
+	pattern_Nostalgia_ListAllCategories_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "categories", "all"}, ""))
 )
 
 var (
