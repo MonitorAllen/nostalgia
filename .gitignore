@@ -35,3 +35,4 @@ postgres_data
 /resources/
 
 .agent
+.agents/

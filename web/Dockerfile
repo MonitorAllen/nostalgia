@@ -12,11 +12,13 @@ RUN npm run build
 FROM node:23-alpine AS build-backend
 WORKDIR /app/backend
 
-COPY backend/package*.json ./
-RUN npm ci
+RUN npm install -g bun
+
+COPY backend/package.json backend/bun.lock ./
+RUN bun install --frozen-lockfile
 
 COPY backend/ ./
-RUN npm run build
+RUN bun run build:pro
 
 # Stage 3: Final nginx server
 FROM nginx:alpine
