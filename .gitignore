@@ -36,3 +36,9 @@ postgres_data
 
 .agent
 .agents/
+!.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/*/
+!.agents/skills/*/SKILL.md
