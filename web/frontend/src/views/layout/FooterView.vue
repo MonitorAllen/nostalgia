@@ -1,12 +1,12 @@
-<script setup>
+<script setup lang="ts">
 const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <footer class="w-full py-4 bg-gray-50 mt-auto">
-    <div class="flex flex-column align-items-center text-600 text-sm gap-2">
-      <p class="m-0">Copyright © {{ currentYear }} Nostalgia. Design by PrimeVue.</p>
-      <p class="m-0 hover:text-900 cursor-pointer transition-colors">粤ICP备2025431323号</p>
+  <footer class="border-t border-border/70 px-4 py-8">
+    <div class="mx-auto flex max-w-7xl flex-col gap-2 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+      <p class="m-0 font-semibold">Copyright © {{ currentYear }} Nostalgia.</p>
+      <p class="m-0">粤ICP备2025431323号 · archived with care</p>
     </div>
   </footer>
 </template>

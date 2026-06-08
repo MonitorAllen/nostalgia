@@ -20,6 +20,7 @@ const heatmap: CalHeatmap = new CalHeatmap();
 
 // 容器 ref，用来获取实际宽度
 const heatmapContainer = ref<HTMLElement | null>(null);
+const isUnavailable = ref(false);
 
 // 缩放函数：根据容器宽度等比缩小 SVG，避免超出
 const resizeHeatmap = () => {
@@ -60,8 +61,19 @@ const onResize = () => {
 };
 
 onMounted(async () => {
-  const res: any = await userStore.contributions();
-  const contributions = res.data.contributions.reverse();
+  let contributions: any[] = [];
+
+  try {
+    const res: any = await userStore.contributions();
+    contributions = [...(res.data?.contributions ?? [])].reverse();
+  } catch {
+    contributions = [];
+  }
+
+  if (contributions.length === 0) {
+    isUnavailable.value = true;
+    return;
+  }
 
   await heatmap.paint(
       {
@@ -151,18 +163,28 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-column justify-content-center align-items-center">
-    <div id="cal-heatmap" class="flex" ref="heatmapContainer"></div>
+  <div class="flex flex-col items-center justify-center">
     <div
-        class="w-full flex justify-content-end align-items-center flex-wrap mt-2 text-xs text-color-secondary"
+        v-if="isUnavailable"
+        class="grid min-h-32 w-full place-items-center rounded-lg border border-dashed border-border/70 px-4 text-sm font-semibold text-muted-foreground"
     >
-      <span>Less</span>
-      <div id="ex-ghDay-legend" class="flex mx-2"></div>
-      <span>More</span>
+      暂无活动记录
+    </div>
+    <div v-else id="cal-heatmap" class="max-w-full overflow-hidden text-muted-foreground" ref="heatmapContainer"></div>
+    <div
+        v-if="!isUnavailable"
+        class="mt-3 flex w-full flex-wrap items-center justify-end text-xs font-semibold text-muted-foreground"
+    >
+      <span>少</span>
+      <div id="ex-ghDay-legend" class="mx-2 flex"></div>
+      <span>多</span>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 不改你原来的布局，这里可以保持为空或后续再加细节 */
+:deep(.ch-domain-text),
+:deep(.ch-subdomain-text) {
+  fill: rgb(var(--color-muted-foreground));
+}
 </style>

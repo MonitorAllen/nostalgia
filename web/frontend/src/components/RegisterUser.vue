@@ -1,116 +1,83 @@
 <script setup lang="ts">
-import InputGroup from 'primevue/inputgroup'
-import InputGroupAddon from 'primevue/inputgroupaddon'
-import InputText from 'primevue/inputtext'
-import FloatLabel from 'primevue/floatlabel'
-import Button from 'primevue/button'
-import Panel from 'primevue/panel'
-
-import { useRouter } from 'vue-router'
 import { computed, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { UserPlus } from '@lucide/vue'
 import { useUserStore } from '@/store/module/user'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/composables/useToast'
 import type { RegisterRequest } from '@/types/request/user'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 
 const user = ref<RegisterRequest>({
   username: '',
   email: '',
   full_name: '',
-  password: ''
+  password: '',
 })
 
-const isRegisterDisabled = computed(() => !user.value.email || !user.value.username || !user.value.full_name || !user.value.password)
-
+const isRegisterDisabled = computed(
+  () => !user.value.email || !user.value.username || !user.value.full_name || !user.value.password,
+)
 const userStore = useUserStore()
-
 const router = useRouter()
-
 const toast = useToast()
 
-const errorMessage = ref<string>('')
-
 const handleRegister = () => {
-  userStore.register(user.value)
+  userStore
+    .register(user.value)
     .then(() => {
-      // 跳转主页
+      toast.add({ severity: 'success', summary: '注册成功', detail: '欢迎加入 Nostalgia。', life: 3000 })
       router.replace({ name: 'home' })
     })
-    .catch((err) => {
-      if (err.response && err.response.status === 403) {
-        errorMessage.value = 'Email or username already exists.'
-      } else if (err.response && err.response.status === 400) {
-        errorMessage.value = 'Parameters error.'
-      } else {
-        errorMessage.value = 'An error occurred, please try again.'
-      }
-      toast.add({
-        severity: 'error',
-        summary: 'Register failed.',
-        detail: errorMessage.value,
-        life: 3000
-      })
+    .catch((err: any) => {
+      const detail =
+        err.response?.status === 403
+          ? '邮箱或用户名已存在'
+          : err.response?.status === 400
+            ? '注册参数有误'
+            : '请稍后再试'
+      toast.add({ severity: 'error', summary: '注册失败', detail, life: 3000 })
     })
 }
 </script>
 
 <template>
-  <div class="flex flex-column register">
-    <Panel header="欢迎来到 Nostalgia!">
-      <div class="flex flex-column row-gap-5 register-form">
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-envelope"></i>
-          </InputGroupAddon>
-          <FloatLabel>
-            <InputText id="email" v-model="user.email" />
-            <label for="username">Email</label>
-          </FloatLabel>
-        </InputGroup>
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-user"></i>
-          </InputGroupAddon>
-          <FloatLabel>
-            <InputText id="username" v-model="user.username" />
-            <label for="username">Username</label>
-          </FloatLabel>
-        </InputGroup>
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-user"></i>
-          </InputGroupAddon>
-          <FloatLabel>
-            <InputText id="full_name" v-model="user.full_name" />
-            <label for="username">FullName</label>
-          </FloatLabel>
-        </InputGroup>
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-lock"></i>
-          </InputGroupAddon>
-          <FloatLabel>
-            <InputText id="password" type="password" v-model="user.password" :feedback="false" />
-            <label for="password">Password</label>
-          </FloatLabel>
-        </InputGroup>
+  <main class="grid min-h-screen place-items-center px-4 py-10">
+    <section class="archive-surface w-full max-w-md rounded-[1.1rem] p-6">
+      <div class="mb-6 flex items-center gap-3">
+        <span class="archive-glass grid h-11 w-11 place-items-center rounded-full">
+          <UserPlus class="h-5 w-5 text-accent" />
+        </span>
+        <div>
+          <h1 class="m-0 text-2xl font-black">创建 Nostalgia 账号</h1>
+          <p class="m-0 text-sm text-muted-foreground">注册后可以评论、验证邮箱并继续阅读。</p>
+        </div>
+      </div>
 
-        <Button label="Register" :disabled="isRegisterDisabled" @click="handleRegister" />
-      </div>
-      <div class="flex flex-row mt-2">
-        <span>已经有账号了？</span><router-link :to="{name: 'login'}" class="pointer">去登陆</router-link>
-      </div>
-    </Panel>
-  </div>
+      <form class="space-y-4" @submit.prevent="handleRegister">
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">Email</span>
+          <AppInput id="email" v-model="user.email" type="email" autocomplete="email" />
+        </label>
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">Username</span>
+          <AppInput id="username" v-model="user.username" autocomplete="username" />
+        </label>
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">Full name</span>
+          <AppInput id="full_name" v-model="user.full_name" autocomplete="name" />
+        </label>
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">Password</span>
+          <AppInput id="password" v-model="user.password" type="password" autocomplete="new-password" />
+        </label>
+        <AppButton class="w-full" type="submit" :disabled="isRegisterDisabled">注册</AppButton>
+      </form>
+
+      <p class="m-0 mt-5 text-center text-sm text-muted-foreground">
+        已经有账号？
+        <RouterLink :to="{ name: 'login' }" class="font-bold text-accent">去登录</RouterLink>
+      </p>
+    </section>
+  </main>
 </template>
-
-<style scoped>
-.register {
-  width: 400px;
-  margin: 10% auto;
-  padding: 8px;
-}
-
-.register-form {
-  margin-top: 8px;
-}
-</style>

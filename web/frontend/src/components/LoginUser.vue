@@ -1,102 +1,74 @@
 <script setup lang="ts">
-import InputGroup from 'primevue/inputgroup'
-import InputGroupAddon from 'primevue/inputgroupaddon'
-import InputText from 'primevue/inputtext'
-import FloatLabel from 'primevue/floatlabel'
-import Button from 'primevue/button'
-import Panel from 'primevue/panel'
-
-import { useRouter } from 'vue-router'
 import { computed, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { LogIn } from '@lucide/vue'
 import { useUserStore } from '@/store/module/user'
-import { useToast } from 'primevue/usetoast'
-import type { AxiosResponse } from 'axios'
+import { useToast } from '@/composables/useToast'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 
 const user = ref({
   username: '',
-  password: ''
+  password: '',
 })
 
 const isLoginDisabled = computed(() => !user.value.username || !user.value.password)
-
 const userStore = useUserStore()
-
 const router = useRouter()
-
 const toast = useToast()
 
-const errorMessage = ref<string>('')
-
 const handleLogin = () => {
-  userStore.login(user.value)
+  userStore
+    .login(user.value)
     .then(() => {
       toast.add({
         severity: 'success',
-        summary: `Hello, ${userStore.userInfo.full_name}`,
-        detail: 'You have successfully logged in.',
-        life: 3000
+        summary: `欢迎回来，${userStore.userInfo.full_name}`,
+        detail: '你已经成功登录。',
+        life: 3000,
       })
-      // 跳转主页
       router.replace({ name: 'home' })
     })
     .catch((err: any) => {
-      if (err.response && err.response.status === 401) {
-        errorMessage.value = err.response.data.error
-      } else {
-        errorMessage.value = 'An error occurred, please try again.'
-      }
       toast.add({
         severity: 'error',
-        summary: 'Login failed.',
-        detail: errorMessage.value,
-        life: 3000
+        summary: '登录失败',
+        detail: err.response?.data?.error || '请检查账号或密码',
+        life: 3000,
       })
     })
 }
 </script>
 
 <template>
-  <div class="flex flex-column login">
-    <Panel header="欢迎来到 Nostalgia!">
-      <div class="flex flex-column row-gap-5 login-form">
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-user"></i>
-          </InputGroupAddon>
-          <FloatLabel>
-            <InputText id="username" v-model="user.username" />
-            <label for="username">用户名</label>
-          </FloatLabel>
-
-        </InputGroup>
-
-        <InputGroup>
-          <InputGroupAddon>
-            <i class="pi pi-lock"></i>
-          </InputGroupAddon>
-          <FloatLabel>
-            <InputText id="password" type="password" v-model="user.password" :feedback="false" />
-            <label for="password">密码</label>
-          </FloatLabel>
-        </InputGroup>
-
-        <Button label="Login" :disabled="isLoginDisabled" @click="handleLogin" />
+  <main class="grid min-h-screen place-items-center px-4 py-10">
+    <section class="archive-surface w-full max-w-md rounded-[1.1rem] p-6">
+      <div class="mb-6 flex items-center gap-3">
+        <span class="archive-glass grid h-11 w-11 place-items-center rounded-full">
+          <LogIn class="h-5 w-5 text-accent" />
+        </span>
+        <div>
+          <h1 class="m-0 text-2xl font-black">登录 Nostalgia</h1>
+          <p class="m-0 text-sm text-muted-foreground">欢迎回来，继续阅读与评论。</p>
+        </div>
       </div>
-      <div class="flex flex-row mt-2">
-        <span>还有没有账号？</span><router-link :to="{name: 'register'}" class="pointer">去注册</router-link>
-      </div>
-    </Panel>
-  </div>
+
+      <form class="space-y-4" @submit.prevent="handleLogin">
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">用户名</span>
+          <AppInput id="username" v-model="user.username" autocomplete="username" />
+        </label>
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">密码</span>
+          <AppInput id="password" v-model="user.password" type="password" autocomplete="current-password" />
+        </label>
+        <AppButton class="w-full" type="submit" :disabled="isLoginDisabled">登录</AppButton>
+      </form>
+
+      <p class="m-0 mt-5 text-center text-sm text-muted-foreground">
+        还没有账号？
+        <RouterLink :to="{ name: 'register' }" class="font-bold text-accent">去注册</RouterLink>
+      </p>
+    </section>
+  </main>
 </template>
-
-<style scoped>
-.login {
-  width: 400px;
-  margin: 10% auto;
-  padding: 8px;
-}
-
-.login-form {
-  margin-top: 8px;
-}
-</style>
