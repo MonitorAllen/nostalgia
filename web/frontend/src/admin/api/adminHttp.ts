@@ -48,6 +48,13 @@ class AdminHttpClient {
     }
 
     const authStore = useAdminAuthStore()
+    const authenticated = await authStore.ensureAuthenticated()
+
+    if (!authenticated) {
+      this.redirectToLogin()
+      return Promise.reject(new Error('Admin authentication required'))
+    }
+
     if (authStore.token) {
       adminConfig.headers.Authorization = `Bearer ${authStore.token}`
     }

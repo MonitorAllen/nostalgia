@@ -1,8 +1,10 @@
+export type AdminInt64 = string | number
+
 export interface AdminUser {
-  id: number
+  id: AdminInt64
   username: string
   is_active?: boolean
-  role_id?: number
+  role_id?: AdminInt64
   created_at?: string
 }
 
@@ -33,8 +35,23 @@ export interface AdminArticle {
   created_at: string
   updated_at: string
   owner: string
-  category_id?: number
+  category_id?: AdminInt64
   category_name?: string
+  cover?: string
+  slug?: string
+  check_outdated?: boolean
+}
+
+export interface CreateAdminArticleRequest {
+  title?: string
+  summary?: string
+  content?: string
+  is_publish?: boolean
+  category_id?: AdminInt64
+}
+
+export interface UpdateAdminArticleRequest extends CreateAdminArticleRequest {
+  id: string
   cover?: string
   slug?: string
   check_outdated?: boolean
@@ -50,16 +67,15 @@ export interface AdminArticleResponse {
 }
 
 export interface AdminCategory {
-  id: number
+  id: AdminInt64
   name: string
-  article_count?: number
+  article_count?: AdminInt64
   created_at?: string
   updated_at?: string
 }
 
-export interface AdminCategoryListResponse {
+export interface AdminCategoryAllResponse {
   categories: AdminCategory[]
-  count: string | number
 }
 
 export interface AdminUploadRequest {

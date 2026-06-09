@@ -1,5 +1,10 @@
 import adminHttp from './adminHttp'
-import type { AdminArticle, AdminArticleListResponse, AdminArticleResponse } from '../types'
+import type {
+  AdminArticleListResponse,
+  AdminArticleResponse,
+  CreateAdminArticleRequest,
+  UpdateAdminArticleRequest,
+} from '../types'
 
 export interface ListAdminArticlesParams {
   title?: string
@@ -15,11 +20,11 @@ export function getAdminArticle(id: string, needContent = true) {
   return adminHttp.get<AdminArticleResponse>(`/articles/${id}/${needContent}`)
 }
 
-export function createAdminArticle(data: Partial<AdminArticle>) {
+export function createAdminArticle(data: CreateAdminArticleRequest) {
   return adminHttp.post<AdminArticleResponse>('/articles', data)
 }
 
-export function updateAdminArticle(data: Partial<AdminArticle>) {
+export function updateAdminArticle(data: UpdateAdminArticleRequest) {
   return adminHttp.patch<AdminArticleResponse>('/articles', data)
 }
 

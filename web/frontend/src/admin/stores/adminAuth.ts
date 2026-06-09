@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, readonly, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { loginAdmin, renewAdminAccessToken } from '../api/adminAuthApi'
 import type { AdminLoginRequest, AdminTokens, AdminUser } from '../types'
@@ -35,17 +35,21 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
   const refreshTokenExpiresAt = ref(localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRES) || '')
   const admin = ref<AdminUser | null>(readJson<AdminUser | null>(STORAGE_KEYS.ADMIN, null))
 
-  const isAuthenticated = computed(() => {
+  const hasValidAccessToken = () => {
     return Boolean(token.value && tokenExpiresAt.value && isFutureDate(tokenExpiresAt.value))
-  })
+  }
 
-  const isRefreshTokenValid = computed(() => {
+  const hasValidRefreshToken = () => {
     return Boolean(
       refreshToken.value &&
         refreshTokenExpiresAt.value &&
         isFutureDate(refreshTokenExpiresAt.value),
     )
-  })
+  }
+
+  const isAuthenticated = computed(hasValidAccessToken)
+
+  const isRefreshTokenValid = computed(hasValidRefreshToken)
 
   const setTokens = (tokens: AdminTokens) => {
     token.value = tokens.access_token
@@ -106,7 +110,7 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
   }
 
   const refreshAccessToken = async () => {
-    if (!refreshToken.value || !isRefreshTokenValid.value) {
+    if (!hasValidRefreshToken()) {
       clear()
       throw new Error('No valid admin refresh token available')
     }
@@ -124,24 +128,46 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     }
   }
 
+  const ensureAuthenticated = async () => {
+    if (hasValidAccessToken()) {
+      return true
+    }
+
+    if (!hasValidRefreshToken()) {
+      clear()
+      return false
+    }
+
+    try {
+      await refreshAccessToken()
+      return true
+    } catch {
+      clear()
+      return false
+    }
+  }
+
   const logout = () => {
     clear()
     window.location.href = '/admin/login'
   }
 
   return {
-    token,
-    tokenExpiresAt,
-    refreshToken,
-    refreshTokenExpiresAt,
-    admin,
+    token: readonly(token),
+    tokenExpiresAt: readonly(tokenExpiresAt),
+    refreshToken: readonly(refreshToken),
+    refreshTokenExpiresAt: readonly(refreshTokenExpiresAt),
+    admin: readonly(admin),
     isAuthenticated,
     isRefreshTokenValid,
+    hasValidAccessToken,
+    hasValidRefreshToken,
     setTokens,
     setAdmin,
     clear,
     login,
     refreshAccessToken,
+    ensureAuthenticated,
     logout,
   }
 })
