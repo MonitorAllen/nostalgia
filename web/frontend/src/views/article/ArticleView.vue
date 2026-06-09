@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
   Calendar,
+  Check,
   Clock,
+  Copy,
   Eye,
   Heart,
   HeartOff,
@@ -77,12 +79,14 @@ const replyCommentParentId = ref(0)
 const deleteDialogOpen = ref(false)
 const pendingDeleteId = ref<number | null>(null)
 const sanitizedArticleContent = computed(() => sanitizeHtml(article.value?.content || ''))
+const isArticlePathCopied = ref(false)
 
 const scrollProgress = ref(0)
 const viewed = ref(false)
 const liked = ref(false)
 const isOutdated = ref(false)
 let timer: ReturnType<typeof setTimeout>
+let copyTimer: ReturnType<typeof setTimeout> | undefined
 
 const config: Ref<EditorConfig> = ref({
   toolbar: {
@@ -118,6 +122,16 @@ const replyComment = (
   toUserName: string,
   parentId: number
 ) => {
+  if (!userStore.userInfo) {
+    toast.add({
+      severity: 'info',
+      summary: '需要登录',
+      detail: '登录后才可以回复评论',
+      life: 2500
+    })
+    return
+  }
+
   if (replyCommentId.value === commentId) {
     replyCommentId.value = 0
     replyUserName.value = ''
@@ -177,6 +191,49 @@ const getCommentText = (html: string) => {
 }
 
 const hasMeaningfulComment = (html: string) => getCommentText(html).length > 0
+
+const writeClipboardText = async (text: string) => {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  document.body.appendChild(textarea)
+  textarea.select()
+
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textarea)
+  if (!copied) throw new Error('copy failed')
+}
+
+const copyArticlePath = async () => {
+  try {
+    await writeClipboardText(articlePath.value)
+    isArticlePathCopied.value = true
+    if (copyTimer) clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => {
+      isArticlePathCopied.value = false
+    }, 1800)
+    toast.add({
+      severity: 'success',
+      summary: '已复制',
+      detail: '文章链接已复制到剪贴板',
+      life: 2200
+    })
+  } catch {
+    toast.add({
+      severity: 'warning',
+      summary: '复制失败',
+      detail: '请手动复制文章链接',
+      life: 2600
+    })
+  }
+}
 
 const createComment = async (parentId: number, toUserId: string) => {
   if (!article.value) return
@@ -354,6 +411,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearTimeout(timer)
+  if (copyTimer) clearTimeout(copyTimer)
   window.removeEventListener('scroll', updateScrollProgress)
   if (editor.value) editor.value.destroy()
 })
@@ -385,7 +443,9 @@ onUnmounted(() => {
           <AppBadge tone="accent">{{ article.category_name }}</AppBadge>
           <AppBadge v-if="article.read_time">{{ article.read_time }}</AppBadge>
         </div>
-        <h1 class="m-0 text-3xl font-black leading-tight text-foreground md:text-5xl">
+        <h1
+          class="m-0 text-3xl font-extrabold leading-tight text-foreground md:text-4xl lg:text-[2.65rem]"
+        >
           {{ article.title }}
         </h1>
         <div
@@ -425,10 +485,22 @@ onUnmounted(() => {
         版权声明
       </div>
       <div class="mt-3 space-y-2 text-sm leading-7 text-muted-foreground">
-        <p class="m-0 inline-flex max-w-full items-center gap-2 break-all">
-          <LinkIcon class="h-4 w-4 shrink-0" />
-          {{ articlePath }}
-        </p>
+        <div class="m-0 flex max-w-full flex-wrap items-center gap-2">
+          <span class="inline-flex min-w-0 flex-1 items-center gap-2 break-all">
+            <LinkIcon class="h-4 w-4 shrink-0" />
+            <span>{{ articlePath }}</span>
+          </span>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            :aria-label="isArticlePathCopied ? '文章链接已复制' : '复制文章链接'"
+            :title="isArticlePathCopied ? '已复制' : '复制文章链接'"
+            @click="copyArticlePath"
+          >
+            <Check v-if="isArticlePathCopied" class="h-4 w-4 text-accent" />
+            <Copy v-else class="h-4 w-4" />
+          </button>
+        </div>
         <p class="m-0">
           本文采用
           <a

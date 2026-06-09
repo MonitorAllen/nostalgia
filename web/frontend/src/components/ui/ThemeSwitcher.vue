@@ -7,7 +7,7 @@ const { mode, setMode } = useTheme()
 const items: Array<{ value: ThemeMode; label: string; icon: object }> = [
   { value: 'system', label: '系统', icon: Monitor },
   { value: 'light', label: '浅色', icon: Sun },
-  { value: 'dark', label: '深色', icon: Moon },
+  { value: 'dark', label: '深色', icon: Moon }
 ]
 </script>
 
@@ -17,7 +17,7 @@ const items: Array<{ value: ThemeMode; label: string; icon: object }> = [
       v-for="item in items"
       :key="item.value"
       type="button"
-      class="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold transition"
+      class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition"
       :class="
         mode === item.value
           ? 'bg-accent text-accent-foreground'
@@ -25,10 +25,11 @@ const items: Array<{ value: ThemeMode; label: string; icon: object }> = [
       "
       role="radio"
       :aria-checked="mode === item.value"
+      :aria-label="`${item.label}主题`"
+      :title="`${item.label}主题`"
       @click="setMode(item.value)"
     >
       <component :is="item.icon" class="h-4 w-4" />
-      <span class="hidden lg:inline">{{ item.label }}</span>
     </button>
   </div>
 </template>
