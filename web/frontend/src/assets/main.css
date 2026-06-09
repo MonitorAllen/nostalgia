@@ -20,7 +20,7 @@
     --color-glass-border: 255 255 255;
     --color-code: 245 247 246;
     --radius-archive: 0.75rem;
-    --shadow-glass: 0 18px 50px rgb(28 41 37 / 0.10);
+    --shadow-glass: 0 18px 50px rgb(28 41 37 / 0.1);
     --shadow-archive: 0 8px 30px rgb(24 29 27 / 0.08);
   }
 
@@ -152,88 +152,6 @@
     font-weight: 600;
     line-height: 1;
     padding: 0.4rem 0.65rem;
-  }
-
-  .reading-prose {
-    color: rgb(var(--color-foreground));
-    overflow-wrap: break-word;
-    word-break: break-word;
-  }
-
-  .reading-prose h1,
-  .reading-prose h2,
-  .reading-prose h3,
-  .reading-prose h4 {
-    color: rgb(var(--color-foreground));
-    font-weight: 750;
-    letter-spacing: 0;
-    line-height: 1.25;
-    margin: 2rem 0 0.85rem;
-    text-wrap: balance;
-  }
-
-  .reading-prose h1 { font-size: clamp(2rem, 4vw, 3rem); }
-  .reading-prose h2 { font-size: clamp(1.55rem, 3vw, 2.15rem); }
-  .reading-prose h3 { font-size: clamp(1.25rem, 2vw, 1.55rem); }
-
-  .reading-prose p,
-  .reading-prose li {
-    color: rgb(var(--color-foreground) / 0.88);
-    font-size: 1.03rem;
-    line-height: 1.9;
-  }
-
-  .reading-prose p {
-    margin: 1rem 0;
-  }
-
-  .reading-prose a {
-    color: rgb(var(--color-accent));
-    border-bottom: 1px solid rgb(var(--color-accent) / 0.35);
-  }
-
-  .reading-prose blockquote {
-    margin: 1.5rem 0;
-    border: 1px solid rgb(var(--color-border));
-    border-radius: 0.85rem;
-    background: rgb(var(--color-surface-raised));
-    color: rgb(var(--color-muted-foreground));
-    padding: 1rem 1.2rem;
-  }
-
-  .reading-prose pre,
-  .reading-prose code {
-    font-family:
-      'JetBrains Mono',
-      'SFMono-Regular',
-      Consolas,
-      monospace;
-  }
-
-  .reading-prose code {
-    border: 1px solid rgb(var(--color-border));
-    border-radius: 0.35rem;
-    background: rgb(var(--color-code));
-    color: rgb(var(--color-foreground));
-    font-size: 0.92em;
-    padding: 0.15rem 0.35rem;
-  }
-
-  .reading-prose pre {
-    border: 1px solid rgb(var(--color-border));
-    border-radius: 0.9rem;
-    background: rgb(var(--color-code)) !important;
-    color: rgb(var(--color-foreground));
-    line-height: 1.75;
-    margin: 1.4rem 0;
-    overflow-x: auto;
-    padding: 1rem;
-  }
-
-  .reading-prose pre code {
-    border: 0;
-    background: transparent;
-    padding: 0;
   }
 }
 

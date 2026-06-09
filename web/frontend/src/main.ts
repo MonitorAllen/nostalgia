@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './assets/content.css'
 
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -8,7 +9,7 @@ import { createPinia } from 'pinia'
 import VueAxios from 'vue-axios'
 import axios from 'axios'
 
-import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue';
+import { CkeditorPlugin } from '@ckeditor/ckeditor5-vue'
 
 import dayjs from 'dayjs'
 import localData from 'dayjs/plugin/localeData'

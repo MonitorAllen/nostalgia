@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, onUpdated, provide, ref, type Ref } from 'vue'
+import { computed, onMounted, onUnmounted, onUpdated, provide, ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
@@ -9,7 +9,7 @@ import {
   Heart,
   HeartOff,
   Link as LinkIcon,
-  ShieldCheck,
+  ShieldCheck
 } from '@lucide/vue'
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
 import { ClassicEditor, Code, CodeBlock, type EditorConfig, Essentials, Paragraph } from 'ckeditor5'
@@ -18,14 +18,29 @@ import 'ckeditor5/ckeditor5.css'
 import 'ckeditor5/ckeditor5-content.css'
 
 import Prism from 'prismjs'
+import 'prismjs/components/prism-bash.min.js'
+import 'prismjs/components/prism-c.min.js'
+import 'prismjs/components/prism-cpp.min.js'
+import 'prismjs/components/prism-css.min.js'
 import 'prismjs/components/prism-go.min.js'
+import 'prismjs/components/prism-java.min.js'
+import 'prismjs/components/prism-javascript.min.js'
+import 'prismjs/components/prism-json.min.js'
+import 'prismjs/components/prism-python.min.js'
+import 'prismjs/components/prism-sql.min.js'
+import 'prismjs/components/prism-typescript.min.js'
 import 'prismjs/themes/prism-solarizedlight.css'
 
 import date from '@/util/date'
 import type { Article, ArticleComments } from '@/types/article'
 import { useUserStore } from '@/store/module/user'
 import { useCommentStore } from '@/store/module/comment'
-import { getArticle, getArticleBySlug, incrementArticleLikes, incrementArticleViews } from '@/api/article'
+import {
+  getArticle,
+  getArticleBySlug,
+  incrementArticleLikes,
+  incrementArticleViews
+} from '@/api/article'
 import { listComments } from '@/api/comment'
 import CommentItem from '@/components/article/CommentItem.vue'
 import { isUUID } from '@/util/validate'
@@ -33,6 +48,7 @@ import { useToast } from '@/composables/useToast'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import { sanitizeHtml } from '@/util/sanitizeHtml'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -47,6 +63,7 @@ const articlePath = ref(window.location.href)
 const articleId = ref(props.id)
 const editor = ref<ClassicEditor>()
 const editorData = ref('')
+const isSubmittingComment = ref(false)
 const isLayoutReady = ref(false)
 const article = ref<Article | null>(null)
 const comments = ref<ArticleComments[]>([])
@@ -58,6 +75,7 @@ const replyCommentParentId = ref(0)
 
 const deleteDialogOpen = ref(false)
 const pendingDeleteId = ref<number | null>(null)
+const sanitizedArticleContent = computed(() => sanitizeHtml(article.value?.content || ''))
 
 const scrollProgress = ref(0)
 const viewed = ref(false)
@@ -67,10 +85,11 @@ let timer: ReturnType<typeof setTimeout>
 
 const config: Ref<EditorConfig> = ref({
   toolbar: {
-    items: ['code', 'codeBlock'],
-    shouldNotGroupWhenFull: true,
+    items: ['undo', 'redo', '|', 'code', 'codeBlock'],
+    shouldNotGroupWhenFull: true
   },
   plugins: [Code, CodeBlock, Essentials, Paragraph],
+  placeholder: '写下评论，Ctrl/⌘ + Enter 提交',
   codeBlock: {
     languages: [
       { language: 'plaintext', label: 'Plain text' },
@@ -87,14 +106,19 @@ const config: Ref<EditorConfig> = ref({
       { language: 'python', label: 'Python' },
       { language: 'ruby', label: 'Ruby' },
       { language: 'typescript', label: 'TypeScript' },
-      { language: 'xml', label: 'XML' },
-    ],
+      { language: 'xml', label: 'XML' }
+    ]
   },
   language: 'zh-cn',
-  translations: [translations],
+  translations: [translations]
 })
 
-const replyComment = (commentId: number, toUserId: string, toUserName: string, parentId: number) => {
+const replyComment = (
+  commentId: number,
+  toUserId: string,
+  toUserName: string,
+  parentId: number
+) => {
   if (replyCommentId.value === commentId) {
     replyCommentId.value = 0
     replyUserName.value = ''
@@ -133,7 +157,12 @@ const confirmDeleteComment = () => {
   const targetId = pendingDeleteId.value
   commentStore.deleteComment(targetId).then(() => {
     if (removeCommentFromTree(comments.value, targetId)) {
-      toast.add({ severity: 'success', summary: '评论已删除', detail: '评论列表已更新', life: 2500 })
+      toast.add({
+        severity: 'success',
+        summary: '评论已删除',
+        detail: '评论列表已更新',
+        life: 2500
+      })
     }
     pendingDeleteId.value = null
     deleteDialogOpen.value = false
@@ -142,46 +171,75 @@ const confirmDeleteComment = () => {
 
 provide('deleteComment', requestDeleteComment)
 
-const createComment = (parentId: number, toUserId: string) => {
+const getCommentText = (html: string) => {
+  const container = document.createElement('div')
+  container.innerHTML = html
+  return (container.textContent || '').replace(/\u00a0/g, ' ').trim()
+}
+
+const hasMeaningfulComment = (html: string) => getCommentText(html).length > 0
+
+const createComment = async (parentId: number, toUserId: string) => {
   if (!article.value) return
   if (!userStore.userInfo) {
-    toast.add({ severity: 'info', summary: '需要登录', detail: '登录后才能使用评论功能', life: 2500 })
+    toast.add({
+      severity: 'info',
+      summary: '需要登录',
+      detail: '登录后才能使用评论功能',
+      life: 2500
+    })
     return
   }
 
-  if (editorData.value.trim().length === 0) {
-    toast.add({ severity: 'warning', summary: '评论为空', detail: '请写下一点内容再提交', life: 2500 })
+  if (!hasMeaningfulComment(editorData.value)) {
+    toast.add({
+      severity: 'warning',
+      summary: '评论为空',
+      detail: '请写下一点内容再提交',
+      life: 2500
+    })
     return
   }
+  if (isSubmittingComment.value) return
 
   const resolvedToUserId = replyUserId.value || toUserId
   const resolvedParentId = replyCommentParentId.value || parentId
 
-  commentStore
-    .createComment({
+  isSubmittingComment.value = true
+  try {
+    const res: any = await commentStore.createComment({
       article_id: articleId.value,
       content: editorData.value,
       parent_id: resolvedParentId,
       from_user_id: userStore.userInfo.id,
-      to_user_id: resolvedToUserId,
+      to_user_id: resolvedToUserId
     })
-    .then((res: any) => {
-      if (resolvedParentId === 0) {
-        comments.value.push(res.data.comment)
-      } else {
-        comments.value.forEach((comment, index) => {
-          if (comment.id === resolvedParentId) comments.value[index].child.push(res.data.comment)
-        })
-      }
 
-      toast.add({ severity: 'success', summary: '评论成功', detail: '新的评论已发布', life: 2500 })
-      editorData.value = ''
-      replyCommentId.value = 0
-      replyUserName.value = ''
-      replyUserId.value = ''
-      replyCommentParentId.value = 0
-      Prism.highlightAll()
+    if (resolvedParentId === 0) {
+      comments.value.push(res.data.comment)
+    } else {
+      comments.value.forEach((comment, index) => {
+        if (comment.id === resolvedParentId) comments.value[index].child.push(res.data.comment)
+      })
+    }
+
+    toast.add({ severity: 'success', summary: '评论成功', detail: '新的评论已发布', life: 2500 })
+    editorData.value = ''
+    replyCommentId.value = 0
+    replyUserName.value = ''
+    replyUserId.value = ''
+    replyCommentParentId.value = 0
+    Prism.highlightAll()
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: '评论失败',
+      detail: error.response?.data?.error || '请稍后再试',
+      life: 3000
     })
+  } finally {
+    isSubmittingComment.value = false
+  }
 }
 
 const checkValidView = async () => {
@@ -201,17 +259,27 @@ const checkValidLike = async () => {
     await incrementArticleLikes({ id: articleId.value })
     article.value.likes++
     liked.value = true
-    toast.add({ severity: 'success', summary: '感谢点赞', detail: '这篇文章对你有帮助就太好了', life: 3000 })
+    toast.add({
+      severity: 'success',
+      summary: '感谢点赞',
+      detail: '这篇文章对你有帮助就太好了',
+      life: 3000
+    })
   } catch (error: any) {
     if (error.response?.status === 409) {
       liked.value = true
-      toast.add({ severity: 'info', summary: '已经点过赞', detail: '你最近已经支持过这篇文章了', life: 3000 })
+      toast.add({
+        severity: 'info',
+        summary: '已经点过赞',
+        detail: '你最近已经支持过这篇文章了',
+        life: 3000
+      })
     } else {
       toast.add({
         severity: 'error',
         summary: '点赞失败',
         detail: error.response?.data?.error || '请稍后再试',
-        life: 3000,
+        life: 3000
       })
     }
   }
@@ -238,6 +306,14 @@ const updateScrollProgress = () => {
 
 const onEditorReady = (editorInstance: ClassicEditor) => {
   editor.value = editorInstance
+  editorInstance.editing.view.document.on('keydown', (event: any, data: any) => {
+    const domEvent = data.domEvent as KeyboardEvent
+    if ((domEvent.ctrlKey || domEvent.metaKey) && domEvent.key === 'Enter') {
+      data.preventDefault()
+      event.stop()
+      createComment(0, article.value?.owner || '')
+    }
+  })
 }
 
 onUpdated(() => {
@@ -265,7 +341,7 @@ onMounted(async () => {
         severity: 'error',
         summary: '获取文章失败',
         detail: error.response?.data?.error || '获取文章信息失败',
-        life: 3000,
+        life: 3000
       })
     }
   }
@@ -285,9 +361,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="fixed left-0 top-0 z-50 h-1 bg-accent transition-[width]" :style="{ width: scrollProgress + '%' }" />
+  <div
+    class="fixed left-0 top-0 z-50 h-1 bg-accent transition-[width]"
+    :style="{ width: scrollProgress + '%' }"
+  />
 
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 md:py-10">
+  <main class="mx-auto flex w-full max-w-[820px] flex-col gap-5 px-4 py-6 md:py-10">
     <div
       v-if="isOutdated"
       class="archive-glass flex items-start gap-3 rounded-archive p-4 text-warning"
@@ -295,7 +374,9 @@ onUnmounted(() => {
       <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0" />
       <div>
         <p class="m-0 text-sm font-bold">这篇文章可能已经过时</p>
-        <p class="m-0 mt-1 text-sm text-muted-foreground">请结合最新版本、文档或实际环境复核相关内容。</p>
+        <p class="m-0 mt-1 text-sm text-muted-foreground">
+          请结合最新版本、文档或实际环境复核相关内容。
+        </p>
       </div>
     </div>
 
@@ -308,11 +389,21 @@ onUnmounted(() => {
         <h1 class="m-0 text-3xl font-black leading-tight text-foreground md:text-5xl">
           {{ article.title }}
         </h1>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-muted-foreground">
-          <span class="inline-flex items-center gap-1"><Calendar class="h-4 w-4" />{{ date.format(article.created_at, 'YYYY-MM-DD') }}</span>
-          <span class="inline-flex items-center gap-1"><Heart class="h-4 w-4" />{{ article.likes }}</span>
-          <span class="inline-flex items-center gap-1"><Eye class="h-4 w-4" />{{ article.views }}</span>
-          <span v-if="article.read_time" class="inline-flex items-center gap-1"><Clock class="h-4 w-4" />{{ article.read_time }}</span>
+        <div
+          class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-muted-foreground"
+        >
+          <span class="inline-flex items-center gap-1"
+            ><Calendar class="h-4 w-4" />{{ date.format(article.created_at, 'YYYY-MM-DD') }}</span
+          >
+          <span class="inline-flex items-center gap-1"
+            ><Heart class="h-4 w-4" />{{ article.likes }}</span
+          >
+          <span class="inline-flex items-center gap-1"
+            ><Eye class="h-4 w-4" />{{ article.views }}</span
+          >
+          <span v-if="article.read_time" class="inline-flex items-center gap-1"
+            ><Clock class="h-4 w-4" />{{ article.read_time }}</span
+          >
         </div>
       </header>
 
@@ -321,7 +412,7 @@ onUnmounted(() => {
         <p class="m-0 mt-2 text-base leading-8 text-foreground/85">{{ article.summary }}</p>
       </section>
 
-      <div class="reading-prose ck-content" v-html="article.content" />
+      <div class="reading-prose ck-content" v-html="sanitizedArticleContent" />
     </article>
 
     <div v-else class="archive-surface rounded-archive p-8 text-center">
@@ -341,7 +432,11 @@ onUnmounted(() => {
         </p>
         <p class="m-0">
           本文采用
-          <a class="font-semibold text-accent" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">
+          <a
+            class="font-semibold text-accent"
+            href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+            target="_blank"
+          >
             CC BY-NC-SA 4.0
           </a>
           许可协议，转载请注明出处。
@@ -381,18 +476,27 @@ onUnmounted(() => {
             >
               取消回复
             </AppButton>
-            <AppButton size="sm" @click="createComment(0, article.owner)">
-              {{ replyCommentId === 0 ? '发表评论' : '回复评论' }}
+            <AppButton
+              size="sm"
+              :disabled="isSubmittingComment"
+              @click="createComment(0, article.owner)"
+            >
+              {{ isSubmittingComment ? '提交中' : replyCommentId === 0 ? '发表评论' : '回复评论' }}
             </AppButton>
           </div>
         </div>
       </div>
 
-      <div v-else class="mt-4 rounded-archive border border-border bg-surface-raised p-5 text-center">
+      <div
+        v-else
+        class="mt-4 rounded-archive border border-border bg-surface-raised p-5 text-center"
+      >
         <p class="m-0 text-sm font-semibold text-muted-foreground">登录后才能使用评论功能</p>
         <div class="mt-4 flex justify-center gap-2">
           <AppButton size="sm" @click="router.push('/login')">登录</AppButton>
-          <AppButton size="sm" variant="secondary" @click="router.push('/register')">注册</AppButton>
+          <AppButton size="sm" variant="secondary" @click="router.push('/register')"
+            >注册</AppButton
+          >
         </div>
       </div>
 

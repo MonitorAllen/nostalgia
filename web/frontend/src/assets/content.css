@@ -1,0 +1,224 @@
+.reading-prose {
+  color: rgb(var(--color-foreground));
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.reading-prose > :first-child {
+  margin-top: 0;
+}
+
+.reading-prose > :last-child {
+  margin-bottom: 0;
+}
+
+.reading-prose h1,
+.reading-prose h2,
+.reading-prose h3,
+.reading-prose h4,
+.reading-prose h5,
+.reading-prose h6 {
+  color: rgb(var(--color-foreground));
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.25;
+  margin: 2rem 0 0.85rem;
+  text-wrap: balance;
+}
+
+.reading-prose h1 {
+  font-size: 2.25rem;
+}
+
+.reading-prose h2 {
+  font-size: 1.8rem;
+}
+
+.reading-prose h3 {
+  font-size: 1.45rem;
+}
+
+.reading-prose h4 {
+  font-size: 1.2rem;
+}
+
+.reading-prose h5,
+.reading-prose h6 {
+  font-size: 1.05rem;
+}
+
+.reading-prose p,
+.reading-prose li {
+  color: rgb(var(--color-foreground) / 0.88);
+  font-size: 1.03rem;
+  line-height: 1.9;
+}
+
+.reading-prose p {
+  margin: 1rem 0;
+}
+
+.reading-prose a {
+  color: rgb(var(--color-accent));
+  border-bottom: 1px solid rgb(var(--color-accent) / 0.35);
+  font-weight: 650;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+}
+
+.reading-prose a:hover {
+  border-bottom-color: rgb(var(--color-accent));
+}
+
+.reading-prose ul,
+.reading-prose ol {
+  margin: 1rem 0;
+  padding-left: 1.55rem;
+}
+
+.reading-prose li {
+  margin: 0.4rem 0;
+  padding-left: 0.15rem;
+}
+
+.reading-prose li::marker {
+  color: rgb(var(--color-accent));
+  font-weight: 700;
+}
+
+.reading-prose blockquote {
+  margin: 1.5rem 0;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.85rem;
+  background: rgb(var(--color-surface-raised));
+  color: rgb(var(--color-muted-foreground));
+  padding: 1rem 1.2rem;
+}
+
+.reading-prose blockquote p {
+  color: inherit;
+}
+
+.reading-prose pre,
+.reading-prose code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+.reading-prose code {
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.35rem;
+  background: rgb(var(--color-code));
+  color: rgb(var(--color-foreground));
+  font-size: 0.92em;
+  padding: 0.15rem 0.35rem;
+}
+
+.reading-prose pre {
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.9rem;
+  background: rgb(var(--color-code)) !important;
+  color: rgb(var(--color-foreground));
+  line-height: 1.75;
+  margin: 1.4rem 0;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.reading-prose pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.reading-prose figure {
+  margin: 1.65rem auto;
+}
+
+.reading-prose img {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0.8rem;
+  box-shadow: 0 14px 34px rgb(var(--color-foreground) / 0.08);
+}
+
+.reading-prose figcaption {
+  margin-top: 0.65rem;
+  color: rgb(var(--color-muted-foreground));
+  font-size: 0.9rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.reading-prose table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.8rem;
+  font-size: 0.96rem;
+}
+
+.reading-prose th,
+.reading-prose td {
+  border: 1px solid rgb(var(--color-border));
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.reading-prose th {
+  background: rgb(var(--color-surface-raised));
+  color: rgb(var(--color-foreground));
+  font-weight: 750;
+}
+
+.reading-prose hr {
+  height: 1px;
+  margin: 2rem 0;
+  border: 0;
+  background: rgb(var(--color-border));
+}
+
+.reading-prose--compact h1,
+.reading-prose--compact h2,
+.reading-prose--compact h3,
+.reading-prose--compact h4,
+.reading-prose--compact h5,
+.reading-prose--compact h6 {
+  margin: 1rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+.reading-prose--compact p,
+.reading-prose--compact li {
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.reading-prose--compact blockquote,
+.reading-prose--compact pre,
+.reading-prose--compact figure,
+.reading-prose--compact table {
+  margin: 0.85rem 0;
+}
+
+@media (max-width: 640px) {
+  .reading-prose h1 {
+    font-size: 1.9rem;
+  }
+
+  .reading-prose h2 {
+    font-size: 1.55rem;
+  }
+
+  .reading-prose h3 {
+    font-size: 1.3rem;
+  }
+
+  .reading-prose p,
+  .reading-prose li {
+    font-size: 1rem;
+  }
+}

@@ -5,6 +5,7 @@ import { useUserStore } from '@/store/module/user'
 import date from '@/util/date'
 import type { ArticleComments } from '@/types/article'
 import AppBadge from '@/components/ui/AppBadge.vue'
+import { sanitizeHtml } from '@/util/sanitizeHtml'
 
 const props = defineProps<{
   comment: ArticleComments
@@ -24,6 +25,7 @@ const displayedChildren = computed(() => {
   if (!props.comment.child) return []
   return showAllChildren.value ? props.comment.child : props.comment.child.slice(0, 2)
 })
+const sanitizedContent = computed(() => sanitizeHtml(props.comment.content || ''))
 
 const deleteComment = inject<(id: number) => void>('deleteComment')
 
@@ -32,7 +34,13 @@ const handleDelete = () => {
 }
 
 const handleReply = () => {
-  emit('reply', props.comment.id, props.comment.from_user_id, props.comment.from_user_name, props.comment.parent_id)
+  emit(
+    'reply',
+    props.comment.id,
+    props.comment.from_user_id,
+    props.comment.from_user_name,
+    props.comment.parent_id
+  )
 }
 </script>
 
@@ -45,7 +53,9 @@ const handleReply = () => {
       <div class="flex flex-wrap items-center gap-2">
         <h3 class="m-0 text-sm font-black text-foreground">{{ comment.from_user_name }}</h3>
         <AppBadge v-if="comment.from_user_id === articleOwnerId" tone="accent">作者</AppBadge>
-        <template v-if="isChild && comment.to_user_id && comment.from_user_id !== comment.to_user_id">
+        <template
+          v-if="isChild && comment.to_user_id && comment.from_user_id !== comment.to_user_id"
+        >
           <CornerDownRight class="h-3.5 w-3.5 text-muted-foreground" />
           <h3 class="m-0 text-sm font-black text-foreground">{{ comment.to_user_name }}</h3>
           <AppBadge v-if="comment.to_user_id === articleOwnerId" tone="accent">作者</AppBadge>
@@ -69,7 +79,10 @@ const handleReply = () => {
       </div>
     </div>
 
-    <div class="reading-prose mt-2 text-sm" v-html="comment.content" />
+    <div
+      class="reading-prose reading-prose--compact ck-content mt-2 text-sm"
+      v-html="sanitizedContent"
+    />
 
     <div v-if="comment.child?.length > 0" class="mt-3 space-y-2">
       <CommentItem
