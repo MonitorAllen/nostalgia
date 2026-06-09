@@ -26,6 +26,7 @@ import 'prismjs/components/prism-go.min.js'
 import 'prismjs/components/prism-java.min.js'
 import 'prismjs/components/prism-javascript.min.js'
 import 'prismjs/components/prism-json.min.js'
+import 'prismjs/components/prism-markup.min.js'
 import 'prismjs/components/prism-python.min.js'
 import 'prismjs/components/prism-sql.min.js'
 import 'prismjs/components/prism-typescript.min.js'
@@ -94,19 +95,17 @@ const config: Ref<EditorConfig> = ref({
     languages: [
       { language: 'plaintext', label: 'Plain text' },
       { language: 'go', label: 'Golang' },
-      { language: 'c', label: 'C' },
-      { language: 'cs', label: 'C#' },
-      { language: 'cpp', label: 'C++' },
-      { language: 'css', label: 'CSS' },
-      { language: 'diff', label: 'Diff' },
-      { language: 'html', label: 'HTML' },
-      { language: 'java', label: 'Java' },
-      { language: 'javascript', label: 'JavaScript' },
-      { language: 'php', label: 'PHP' },
       { language: 'python', label: 'Python' },
-      { language: 'ruby', label: 'Ruby' },
+      { language: 'javascript', label: 'JavaScript' },
       { language: 'typescript', label: 'TypeScript' },
-      { language: 'xml', label: 'XML' }
+      { language: 'java', label: 'Java' },
+      { language: 'c', label: 'C' },
+      { language: 'cpp', label: 'C++' },
+      { language: 'sql', label: 'SQL' },
+      { language: 'json', label: 'JSON' },
+      { language: 'bash', label: 'Bash' },
+      { language: 'html', label: 'HTML' },
+      { language: 'css', label: 'CSS' }
     ]
   },
   language: 'zh-cn',
