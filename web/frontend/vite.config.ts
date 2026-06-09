@@ -20,6 +20,10 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': 'http://localhost:8080',
+      '/v1': {
+        target: 'http://localhost:9091',
+        changeOrigin: true,
+      },
       '/resources': 'http://localhost:8080'
     }
   }
