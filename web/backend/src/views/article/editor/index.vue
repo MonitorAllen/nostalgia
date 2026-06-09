@@ -8,7 +8,9 @@
           {{ isFullScreen ? '退出全屏' : '全屏编辑' }}
         </el-button>
         <el-button @click="goBack">返回</el-button>
-        <el-button type="primary" :loading="isSaving" @click="saveArticle">保存文章</el-button>
+        <el-button type="primary" :loading="isSaving" :disabled="isSaving" @click="saveArticle">
+          保存文章
+        </el-button>
       </div>
     </div>
 
@@ -20,6 +22,7 @@
           v-model="editorData"
           :editor="ClassicEditor"
           :config="finalConfig"
+          @ready="onEditorReady"
         />
       </div>
 
@@ -68,9 +71,12 @@
                 action=""
                 :auto-upload="false"
                 :show-file-list="false"
+                :disabled="isCoverUploading"
                 :on-change="handleCoverChange"
               >
-                <el-icon class="uploader-icon"><Plus /></el-icon>
+                <el-icon class="uploader-icon"
+                  ><Loading v-if="isCoverUploading" /><Plus v-else
+                /></el-icon>
               </el-upload>
             </el-form-item>
           </el-form>
@@ -83,19 +89,23 @@
         <span>字符数: {{ charCount }}</span>
         <span style="margin-left: 15px">单词数: {{ wordCount }}</span>
       </div>
-      <div class="last-save" v-if="lastSaveTime">上次保存: {{ lastSaveTime }}</div>
+      <div class="save-meta">
+        <span class="save-status" :class="saveStatusClass">{{ saveStatusText }}</span>
+        <span v-if="hasDraft">已缓存草稿</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts" name="articleEditor">
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ClassicEditor } from 'ckeditor5'
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
 import 'ckeditor5/ckeditor5.css'
+import '@/styles/content.scss'
 
-import { Plus, Delete, FullScreen } from '@element-plus/icons-vue'
+import { Plus, Delete, FullScreen, Loading } from '@element-plus/icons-vue'
 import { editorConfig } from '@/config/editorConfig'
 import MyUploadAdapter from '@/utils/uploadAdapter'
 import { getArticleByIdApi, createArticleApi, updateArticleApi } from '@/api/modules/articles'
@@ -127,17 +137,61 @@ const article = ref<Partial<Nostalgia.Article>>({
 const tabsStore = useTabsStore()
 const categoryList = ref<Nostalgia.Category[]>([])
 const isSaving = ref(false)
+const isCoverUploading = ref(false)
 const lastSaveTime = ref('')
+const saveStatus = ref<'saved' | 'dirty' | 'saving' | 'error'>('saved')
+const hasDraft = ref(false)
+const isTrackingChanges = ref(false)
 
 const STORAGE_KEY = 'nostalgia_article_draft'
 
 let initialContent = ''
 let initialArticle = ''
 
+const serializeArticle = () => JSON.stringify(article.value)
+
+const hasUnsavedChanges = () =>
+  isTrackingChanges.value &&
+  (editorData.value !== initialContent || serializeArticle() !== initialArticle)
+
+const saveStatusText = computed(() => {
+  if (saveStatus.value === 'saving') return '保存中...'
+  if (saveStatus.value === 'error') return '保存失败，修改仍已缓存'
+  if (hasUnsavedChanges()) return hasDraft.value ? '有未保存草稿' : '有未保存修改'
+  if (lastSaveTime.value) return `已保存 ${lastSaveTime.value}`
+  return '已保存'
+})
+
+const saveStatusClass = computed(() => ({
+  'is-dirty': hasUnsavedChanges() && saveStatus.value !== 'saving',
+  'is-saving': saveStatus.value === 'saving',
+  'is-error': saveStatus.value === 'error',
+}))
+
+const validateImageFile = (file?: File) => {
+  if (!file) return '请选择要上传的图片'
+  if (!file.type.startsWith('image/')) return '只能上传图片文件'
+  return ''
+}
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => {
+      const result = reader.result as string
+      resolve(result.split(',')[1] || '')
+    }
+    reader.onerror = () => reject(new Error('读取图片失败'))
+  })
+}
+
 // 从本地存储恢复
 const restoreDraft = () => {
   const draft = sessionStorage.getItem(STORAGE_KEY)
-  if (draft) {
+  if (!draft) return
+
+  try {
     const data = JSON.parse(draft)
     if (data.id === article.value.id) {
       // 只有当草稿内容和当前接口拉取的内容真正不一致时，才进行恢复
@@ -147,12 +201,16 @@ const restoreDraft = () => {
       ) {
         editorData.value = data.content
         Object.assign(article.value, data.article)
+        hasDraft.value = true
+        saveStatus.value = 'dirty'
         ElMessage.info('已恢复未保存的内容')
       } else {
         // 如果内容完全一致，说明不需要恢复，顺手清掉无用草稿
         clearDraft()
       }
     }
+  } catch (error) {
+    clearDraft()
   }
 }
 
@@ -160,8 +218,13 @@ const restoreDraft = () => {
 watch(
   [editorData, article],
   () => {
-    if (editorData.value === initialContent && JSON.stringify(article.value) === initialArticle)
+    if (!isTrackingChanges.value) return
+
+    if (!hasUnsavedChanges()) {
+      saveStatus.value = 'saved'
+      clearDraft()
       return
+    }
 
     sessionStorage.setItem(
       STORAGE_KEY,
@@ -171,6 +234,10 @@ watch(
         article: article.value,
       }),
     )
+    hasDraft.value = true
+    if (saveStatus.value !== 'saving' && saveStatus.value !== 'error') {
+      saveStatus.value = 'dirty'
+    }
   },
   { deep: true },
 )
@@ -178,6 +245,7 @@ watch(
 // 保存成功后清除草稿
 const clearDraft = () => {
   sessionStorage.removeItem(STORAGE_KEY)
+  hasDraft.value = false
 }
 
 const charCount = ref(0)
@@ -202,6 +270,10 @@ function CustomUploadAdapterPlugin(editor: any) {
   }
 }
 
+const onEditorReady = (editorInstance: any) => {
+  editorInstance.ui.view.editable.element?.classList.add('nostalgia-content')
+}
+
 const initData = async () => {
   try {
     const catRes = await getCategoryListApi()
@@ -214,7 +286,7 @@ const initData = async () => {
       article.value = { ...res.data.article }
       editorData.value = res.data.article.content || ''
       initialContent = editorData.value
-      initialArticle = JSON.stringify(article.value)
+      initialArticle = serializeArticle()
     } else {
       isNew = true
       // Create a draft first
@@ -222,7 +294,7 @@ const initData = async () => {
       const oldPath = route.fullPath
       article.value = { ...res.data.article }
       initialContent = editorData.value // It's empty initially
-      initialArticle = JSON.stringify(article.value)
+      initialArticle = serializeArticle()
       const newPath = `/article/editor?id=${article.value.id}`
 
       // 更新 TabsStore
@@ -237,45 +309,60 @@ const initData = async () => {
     if (!isNew) {
       restoreDraft()
     }
+    isTrackingChanges.value = true
+    saveStatus.value = hasUnsavedChanges() ? 'dirty' : 'saved'
   } catch (error) {
     ElMessage.error('加载失败')
   }
 }
 
 const saveArticle = async () => {
+  if (isSaving.value) return
   if (!article.value.title) return ElMessage.warning('标题不能为空')
   isSaving.value = true
+  saveStatus.value = 'saving'
   try {
     const params = {
       ...article.value,
       content: editorData.value,
     }
     await updateArticleApi(params)
+    initialContent = editorData.value
+    initialArticle = serializeArticle()
     lastSaveTime.value = dayjs().format('HH:mm:ss')
+    saveStatus.value = 'saved'
     ElMessage.success('保存成功')
     clearDraft()
+  } catch (error: any) {
+    saveStatus.value = 'error'
+    ElMessage.error(error?.response?.data?.error || '保存失败，请稍后重试')
   } finally {
     isSaving.value = false
   }
 }
 
 const handleCoverChange = async (file: any) => {
-  const reader = new FileReader()
-  reader.readAsDataURL(file.raw)
-  reader.onload = async () => {
-    const result = reader.result as string
-    const base64 = result.split(',')[1]
-    try {
-      const res = await http.post<any>('/util/upload_file', {
-        article_id: article.value.id,
-        content: base64,
-        type: 'cover',
-      })
-      article.value.cover = res.data.url + '?t=' + Date.now()
-      ElMessage.success('封面已更新')
-    } catch (e) {
-      ElMessage.error('上传失败')
-    }
+  const rawFile = file.raw as File | undefined
+  const validationMessage = validateImageFile(rawFile)
+  if (validationMessage) {
+    ElMessage.warning(validationMessage)
+    return
+  }
+
+  isCoverUploading.value = true
+  try {
+    const base64 = await fileToBase64(rawFile!)
+    const res = await http.post<any>('/util/upload_file', {
+      article_id: article.value.id,
+      content: base64,
+      type: 'cover',
+    })
+    article.value.cover = res.data.url + '?t=' + Date.now()
+    ElMessage.success('封面已更新')
+  } catch (error: any) {
+    ElMessage.error(error?.response?.data?.error || error?.message || '封面上传失败')
+  } finally {
+    isCoverUploading.value = false
   }
 }
 
@@ -291,8 +378,41 @@ const toggleFullScreen = () => {
   isFullScreen.value = !isFullScreen.value
 }
 
+const handleSaveShortcut = (event: KeyboardEvent) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    saveArticle()
+  }
+}
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (!hasUnsavedChanges() || isSaving.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+onBeforeRouteLeave((_to, _from, next) => {
+  if (!hasUnsavedChanges()) {
+    next()
+    return
+  }
+
+  if (window.confirm('文章还有未保存的修改，确认离开吗？')) {
+    next()
+  } else {
+    next(false)
+  }
+})
+
 onMounted(() => {
   initData()
+  window.addEventListener('keydown', handleSaveShortcut)
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleSaveShortcut)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>
 
@@ -304,7 +424,7 @@ onMounted(() => {
   height: 100%;
   padding: 0;
   overflow: hidden;
-  background-color: #f5f7f9;
+  background-color: var(--el-fill-color-extra-light);
   transition: all 0.3s ease;
   &.full-screen {
     position: fixed;
@@ -319,8 +439,8 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
-    background-color: #ffffff;
-    border-bottom: 1px solid #dcdfe6;
+    background-color: var(--el-bg-color);
+    border-bottom: 1px solid var(--el-border-color-light);
     .title-input {
       font-size: 20px;
       font-weight: bold;
@@ -350,10 +470,12 @@ onMounted(() => {
           display: flex;
           flex-direction: column;
           width: 100%;
-          max-width: 850px;
+          max-width: 820px;
           margin-bottom: 50px;
-          background-color: #ffffff;
-          box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);
+          background-color: var(--el-bg-color);
+          border: 1px solid var(--el-border-color-lighter);
+          border-radius: 12px;
+          box-shadow: 0 14px 38px rgb(0 0 0 / 8%);
           .ck-editor__editable {
             height: calc(100vh - 200px); /* 限制高度触发内部滚动 */
             min-height: 400px;
@@ -364,9 +486,9 @@ onMounted(() => {
             position: sticky;
             top: 0;
             z-index: 10;
-            background-color: #fafafa !important;
+            background-color: var(--el-bg-color-overlay) !important;
             border: none !important;
-            border-bottom: 1px solid #eeeeee !important;
+            border-bottom: 1px solid var(--el-border-color-light) !important;
             box-shadow: 0 2px 4px rgb(0 0 0 / 5%);
           }
         }
@@ -376,8 +498,8 @@ onMounted(() => {
       width: 320px;
       padding: 20px;
       overflow-y: auto;
-      background-color: #ffffff;
-      border-left: 1px solid #dcdfe6;
+      background-color: var(--el-bg-color);
+      border-left: 1px solid var(--el-border-color-light);
       .w-full {
         width: 100%;
       }
@@ -386,7 +508,7 @@ onMounted(() => {
         width: 100%;
         height: 160px;
         overflow: hidden;
-        border: 1px solid #dcdfe6;
+        border: 1px solid var(--el-border-color);
         border-radius: 4px;
         .el-image {
           width: 100%;
@@ -409,7 +531,7 @@ onMounted(() => {
         width: 100%;
         height: 160px;
         cursor: pointer;
-        border: 1px dashed #dcdfe6;
+        border: 1px dashed var(--el-border-color);
         border-radius: 4px;
         &:hover {
           border-color: #409eff;
@@ -426,9 +548,51 @@ onMounted(() => {
     justify-content: space-between;
     padding: 8px 20px;
     font-size: 12px;
-    color: #909399;
-    background-color: #ffffff;
-    border-top: 1px solid #dcdfe6;
+    color: var(--el-text-color-secondary);
+    background-color: var(--el-bg-color);
+    border-top: 1px solid var(--el-border-color-light);
+
+    .save-meta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .save-status {
+      color: var(--el-color-success);
+
+      &.is-dirty {
+        color: var(--el-color-warning);
+      }
+
+      &.is-saving {
+        color: var(--el-color-primary);
+      }
+
+      &.is-error {
+        color: var(--el-color-danger);
+      }
+    }
+  }
+}
+
+@media (max-width: 960px) {
+  .editor-container {
+    .editor-main {
+      .editor-wrapper {
+        padding: 16px;
+
+        &.paper-style {
+          :deep(.ck-editor .ck-editor__editable) {
+            padding: 28px 24px;
+          }
+        }
+      }
+
+      .editor-side {
+        width: 280px;
+      }
+    }
   }
 }
 </style>

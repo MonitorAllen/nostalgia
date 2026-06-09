@@ -2,12 +2,14 @@ package util
 
 import (
 	"fmt"
+	"io"
+	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/go-resty/resty/v2"
+	"golang.org/x/net/html"
 )
 
 // DownloadFile 从 URL 下载文件并保存到本地
@@ -72,26 +74,76 @@ func ListFiles(dirPath string) ([]string, error) {
 }
 
 func ExtractFileNames(content string) []string {
-	// 定义一个正则表达式，匹配 URL 的基本结构
-	urlRegex := `https?://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]`
-	re := regexp.MustCompile(urlRegex)
-
-	// 找出文章中的所有 URL
-	matches := re.FindAllString(content, -1)
-
 	var fileNames []string
-	for _, url := range matches {
-		// 从 URL 中提取文件名
-		segments := strings.Split(url, "/")
-		fileName := segments[len(segments)-1]
+	seen := make(map[string]struct{})
+	tokenizer := html.NewTokenizer(strings.NewReader(content))
+	resourceAttrs := map[string]struct{}{
+		"href":     {},
+		"poster":   {},
+		"src":      {},
+		"data-src": {},
+	}
 
-		// 排除没有文件名的情况（例如 URL 以 / 结尾）
-		if fileName != "" {
+	for {
+		tokenType := tokenizer.Next()
+		if tokenType == html.ErrorToken {
+			if tokenizer.Err() == io.EOF {
+				break
+			}
+			return fileNames
+		}
+
+		token := tokenizer.Token()
+		for _, attr := range token.Attr {
+			if _, ok := resourceAttrs[strings.ToLower(attr.Key)]; !ok {
+				continue
+			}
+
+			fileName := extractResourceFileName(attr.Val)
+			if fileName == "" {
+				continue
+			}
+			if _, ok := seen[fileName]; ok {
+				continue
+			}
+
 			fileNames = append(fileNames, fileName)
+			seen[fileName] = struct{}{}
 		}
 	}
 
 	return fileNames
+}
+
+func extractResourceFileName(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+
+	path := parsed.EscapedPath()
+	if path == "" {
+		path = raw
+	}
+	normalizedPath := "/" + strings.TrimPrefix(path, "/")
+	if !strings.Contains(normalizedPath, "/resources/") {
+		return ""
+	}
+
+	fileName, err := url.PathUnescape(filepath.Base(normalizedPath))
+	if err != nil {
+		return ""
+	}
+	if fileName == "." || fileName == "/" {
+		return ""
+	}
+
+	return fileName
 }
 
 func dirExists(path string) (bool, error) {

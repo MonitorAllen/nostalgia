@@ -1,99 +1,167 @@
-@import 'primeicons/primeicons.css';
-@import 'primeflex/primeflex.css';
-@import "primeflex/themes/primeone-light.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-background: 244 247 245;
+    --color-foreground: 24 29 27;
+    --color-muted: 231 237 234;
+    --color-muted-foreground: 84 99 94;
+    --color-surface: 255 255 255;
+    --color-surface-raised: 250 252 251;
+    --color-border: 211 222 217;
+    --color-accent: 19 118 91;
+    --color-accent-foreground: 255 255 255;
+    --color-danger: 181 59 48;
+    --color-warning: 177 119 22;
+    --color-glass: 255 255 255;
+    --color-glass-border: 255 255 255;
+    --color-code: 245 247 246;
+    --radius-archive: 0.75rem;
+    --shadow-glass: 0 18px 50px rgb(28 41 37 / 0.1);
+    --shadow-archive: 0 8px 30px rgb(24 29 27 / 0.08);
+  }
 
-#app {
-  margin: 0;
-}
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --color-background: 18 19 18;
+    --color-foreground: 235 238 234;
+    --color-muted: 37 39 37;
+    --color-muted-foreground: 165 173 166;
+    --color-surface: 28 30 28;
+    --color-surface-raised: 34 37 34;
+    --color-border: 58 64 59;
+    --color-accent: 73 188 146;
+    --color-accent-foreground: 8 31 24;
+    --color-danger: 239 103 91;
+    --color-warning: 238 176 77;
+    --color-glass: 31 34 31;
+    --color-glass-border: 84 91 83;
+    --color-code: 22 24 22;
+    --shadow-glass: 0 18px 60px rgb(0 0 0 / 0.32);
+    --shadow-archive: 0 14px 42px rgb(0 0 0 / 0.28);
+  }
 
-html, body {
-  height: 100%; /* 确保页面充满整个视口 */
-  margin: 0;
-  padding: 0;
-  -webkit-font-smoothing: antialiased; /* 提高字体渲染质量 */
-  -moz-osx-font-smoothing: grayscale;
-}
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-body {
-  color: #212529; /* 设置默认文字颜色 */
-}
-
-img, picture, video, canvas, svg {
-  /*display: block; !* 图片、视频等元素默认块级显示 *!*/
-  max-width: 100%; /* 确保这些媒体元素不超过其父元素宽度 */
-}
-
-input, textarea, select {
-  font: inherit; /* 继承父元素的字体 */
-  padding: 0;
-  margin: 0;
-  background: none;
-  border: none;
-  outline: none;
-}
-
-a {
-  text-decoration: none; /* 移除链接的默认下划线 */
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"],
-textarea {
-  border: 1px solid #ced4da; /* 边框 */
-  padding: 0.5rem; /* 内边距 */
-  border-radius: 0.25rem; /* 圆角 */
-  width: 100%; /* 输入框默认占满宽度 */
-}
-
-textarea {
-  resize: vertical; /* 限制 textarea 只在垂直方向可调整大小 */
-}
-
-/* 4. 自定义滚动条（现代浏览器） */
-::-webkit-scrollbar {
-  width: 12px;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #888; /* 滚动条颜色 */
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #555;
-}
-
-::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
-}
-
-/* 5. 响应式字体设置 */
-html {
-  font-size: 16px; /* 默认字体大小 */
-}
-
-@media (max-width: 1200px) {
   html {
-    font-size: 15px;
+    min-height: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background:
+      radial-gradient(circle at 15% 10%, rgb(var(--color-accent) / 0.08), transparent 28rem),
+      linear-gradient(180deg, rgb(var(--color-background)), rgb(var(--color-muted)));
+    color: rgb(var(--color-foreground));
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  ::selection {
+    background: rgb(var(--color-accent) / 0.22);
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 0.75rem;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--color-muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-muted-foreground) / 0.45);
+    border: 3px solid rgb(var(--color-muted));
+    border-radius: 999px;
   }
 }
 
-@media (max-width: 992px) {
-  html {
-    font-size: 14px;
+@layer components {
+  .archive-glass {
+    border: 1px solid rgb(var(--color-glass-border) / 0.62);
+    background: rgb(var(--color-glass) / 0.72);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(18px) saturate(1.08);
+  }
+
+  :root[data-theme='dark'] .archive-glass {
+    background: rgb(var(--color-glass) / 0.68);
+    border-color: rgb(var(--color-glass-border) / 0.56);
+  }
+
+  .archive-surface {
+    border: 1px solid rgb(var(--color-border));
+    background: rgb(var(--color-surface));
+    box-shadow: var(--shadow-archive);
+  }
+
+  .archive-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 999px;
+    background: rgb(var(--color-surface-raised) / 0.86);
+    color: rgb(var(--color-muted-foreground));
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.4rem 0.65rem;
   }
 }
 
-@media (max-width: 768px) {
-  html {
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 576px) {
-  html {
-    font-size: 12px;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

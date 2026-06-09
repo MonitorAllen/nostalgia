@@ -1,17 +1,17 @@
 # Stage 1: Build the Vue frontend
-FROM node:21-alpine AS build-stage
+FROM oven/bun:1-alpine AS build-stage
 
 WORKDIR /app
 
 # Install dependencies
-COPY frontend/package*.json ./
-RUN npm install
+COPY frontend/package.json frontend/bun.lock* ./
+RUN bun install --frozen-lockfile
 
 # Copy the rest of the application code
 COPY frontend/ .
 
 # Build the Vue project for production
-RUN npm run build
+RUN bun run build
 
 # Stage 2: Serve the frontend using Nginx
 FROM nginx:alpine

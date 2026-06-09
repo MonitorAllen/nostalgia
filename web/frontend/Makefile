@@ -1,4 +1,7 @@
 dev:
-	npm run dev
+	bun run dev
 
-.PHONY: dev
+build:
+	bun run build
+
+.PHONY: dev build

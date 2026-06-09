@@ -1,0 +1,185 @@
+.nostalgia-content {
+  color: var(--el-text-color-primary);
+  overflow-wrap: break-word;
+  word-break: break-word;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--el-text-color-primary);
+    font-weight: 750;
+    letter-spacing: 0;
+    line-height: 1.25;
+    margin: 2rem 0 0.85rem;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.8rem;
+  }
+
+  h3 {
+    font-size: 1.45rem;
+  }
+
+  h4 {
+    font-size: 1.2rem;
+  }
+
+  h5,
+  h6 {
+    font-size: 1.05rem;
+  }
+
+  p,
+  li {
+    color: var(--el-text-color-regular);
+    font-size: 1.03rem;
+    line-height: 1.9;
+  }
+
+  p {
+    margin: 1rem 0;
+  }
+
+  a {
+    color: var(--el-color-primary);
+    font-weight: 650;
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--el-color-primary) 35%, transparent);
+
+    &:hover {
+      border-bottom-color: var(--el-color-primary);
+    }
+  }
+
+  ul,
+  ol {
+    margin: 1rem 0;
+    padding-left: 1.55rem;
+  }
+
+  li {
+    margin: 0.4rem 0;
+    padding-left: 0.15rem;
+
+    &::marker {
+      color: var(--el-color-primary);
+      font-weight: 700;
+    }
+  }
+
+  blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.2rem;
+    color: var(--el-text-color-secondary);
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color);
+    border-radius: 12px;
+
+    p {
+      color: inherit;
+    }
+  }
+
+  pre,
+  code {
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+
+  code {
+    padding: 0.15rem 0.35rem;
+    color: var(--el-text-color-primary);
+    font-size: 0.92em;
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color);
+    border-radius: 6px;
+  }
+
+  pre {
+    margin: 1.4rem 0;
+    padding: 1rem;
+    overflow-x: auto;
+    color: var(--el-text-color-primary);
+    line-height: 1.75;
+    background: var(--el-fill-color-lighter) !important;
+    border: 1px solid var(--el-border-color);
+    border-radius: 14px;
+
+    code {
+      padding: 0;
+      background: transparent;
+      border: 0;
+    }
+  }
+
+  figure {
+    margin: 1.65rem auto;
+  }
+
+  img {
+    display: block;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 12px;
+    box-shadow: 0 14px 34px rgb(0 0 0 / 8%);
+  }
+
+  figcaption {
+    margin-top: 0.65rem;
+    color: var(--el-text-color-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  table {
+    width: 100%;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    font-size: 0.96rem;
+    border: 1px solid var(--el-border-color);
+    border-collapse: collapse;
+    border-radius: 12px;
+  }
+
+  th,
+  td {
+    padding: 0.75rem 0.85rem;
+    text-align: left;
+    vertical-align: top;
+    border: 1px solid var(--el-border-color);
+  }
+
+  th {
+    color: var(--el-text-color-primary);
+    font-weight: 750;
+    background: var(--el-fill-color-light);
+  }
+
+  hr {
+    height: 1px;
+    margin: 2rem 0;
+    background: var(--el-border-color);
+    border: 0;
+  }
+}
+
+.ck-editor__editable.nostalgia-content {
+  background: var(--el-bg-color);
+}

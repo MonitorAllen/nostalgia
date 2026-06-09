@@ -1,7 +1,7 @@
 // utils/http.ts - 简化版本
 import axios, {type AxiosResponse, type InternalAxiosRequestConfig} from 'axios'
 import {useAuthStore} from '@/store/module/auth'
-import {useToast} from 'primevue/usetoast'
+import {useToast} from '@/composables/useToast'
 
 // 扩展请求配置
 declare module 'axios' {

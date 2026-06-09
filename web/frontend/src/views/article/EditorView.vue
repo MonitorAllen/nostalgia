@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-row justify-content-center">
-    <div class="flex flex-column gap-5">
-      <div class="main-container">
+  <div class="mx-auto w-full max-w-6xl px-4 py-8">
+    <div class="flex flex-col gap-5">
+      <div class="main-container w-full overflow-x-auto">
         <div class="editor-container editor-container_classic-editor" ref="editorContainerElement">
           <div class="editor-container__editor">
             <div ref="editorElement">
@@ -17,36 +17,31 @@
           </div>
         </div>
       </div>
-      <div class="flex flex-column border-solid border-1 border-round-sm pl-4 pr-4 pt-5 pb-5 row-gap-5"
-           style="border-color: #e2e8f0">
-        <FloatLabel>
-          <InputText id="title" v-model="post.title" class="w-full"></InputText>
-          <label for="title">标题</label>
-        </FloatLabel>
-        <FloatLabel>
-          <Textarea id="summary" class="w-full" rows="3" v-model="post.summary" autoResize />
-          <label for="summary">简介</label>
-        </FloatLabel>
-        <div class="flex flex-column gap-3">
-          <label style="position: relative; left: 0.75rem; line-height: 1px; font-size: 12px; color: #64748b; margin-top: -1rem;"
-                 for="isPublish">是否发布</label>
-          <ToggleButton id="isPublish" v-model="isPublish" onLabel="发布" offLabel="取消发布"
-                        onIcon="pi pi-lock-open"
-                        offIcon="pi pi-lock" class="" aria-label="Do you confirm" />
+      <div class="archive-surface flex flex-col gap-5 rounded-archive p-5">
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">标题</span>
+          <AppInput id="title" v-model="post.title" />
+        </label>
+        <label class="block space-y-2">
+          <span class="text-sm font-bold">简介</span>
+          <textarea
+            id="summary"
+            v-model="post.summary"
+            rows="3"
+            class="w-full rounded-archive border border-border bg-surface px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+          />
+        </label>
+        <div class="flex items-center gap-3">
+          <input id="isPublish" v-model="isPublish" type="checkbox" class="h-4 w-4 accent-[rgb(var(--color-accent))]" />
+          <label class="text-sm font-bold" for="isPublish">发布文章</label>
         </div>
-        <Button label="保存" severity="success" @click="save"/>
+        <AppButton class="w-max" @click="save">保存</AppButton>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import FloatLabel from 'primevue/floatlabel'
-import Textarea from 'primevue/textarea'
-import InputText from 'primevue/inputtext'
-import ToggleButton from 'primevue/togglebutton'
-import Button from 'primevue/button'
-
 import {
   ClassicEditor, AccessibilityHelp, Alignment, Autoformat, AutoImage, Autosave, BlockQuote, Bold,
   Code, CodeBlock, Essentials, FontBackgroundColor, FontColor, FontFamily, FontSize, FullPage,
@@ -70,9 +65,11 @@ import 'ckeditor5-premium-features/ckeditor5-premium-features.css'
 
 import { ref, onMounted, type Ref } from 'vue'
 import { useArticleStore } from '@/store/module/article'
-import { useToast } from 'primevue/usetoast';
+import { useToast } from '@/composables/useToast';
 import router from '@/router'
 import { useUserStore } from '@/store/module/user'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppInput from '@/components/ui/AppInput.vue'
 
 const editor = ref<ClassicEditor|null>(null)
 const config: Ref<EditorConfig>= ref({})
@@ -396,17 +393,9 @@ interface Post {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
-.main-container {
-  width: 1000px !important;
-  font-family: 'Lato';
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-}
-
 .editor-container_classic-editor .editor-container__editor .ck-editor__editable_inline{
   min-height: 450px !important;
-  min-width: 1000px;
+  min-width: min(1000px, calc(100vw - 2rem));
   max-width: none !important;
 }
 

@@ -1,272 +1,188 @@
-<template>
-  <div class="flex flex-row min-w-min h-4rem relative shadow-1 justify-content-between bg-white z-5">
-
-    <div class="flex flex-row nav-r-box gap-1 h-full align-items-center">
-      <router-link to="/" class="flex flex-row align-items-center ml-2 sm:ml-6 cursor-pointer select-none">
-        <img src="/logo.svg" alt="Nostalgia Logo" class="h-2rem">
-      </router-link>
-
-      <a class="flex align-items-center lg:hidden ml-2 cursor-pointer p-2 hover:bg-gray-100 border-round transition-colors transition-duration-200"
-         @click.stop="toggleLeftNav">
-        <i class="pi pi-bars text-xl"></i>
-      </a>
-
-      <div
-          :class="[isLeftNavOpen ? 'flex absolute w-full bg-white nav-open h-auto shadow-1 border-top-1 border-gray-100' : 'hidden']"
-          class="flex-column align-content-between pl-1 lg:shadow-none lg:border-none lg:flex lg:flex-row lg:static menu-box lg:h-full"
-          @click.stop
-      >
-        <ul class="flex flex-column lg:flex-row menu-box m-0 pl-0 w-full list-none h-full">
-          <li v-for="(item, index) in navItems" :key="index" class="h-full">
-
-            <a
-                v-if="item.url"
-                :href="item.url"
-                :target="item.target"
-                :class="[
-                  'flex h-full py-3 lg:py-0 px-4 cursor-pointer align-items-center gap-2 menu_a column-a',
-                  isLeftNavOpen ? 'down' : 'lg:border-left-none lg:border-bottom-2',
-                  { active: $route.path === item.route }
-                ]"
-            >
-              <span :class="item.icon"></span>
-              <span class="relative">
-                {{ item.label }}
-                <i v-if="item.target === '_blank'"
-                   class="pi pi-external-link absolute text-700"
-                   style="font-size: 0.6rem; top: -4px; right: -10px;"></i>
-              </span>
-            </a>
-
-            <router-link
-                v-else
-                :to="{ path: item.route}"
-                :class="[
-                  'flex h-full py-3 lg:py-0 px-4 cursor-pointer align-items-center gap-2 menu_a column-a',
-                  isLeftNavOpen ? 'down' : 'lg:border-left-none lg:border-bottom-2',
-                  { active: $route.path === item.route }
-                ]"
-            >
-              <span :class="item.icon"></span>
-              <span>{{ item.label }}</span>
-            </router-link>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <a class="flex align-items-center p-2 sm:hidden relative cursor-pointer mr-2"
-       @click.stop="toggleRightPanel">
-      <i class="pi pi-ellipsis-v text-xl"></i>
-    </a>
-
-    <div
-        v-if="isRightPanelOpen"
-        class="flex flex-column md:flex-row absolute sm:relative z-5 bg-white shadow-1 sm:shadow-none
-               w-full sm:w-auto h-auto align-items-start sm:align-items-center
-               top-100 sm:top-0 left-0 sm:left-auto border-top-1 sm:border-none border-gray-100 sm:h-full"
-        @click.stop
-    >
-      <ul class="flex flex-column w-full h-full m-0 pl-1 pb-1 row-gap-2 list-none align-items-start sm:flex-row sm:gap-3 sm:align-items-center sm:p-0">
-
-        <li class="w-full md:w-18rem p-2 sm:p-0">
-          <InputText
-              v-model="searchValue"
-              placeholder="搜索..."
-              type="text"
-              class="w-full"
-              v-tooltip.focus.bottom="{
-                  value: '使用空格隔开关键词',
-                  pt: {
-                      root: {
-                        style: {
-                          height: '8px'
-                        }
-                      },
-                      text: {
-                        style: {
-                          fontSize: '12px',
-                          letterSpacing: '0.1em',
-                          padding: '5px'
-                        }
-                      }
-                  }
-              }"
-              @keydown.enter="handleSearch"
-          />
-        </li>
-
-        <li class="relative h-full w-full sm:w-auto" v-if="userStore.userInfo">
-          <a
-              class="flex w-full h-full p-2 sm:py-0 sm:px-0 sm:px-4 column-a sm:border-left-none sm:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a"
-              @click="toggleUserMenu"
-              aria-haspopup="true"
-              aria-controls="user_menu"
-          >
-            <img src="/images/go.png" class="h-2rem mr-0" alt="Avatar">
-            <span>{{ userStore.userInfo.username }}</span>
-            <i class="pi pi-angle-down"></i>
-          </a>
-
-          <Menu ref="userMenu" id="user_menu" :model="userMenuItems" :popup="true"/>
-        </li>
-
-        <li class="flex flex-column sm:flex-row w-full h-full row-gap-2 sm:max-w-max sm:gap-0" v-else>
-          <router-link
-              class="flex h-full py-2 sm:py-0 px-3 sm:border-left-none sm:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a column-a"
-              to="/login"
-          >
-            <span>登录</span>
-          </router-link>
-          <router-link
-              class="flex h-full py-2 sm:py-0 px-3 sm:border-left-none sm:border-bottom-2 cursor-pointer align-items-center gap-2 menu_a column-a"
-              to="/register"
-          >
-            <span>注册</span>
-          </router-link>
-        </li>
-      </ul>
-    </div>
-
-  </div>
-</template>
-
-<script setup>
-import {computed, onBeforeUnmount, onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
-import {useUserStore} from '@/store/module/user.ts'
-import InputText from 'primevue/inputtext'
-import Menu from 'primevue/menu'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { ExternalLink, Home, LogIn, LogOut, Menu, Search, User, Wrench, X } from '@lucide/vue'
+import { useUserStore } from '@/store/module/user'
+import AppButton from '@/components/ui/AppButton.vue'
+import AppInput from '@/components/ui/AppInput.vue'
+import ThemeSwitcher from '@/components/ui/ThemeSwitcher.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-// --- 状态控制 ---
-const isLeftNavOpen = ref(false)
-const isRightPanelOpen = ref(true)
-
 const searchValue = ref('')
-const userMenu = ref(null)
+const mobileOpen = ref(false)
+const userMenuOpen = ref(false)
 
-// --- 导航数据 ---
-const navItems = ref([
-  {label: '主页', icon: 'pi pi-home', route: '/', target: ''},
-  {label: '工具', icon: 'pi pi-wrench', url: 'https://toolx.de5.net', target: '_blank'}
-])
-
-const userMenuItems = computed(() => [
-  {
-    label: '退出登录',
-    icon: 'pi pi-sign-out',
-    command: () => {
-      userStore.logout()
-    }
-  }
-])
-
-// --- 方法 ---
+const hasUser = computed(() => !!userStore.userInfo)
+const username = computed(() => userStore.userInfo?.username ?? '访客')
 
 const handleSearch = () => {
   const query = searchValue.value.trim()
   if (!query) return
   searchValue.value = ''
-  router.push({path: '/search', query: {q: query}})
-  // 搜索后自动收起
-  if (window.innerWidth < 576) isRightPanelOpen.value = false
+  mobileOpen.value = false
+  router.push({ path: '/search', query: { q: query } })
 }
 
-const toggleLeftNav = () => {
-  isLeftNavOpen.value = !isLeftNavOpen.value
-  if (isLeftNavOpen.value && window.innerWidth < 576) {
-    isRightPanelOpen.value = false
-  }
+const logout = () => {
+  userStore.logout()
 }
-
-const toggleRightPanel = () => {
-  isRightPanelOpen.value = !isRightPanelOpen.value
-  if (isRightPanelOpen.value) {
-    isLeftNavOpen.value = false
-  }
-}
-
-const toggleUserMenu = (event) => {
-  userMenu.value.toggle(event)
-}
-
-// 点击空白关闭菜单
-const handleClickOutside = () => {
-  const isMobile = window.innerWidth < 992
-  const isSmallMobile = window.innerWidth < 576
-
-  if (!isMobile) return
-
-  // 这里的逻辑很简单：因为面板内部都有 @click.stop，
-  // 所以只要代码跑到了这里，说明点击的一定是“面板外部”
-  if (isLeftNavOpen.value) isLeftNavOpen.value = false
-  if (isSmallMobile && isRightPanelOpen.value) isRightPanelOpen.value = false
-}
-
-const handleResize = () => {
-  const width = window.innerWidth
-  if (width >= 992) isLeftNavOpen.value = false
-  if (width >= 576) {
-    isRightPanelOpen.value = true
-  } else {
-    isRightPanelOpen.value = false
-  }
-}
-
-onMounted(() => {
-  handleResize()
-  window.addEventListener('resize', handleResize)
-  document.addEventListener('click', handleClickOutside)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-  document.removeEventListener('click', handleClickOutside)
-})
 </script>
 
-<style scoped>
-.menu_a {
-  color: #334155 !important;
-  text-decoration: none;
-  border-bottom: 0 solid transparent;
-  transition: border-color 0.3s ease, background-color 0.2s ease;
-}
+<template>
+  <nav class="border-b border-glass-border/50 bg-background/55 px-4 py-3 backdrop-blur-xl">
+    <div
+      class="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_minmax(12rem,1fr)_auto]"
+    >
+      <div class="flex min-w-0 items-center gap-2">
+        <RouterLink
+          to="/"
+          class="group flex shrink-0 items-center rounded-full text-foreground"
+          aria-label="回到 Nostalgia 首页"
+        >
+          <img
+            src="/logo.svg"
+            alt="Nostalgia Logo"
+            class="h-10 w-auto max-w-[10rem] xl:max-w-[11rem]"
+          />
+        </RouterLink>
 
-.menu_a:hover {
-  border-color: color-mix(in srgb, #64748b calc(100% * 1), transparent);
-}
+        <div class="hidden shrink-0 items-center gap-1 lg:flex">
+          <RouterLink
+            to="/"
+            class="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <Home class="h-4 w-4 shrink-0" />
+            主页
+          </RouterLink>
+          <a
+            href="https://toolx.de5.net"
+            target="_blank"
+            rel="noreferrer"
+            class="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <Wrench class="h-4 w-4 shrink-0" />
+            工具
+            <ExternalLink class="h-3.5 w-3.5 shrink-0" />
+          </a>
+        </div>
+      </div>
 
-.active {
-  border-bottom: 0 solid color-mix(in srgb, #020617 calc(100% * 1), transparent);
-}
+      <div class="hidden min-w-0 justify-center lg:flex">
+        <label class="relative block w-full min-w-0 max-w-[26rem]">
+          <Search
+            class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <AppInput
+            v-model="searchValue"
+            class="pl-10"
+            placeholder="搜索文章，空格分隔关键词"
+            @keydown.enter="handleSearch"
+          />
+        </label>
+      </div>
 
-.down {
-  animation: slide-down 0.3s ease forwards;
-}
+      <div class="ml-auto hidden shrink-0 items-center justify-end gap-2 lg:flex">
+        <ThemeSwitcher />
 
-@keyframes slide-down {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+        <div v-if="hasUser" class="relative">
+          <AppButton variant="ghost" size="sm" @click="userMenuOpen = !userMenuOpen">
+            <User class="h-4 w-4" />
+            {{ username }}
+          </AppButton>
+          <div
+            v-if="userMenuOpen"
+            class="archive-glass absolute right-0 mt-2 w-44 rounded-archive p-2"
+          >
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              @click="logout"
+            >
+              <LogOut class="h-4 w-4" />
+              退出登录
+            </button>
+          </div>
+        </div>
+        <div v-else class="flex items-center gap-1">
+          <RouterLink
+            to="/login"
+            class="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <LogIn class="h-4 w-4" />
+            登录
+          </RouterLink>
+          <RouterLink
+            to="/register"
+            class="inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-full bg-accent px-4 text-sm font-bold text-accent-foreground transition hover:bg-accent/90"
+          >
+            注册
+          </RouterLink>
+        </div>
+      </div>
 
-.column-a {
-  border-left: 2px solid transparent;
-  transition: border-color 0.3s ease;
-}
+      <AppButton
+        variant="ghost"
+        size="icon"
+        class="ml-auto lg:hidden"
+        @click="mobileOpen = !mobileOpen"
+      >
+        <X v-if="mobileOpen" class="h-5 w-5" />
+        <Menu v-else class="h-5 w-5" />
+      </AppButton>
+    </div>
 
-.nav-open {
-  top: 100%;
-  left: 0;
-  z-index: 1004;
-}
-</style>
+    <div v-if="mobileOpen" class="mx-auto mt-3 max-w-7xl lg:hidden">
+      <div class="archive-glass rounded-archive p-3">
+        <label class="relative block">
+          <Search
+            class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <AppInput
+            v-model="searchValue"
+            class="pl-10"
+            placeholder="搜索文章"
+            @keydown.enter="handleSearch"
+          />
+        </label>
+        <div class="mt-3 flex flex-col gap-2">
+          <RouterLink to="/" class="rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted"
+            >主页</RouterLink
+          >
+          <a
+            href="https://toolx.de5.net"
+            target="_blank"
+            rel="noreferrer"
+            class="rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted"
+          >
+            工具
+          </a>
+          <ThemeSwitcher class="w-max" />
+          <button
+            v-if="hasUser"
+            type="button"
+            class="rounded-full px-3 py-2 text-left text-sm font-semibold hover:bg-muted"
+            @click="logout"
+          >
+            退出登录
+          </button>
+          <div v-else class="grid grid-cols-2 gap-2">
+            <RouterLink
+              to="/login"
+              class="rounded-full px-3 py-2 text-center text-sm font-semibold hover:bg-muted"
+            >
+              登录
+            </RouterLink>
+            <RouterLink
+              to="/register"
+              class="rounded-full bg-accent px-3 py-2 text-center text-sm font-bold text-accent-foreground hover:bg-accent/90"
+            >
+              注册
+            </RouterLink>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</template>
