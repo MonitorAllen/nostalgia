@@ -1,9 +1,11 @@
 import http from '@/api' // 确保引用正确的 http 工具
+import { ElMessage } from 'element-plus'
 
 export default class MyUploadAdapter {
   private loader: any
   private readonly article_id: string
   private type: string
+  private abortController = new AbortController()
 
   constructor(loader: any, article_id: string, type: string = 'content') {
     this.loader = loader
@@ -14,7 +16,21 @@ export default class MyUploadAdapter {
   // 开始上传
   async upload() {
     // 读取文件
-    const file = await this.loader.file
+    const file = (await this.loader.file) as File | null
+    if (!file) {
+      const message = '请选择要上传的图片'
+      ElMessage.warning(message)
+      throw new Error(message)
+    }
+    if (!file.type.startsWith('image/')) {
+      const message = '只能上传图片文件'
+      ElMessage.warning(message)
+      throw new Error(message)
+    }
+
+    this.loader.uploadTotal = file.size
+    this.loader.uploaded = 0
+
     // 转 Base64
     const base64Content = await this.fileToBase64(file)
 
@@ -27,12 +43,18 @@ export default class MyUploadAdapter {
     }
 
     try {
-      const res = await http.post<any>('/util/upload_file', payload)
+      const res = await http.post<any>('/util/upload_file', payload, {
+        cancel: false,
+        loading: false,
+        signal: this.abortController.signal,
+      })
       // gRPC 返回 { url: "...", filename: "..." }
       // CKEditor 需要 { default: url }
       return { default: res.data.url, url: res.data.url }
-    } catch (error) {
-      throw error
+    } catch (error: any) {
+      const message = error?.response?.data?.error || error?.message || '图片上传失败，请稍后重试'
+      if (message !== 'canceled') ElMessage.error(message)
+      throw new Error(message)
     }
   }
 
@@ -45,7 +67,11 @@ export default class MyUploadAdapter {
         // 去掉 Data URL 前缀 (例如 "data:image/png;base64,")
         // 因为 gRPC bytes 字段只需要纯数据
         const base64 = result.split(',')[1]
+        this.loader.uploaded = file.size
         resolve(base64)
+      }
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) this.loader.uploaded = event.loaded
       }
       reader.onerror = (error) => reject(error)
     })
@@ -53,6 +79,6 @@ export default class MyUploadAdapter {
 
   // 终止上传
   abort() {
-    // 如果需要支持取消上传，可以结合 axios 的 CancelToken
+    this.abortController.abort()
   }
 }
