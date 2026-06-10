@@ -71,25 +71,21 @@ jobs:
           echo "image=${IMAGE}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
-      - name: Decrypt ENV
-        env:
-          ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
-        run: |
-          make decrypt_env env=prod
-
       - name: Build and push API image
+        env:
+          DOCKER_BUILDKIT: "1"
         run: |
           IMAGE="${{ steps.meta.outputs.image }}"
           echo "Building API image: ${IMAGE}"
-          docker build -t ${IMAGE} .
-          docker push ${IMAGE}
+          docker build -t "${IMAGE}" .
+          docker push "${IMAGE}"
           
           # 同时推送latest标签
-                    if [[ "${{ steps.meta.outputs.tag }}" != "latest" ]]; then
-                      LATEST_IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.API_REPOSITORY }}:latest"
-                      docker tag ${IMAGE} ${LATEST_IMAGE}
-                      docker push ${LATEST_IMAGE}
-                    fi
+          if [[ "${{ steps.meta.outputs.tag }}" != "latest" ]]; then
+            LATEST_IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.API_REPOSITORY }}:latest"
+            docker tag "${IMAGE}" "${LATEST_IMAGE}"
+            docker push "${LATEST_IMAGE}"
+          fi
 
   build-web:
     name: Build Web Service
@@ -122,16 +118,18 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Build and push Web image
+        env:
+          DOCKER_BUILDKIT: "1"
         run: |
           IMAGE="${{ steps.meta.outputs.image }}"
           echo "Building Web image: ${IMAGE}"
           cd web
-          docker build -t ${IMAGE} .
-          docker push ${IMAGE}
+          docker build -t "${IMAGE}" .
+          docker push "${IMAGE}"
           
           # 同时推送latest标签
           if [[ "${{ steps.meta.outputs.tag }}" != "latest" ]]; then
             LATEST_IMAGE="${{ env.TCR_REGISTRY }}/${{ env.TCR_NAMESPACE }}/${{ secrets.WEB_REPOSITORY }}:latest"
-            docker tag ${IMAGE} ${LATEST_IMAGE}
-            docker push ${LATEST_IMAGE}
+            docker tag "${IMAGE}" "${LATEST_IMAGE}"
+            docker push "${LATEST_IMAGE}"
           fi

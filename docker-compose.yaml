@@ -20,6 +20,8 @@ services:
 
   api:
     image: ${TCR_REGISTRY}/${TCR_NAMESPACE}/${API_REPOSITORY}:${API_TAG:-latest}
+    env_file:
+      - path: .env
     networks:
       - nostalgia
     volumes:

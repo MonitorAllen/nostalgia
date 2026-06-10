@@ -38,11 +38,14 @@ temp/
 logs/
 
 # 忽略环境文件（构建时通过其他方式处理）
-.env.local
-.env.dev
-.env.prod
-.env.example
-.env.dev.enc
+.env
+.env.*
+!.env.example
+
+# 忽略本地运行时数据
+certs/
+postgres_data/
+resources/
 
 # 忽略测试相关
 *_test.go

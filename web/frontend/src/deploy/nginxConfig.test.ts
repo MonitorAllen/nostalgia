@@ -29,4 +29,33 @@ describe('nginx deployment ingress config', () => {
     expect(compose).toContain('"443:443"')
     expect(compose).toContain('./certs:/etc/nginx/certs:ro')
   })
+
+  test('api image build does not include production env secrets', () => {
+    const dockerfile = readRepoFile('Dockerfile')
+    const dockerignore = readRepoFile('.dockerignore')
+    const deployWorkflow = readRepoFile('.github/workflows/deploy.yml')
+
+    expect(dockerfile).not.toMatch(/COPY\s+--from=builder\s+\/app\/\.env\b/)
+    expect(dockerignore).toMatch(/^\.env$/m)
+    expect(dockerignore).toMatch(/^\.env\.\*$/m)
+    expect(deployWorkflow).not.toContain('make decrypt_env env=prod')
+  })
+
+  test('compose injects api configuration at runtime instead of build time', () => {
+    const productionCompose = readRepoFile('docker-compose.yaml')
+    const developmentCompose = readRepoFile('docker-compose.dev.yaml')
+
+    expect(productionCompose).toMatch(/api:\n[\s\S]*env_file:\n[\s\S]*path: \.env/)
+    expect(developmentCompose).toMatch(/api:\n[\s\S]*env_file:\n[\s\S]*path: \.env/)
+  })
+
+  test('api and web images declare their runtime-only responsibilities', () => {
+    const apiDockerfile = readRepoFile('Dockerfile')
+    const webDockerfile = readRepoFile('web/Dockerfile')
+    const webDevDockerfile = readRepoFile('web/Dockerfile.dev')
+
+    expect(apiDockerfile).toContain('EXPOSE 8080 9091')
+    expect(webDockerfile).not.toContain('openssl req -x509')
+    expect(webDevDockerfile).toContain('openssl req -x509')
+  })
 })

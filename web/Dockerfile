@@ -1,9 +1,11 @@
+# syntax=docker/dockerfile:1.7
+
 # Stage 1: Build unified frontend
 FROM oven/bun:1-alpine AS build-frontend
 WORKDIR /app/frontend
 
 COPY frontend/package.json frontend/bun.lock* ./
-RUN bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
 
 COPY frontend/ ./
 RUN bun run build
@@ -11,16 +13,11 @@ RUN bun run build
 # Stage 2: Final nginx server
 FROM nginx:alpine
 
-# 设置时区，并生成本地兜底证书；生产环境通过 Compose 挂载 Cloudflare Origin CA 覆盖。
-RUN apk add --no-cache openssl tzdata && \
+# 设置时区；生产环境通过 Compose 挂载 Cloudflare Origin CA。
+RUN apk add --no-cache tzdata && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone && \
-    mkdir -p /etc/nginx/certs && \
-    openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
-        -subj "/CN=localhost" \
-        -keyout /etc/nginx/certs/cloudflare-origin.key \
-        -out /etc/nginx/certs/cloudflare-origin.pem && \
-    chmod 600 /etc/nginx/certs/cloudflare-origin.key
+    mkdir -p /etc/nginx/certs
 
 # 清理默认文件
 RUN rm -rf /usr/share/nginx/html/*
