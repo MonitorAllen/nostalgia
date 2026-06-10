@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, onUpdated, provide, ref, type Ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  onUpdated,
+  provide,
+  ref
+} from 'vue'
 import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
@@ -13,11 +22,6 @@ import {
   Link as LinkIcon,
   ShieldCheck
 } from '@lucide/vue'
-import { Ckeditor } from '@ckeditor/ckeditor5-vue'
-import { ClassicEditor, Code, CodeBlock, type EditorConfig, Essentials, Paragraph } from 'ckeditor5'
-import translations from 'ckeditor5/translations/zh-cn.js'
-import 'ckeditor5/ckeditor5.css'
-import 'ckeditor5/ckeditor5-content.css'
 
 import Prism from 'prismjs'
 import 'prismjs/components/prism-bash.min.js'
@@ -52,12 +56,13 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { sanitizeHtml } from '@/util/sanitizeHtml'
-import { CODE_BLOCK_LANGUAGES } from '@/editor/contentLanguages'
+import { shouldRenderCommentEditor } from '@/components/article/commentEditorGate'
 
 const router = useRouter()
 const userStore = useUserStore()
 const commentStore = useCommentStore()
 const toast = useToast()
+const CommentEditor = defineAsyncComponent(() => import('@/components/article/CommentEditor.vue'))
 
 const props = defineProps<{
   id: string
@@ -65,10 +70,9 @@ const props = defineProps<{
 
 const articlePath = ref(window.location.href)
 const articleId = ref(props.id)
-const editor = ref<ClassicEditor>()
 const editorData = ref('')
 const isSubmittingComment = ref(false)
-const isLayoutReady = ref(false)
+const isCommentEditorActive = ref(false)
 const article = ref<Article | null>(null)
 const comments = ref<ArticleComments[]>([])
 
@@ -81,6 +85,12 @@ const deleteDialogOpen = ref(false)
 const pendingDeleteId = ref<number | null>(null)
 const sanitizedArticleContent = computed(() => sanitizeHtml(article.value?.content || ''))
 const isArticlePathCopied = ref(false)
+const canRenderCommentEditor = computed(() =>
+  shouldRenderCommentEditor({
+    isAuthenticated: Boolean(userStore.userInfo),
+    isActivated: isCommentEditorActive.value
+  })
+)
 
 const scrollProgress = ref(0)
 const viewed = ref(false)
@@ -88,20 +98,41 @@ const liked = ref(false)
 const isOutdated = ref(false)
 let timer: ReturnType<typeof setTimeout>
 let copyTimer: ReturnType<typeof setTimeout> | undefined
+const COMMENT_EDITOR_SCROLL_ATTEMPTS = 20
+const COMMENT_EDITOR_SCROLL_DELAY_MS = 50
 
-const config: Ref<EditorConfig> = ref({
-  toolbar: {
-    items: ['undo', 'redo', '|', 'code', 'codeBlock'],
-    shouldNotGroupWhenFull: true
-  },
-  plugins: [Code, CodeBlock, Essentials, Paragraph],
-  placeholder: '写下评论，Ctrl/⌘ + Enter 提交',
-  codeBlock: {
-    languages: [...CODE_BLOCK_LANGUAGES]
-  },
-  language: 'zh-cn',
-  translations: [translations]
-})
+const waitForCommentEditorMount = () =>
+  new Promise((resolve) => window.setTimeout(resolve, COMMENT_EDITOR_SCROLL_DELAY_MS))
+
+const scrollToCommentEditor = async (attempt = 0): Promise<void> => {
+  await nextTick()
+  const editorElement = document.getElementById('comment-editor')
+  if (editorElement) {
+    editorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
+
+  if (attempt >= COMMENT_EDITOR_SCROLL_ATTEMPTS) return
+
+  await waitForCommentEditorMount()
+  return scrollToCommentEditor(attempt + 1)
+}
+
+const activateCommentEditor = async () => {
+  if (!userStore.userInfo) {
+    toast.add({
+      severity: 'info',
+      summary: '需要登录',
+      detail: '登录后才能使用评论功能',
+      life: 2500
+    })
+    return false
+  }
+
+  isCommentEditorActive.value = true
+  await scrollToCommentEditor()
+  return true
+}
 
 const replyComment = (
   commentId: number,
@@ -127,11 +158,12 @@ const replyComment = (
     return
   }
 
-  document.getElementById('editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  isCommentEditorActive.value = true
   replyCommentId.value = commentId
   replyUserName.value = `@${toUserName}`
   replyUserId.value = toUserId
   replyCommentParentId.value = parentId === 0 ? commentId : parentId
+  void scrollToCommentEditor()
 }
 
 const removeCommentFromTree = (list: ArticleComments[], targetId: number): boolean => {
@@ -347,23 +379,6 @@ const updateScrollProgress = () => {
   scrollProgress.value = height > 0 ? (winScroll / height) * 100 : 0
 }
 
-const onEditorReady = (editorInstance: ClassicEditor) => {
-  editor.value = editorInstance
-  editorInstance.ui.view.editable.element?.classList.add(
-    'reading-prose',
-    'reading-prose--compact',
-    'comment-editor-content'
-  )
-  editorInstance.editing.view.document.on('keydown', (event: any, data: any) => {
-    const domEvent = data.domEvent as KeyboardEvent
-    if ((domEvent.ctrlKey || domEvent.metaKey) && domEvent.key === 'Enter') {
-      data.preventDefault()
-      event.stop()
-      createComment(0, article.value?.owner || '')
-    }
-  })
-}
-
 onUpdated(() => {
   Prism.highlightAll()
 })
@@ -394,7 +409,6 @@ onMounted(async () => {
     }
   }
 
-  isLayoutReady.value = true
   window.addEventListener('scroll', updateScrollProgress)
   timer = setTimeout(() => {
     checkValidView()
@@ -405,7 +419,6 @@ onUnmounted(() => {
   clearTimeout(timer)
   if (copyTimer) clearTimeout(copyTimer)
   window.removeEventListener('scroll', updateScrollProgress)
-  if (editor.value) editor.value.destroy()
 })
 </script>
 
@@ -519,14 +532,21 @@ onUnmounted(() => {
       <h2 class="m-0 text-xl font-black">评论</h2>
 
       <div v-if="userStore.userInfo" class="mt-4">
-        <div id="editor" class="overflow-hidden rounded-archive border border-border">
-          <ckeditor
-            v-if="isLayoutReady"
-            v-model="editorData"
-            :editor="ClassicEditor"
-            :config="config"
-            @ready="onEditorReady"
-          />
+        <CommentEditor
+          v-if="canRenderCommentEditor"
+          v-model="editorData"
+          :disabled="isSubmittingComment"
+          @submit="createComment(0, article.owner)"
+        />
+        <div
+          v-else
+          class="flex flex-col gap-3 rounded-archive border border-border bg-surface-raised p-5 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p class="m-0 text-sm font-black text-foreground">参与讨论</p>
+            <p class="m-0 mt-1 text-sm text-muted-foreground">写下你的想法，和这篇文章接上话。</p>
+          </div>
+          <AppButton size="sm" class="w-max" @click="activateCommentEditor">写评论</AppButton>
         </div>
         <div class="mt-3 flex items-center justify-between gap-3">
           <span class="text-sm font-semibold text-muted-foreground">{{ replyUserName }}</span>
@@ -589,20 +609,3 @@ onUnmounted(() => {
     @confirm="confirmDeleteComment"
   />
 </template>
-
-<style scoped>
-:deep(.ck-editor__editable_inline) {
-  min-height: 8rem;
-  background: rgb(var(--color-surface));
-  color: rgb(var(--color-foreground));
-}
-
-:deep(.ck-toolbar) {
-  background: rgb(var(--color-surface-raised)) !important;
-  border-color: rgb(var(--color-border)) !important;
-}
-
-:deep(.ck-content) {
-  background: rgb(var(--color-surface)) !important;
-}
-</style>
