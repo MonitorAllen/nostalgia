@@ -21,11 +21,15 @@ const errorMessage = ref('')
 const redirectPath = computed(() => {
   const redirect = route.query.redirect
 
-  if (typeof redirect === 'string' && redirect.startsWith('/admin') && redirect !== '/admin/login') {
-    return redirect
+  if (typeof redirect !== 'string') {
+    return '/admin/articles'
   }
 
-  return '/admin/articles'
+  const resolved = router.resolve(redirect)
+  const isAdminProtectedRoute =
+    resolved.name !== 'adminLogin' && resolved.matched.some((record) => record.meta.requiresAdmin)
+
+  return isAdminProtectedRoute ? resolved.fullPath : '/admin/articles'
 })
 
 const isSubmitDisabled = computed(() => {

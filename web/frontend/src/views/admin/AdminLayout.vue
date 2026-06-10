@@ -60,7 +60,7 @@ const handleLogout = async () => {
 
 <template>
   <div class="min-h-dvh bg-background text-foreground">
-    <header class="sticky top-0 z-40 border-b border-border/70 bg-background/92 px-4 py-3 backdrop-blur lg:hidden">
+    <header class="sticky top-0 z-40 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <RouterLink
           :to="{ name: 'adminArticles' }"

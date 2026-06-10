@@ -101,6 +101,11 @@ const router = createRouter({
                     name: 'adminCategories',
                     component: () => import('@/views/admin/AdminCategoryView.vue'),
                 },
+                {
+                    path: ':pathMatch(.*)*',
+                    name: 'adminNotFound',
+                    redirect: { name: 'adminArticles' },
+                },
             ],
         },
         {
