@@ -1,0 +1,15 @@
+export const CODE_BLOCK_LANGUAGES = [
+  { language: 'plaintext', label: 'Plain text' },
+  { language: 'go', label: 'Golang' },
+  { language: 'python', label: 'Python' },
+  { language: 'javascript', label: 'JavaScript' },
+  { language: 'typescript', label: 'TypeScript' },
+  { language: 'java', label: 'Java' },
+  { language: 'c', label: 'C' },
+  { language: 'cpp', label: 'C++' },
+  { language: 'sql', label: 'SQL' },
+  { language: 'json', label: 'JSON' },
+  { language: 'bash', label: 'Bash' },
+  { language: 'html', label: 'HTML' },
+  { language: 'css', label: 'CSS' },
+] as const
