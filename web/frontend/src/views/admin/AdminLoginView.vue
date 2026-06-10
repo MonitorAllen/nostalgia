@@ -5,12 +5,12 @@ import ArchivePanel from '@/components/ui/ArchivePanel.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import { useToast } from '@/composables/useToast'
-import { useAdminAuthStore } from '@/admin/stores/adminAuth'
+import { useAuthStore } from '@/store/module/auth'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const adminAuth = useAdminAuthStore()
+const authStore = useAuthStore()
 
 const username = ref('')
 const password = ref('')
@@ -37,6 +37,10 @@ const isSubmitDisabled = computed(() => {
 })
 
 const extractErrorDetail = (error: unknown) => {
+  if (error instanceof Error && error.message === 'Admin role required') {
+    return '当前账号没有后台权限'
+  }
+
   if (typeof error === 'object' && error && 'response' in error) {
     const response = (error as { response?: { data?: { error?: string; message?: string } | string } }).response
     const data = response?.data
@@ -60,10 +64,16 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    await adminAuth.login({
+    const response = await authStore.login({
       username: username.value,
       password: password.value,
     })
+
+    if (response.data.user.role !== 'admin') {
+      authStore.clearTokens()
+      throw new Error('Admin role required')
+    }
+
     await redirectToAdmin()
   } catch (error) {
     errorMessage.value = extractErrorDetail(error)
@@ -79,7 +89,7 @@ const handleSubmit = async () => {
 }
 
 onMounted(async () => {
-  const authenticated = await adminAuth.ensureAuthenticated()
+  const authenticated = await authStore.ensureAdminAuthenticated()
   isCheckingSession.value = false
 
   if (authenticated) {

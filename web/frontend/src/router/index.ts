@@ -8,7 +8,7 @@ import NotFound from '@/views/NotFound.vue'
 import MainLayout from "@/views/layout/MainLayout.vue";
 import CategoryArticleView from "@/views/category/CategoryArticleView.vue";
 import Forbidden from "@/views/Forbidden.vue";
-import { useAdminAuthStore } from '@/admin/stores/adminAuth'
+import { useAuthStore } from '@/store/module/auth'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -69,6 +69,12 @@ const router = createRouter({
             meta: {hideNavbar: true}
         },
         {
+            path: '/setup',
+            name: 'setup',
+            component: () => import('@/views/setup/SetupView.vue'),
+            meta: { hideNavbar: true, hideFooter: true },
+        },
+        {
             path: '/admin/login',
             name: 'adminLogin',
             component: () => import('@/views/admin/AdminLoginView.vue'),
@@ -120,8 +126,8 @@ const router = createRouter({
 router.beforeEach(async (to) => {
     if (!to.meta.requiresAdmin) return true
 
-    const adminAuth = useAdminAuthStore()
-    const authenticated = await adminAuth.ensureAuthenticated()
+    const authStore = useAuthStore()
+    const authenticated = await authStore.ensureAdminAuthenticated()
 
     if (authenticated) return true
 
