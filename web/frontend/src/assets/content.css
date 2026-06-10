@@ -204,6 +204,45 @@
   margin: 0.85rem 0;
 }
 
+.admin-editor-content .ck.ck-editor {
+  color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck.ck-toolbar {
+  border-color: rgb(var(--color-border));
+  background: rgb(var(--color-surface-raised));
+}
+
+.admin-editor-content .ck.ck-editor__main > .ck-editor__editable {
+  border-color: rgb(var(--color-border));
+  background: rgb(var(--color-surface));
+}
+
+.admin-editor-content .ck-content {
+  min-height: 58vh;
+  padding: 2rem min(3vw, 2.5rem);
+}
+
+.admin-editor-content .ck-content,
+.admin-editor-content .ck-content.ck-editor__editable {
+  color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck-content h1,
+.admin-editor-content .ck-content h2,
+.admin-editor-content .ck-content h3,
+.admin-editor-content .ck-content h4,
+.admin-editor-content .ck-content h5,
+.admin-editor-content .ck-content h6,
+.admin-editor-content .ck-content p,
+.admin-editor-content .ck-content li,
+.admin-editor-content .ck-content blockquote,
+.admin-editor-content .ck-content pre,
+.admin-editor-content .ck-content table,
+.admin-editor-content .ck-content figure {
+  max-width: 100%;
+}
+
 @media (max-width: 640px) {
   .reading-prose h1 {
     font-size: 1.9rem;
