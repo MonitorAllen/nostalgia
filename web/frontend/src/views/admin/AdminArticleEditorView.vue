@@ -16,6 +16,11 @@ import { listAllAdminCategories } from '@/admin/api/adminCategoryApi'
 import { uploadAdminFile } from '@/admin/api/adminUploadApi'
 import { adminEditorConfig } from '@/admin/editor/adminEditorConfig'
 import AdminUploadAdapter from '@/admin/editor/adminUploadAdapter'
+import {
+  ADMIN_IMAGE_ACCEPT,
+  getAdminUploadErrorMessage,
+  validateAdminImageFile
+} from '@/admin/editor/uploadPolicy'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -331,17 +336,17 @@ const saveArticle = async () => {
       detail: title,
       life: 2400
     })
-  } catch {
+  } catch (error) {
     saveStatus.value = 'error'
+    toast.add({
+      severity: 'error',
+      summary: '保存失败',
+      detail: getAdminUploadErrorMessage(error, '修改已保存在本地草稿，请稍后重试'),
+      life: 3200
+    })
   } finally {
     isSaving.value = false
   }
-}
-
-const validateImageFile = (file?: File) => {
-  if (!file) return '请选择要上传的图片'
-  if (!file.type.startsWith('image/')) return '只能上传图片文件'
-  return ''
 }
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -362,7 +367,7 @@ const handleCoverInput = async (event: Event) => {
   const file = input.files?.[0]
   input.value = ''
 
-  const validationMessage = validateImageFile(file)
+  const validationMessage = validateAdminImageFile(file)
   if (validationMessage) {
     toast.add({
       severity: 'warning',
@@ -395,7 +400,7 @@ const handleCoverInput = async (event: Event) => {
     toast.add({
       severity: 'error',
       summary: '封面上传失败',
-      detail: error?.response?.data?.error || error?.message || '请稍后再试',
+      detail: getAdminUploadErrorMessage(error),
       life: 3000
     })
   } finally {
@@ -589,7 +594,7 @@ onBeforeUnmount(() => {
               <input
                 ref="coverInput"
                 type="file"
-                accept="image/*"
+                :accept="ADMIN_IMAGE_ACCEPT"
                 class="hidden"
                 @change="handleCoverInput"
               />
