@@ -21,6 +21,7 @@ type Config struct {
 	GrpcGatewayAddress    string        `mapstructure:"GRPC_GATEWAY_ADDRESS"`
 	GRPCServerAddress     string        `mapstructure:"GRPC_SERVER_ADDRESS"`
 	TokenSymmetricKey     string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	SetupToken            string        `mapstructure:"SETUP_TOKEN"`
 	AccessTokenDuration   time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration  time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	EmailSenderName       string        `mapstructure:"EMAIL_SENDER_NAME"`

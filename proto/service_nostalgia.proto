@@ -4,18 +4,11 @@ package pb;
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
-import "rpc_create_admin.proto";
-import "rpc_update_admin.proto";
-import "rpc_login_admin.proto";
-import "rpc_logout_admin.proto";
-import "rpc_admin_info.proto";
-import "rpc_init_sys_menu.proto";
 import "rpc_create_article.proto";
 import "rpc_delete_article.proto";
 import "rpc_list_articles.proto";
 import "rpc_get_article.proto";
 import "rpc_update_article.proto";
-import "rpc_renew_access_token.proto";
 import "rpc_upload_file.proto";
 import "category.proto";
 
@@ -34,81 +27,6 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
 };
 
 service Nostalgia {
-  rpc LoginAdmin (LoginAdminRequest) returns (LoginAdminResponse) {
-    option (google.api.http) = {
-      post: "/v1/admin/login"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to login backend";
-      summary: "login backend";
-      tags: "Auth";
-    };
-  }
-  rpc LogoutAdmin (LogoutAdminRequest) returns (LogoutAdminResponse) {
-    option (google.api.http) = {
-      post: "/v1/admin/logout"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to logout backend";
-      summary: "logout backend";
-      tags: "Auth";
-    };
-  }
-  rpc RenewAccessToken (RenewAccessTokenRequest) returns (RenewAccessTokenResponse) {
-    option (google.api.http) = {
-      post: "/v1/admin/renew_access"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to renew a access token";
-      summary: "renew access token";
-      tags: "Auth";
-    };
-  }
-  rpc InitSysMenu (InitSysMenuRequest) returns (InitSysMenuResponse) {
-    option (google.api.http) = {
-      get: "/v1/menu/init"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to init system menu";
-      summary: "init system menu";
-      tags: "Menu";
-    };
-  }
-  rpc CreateAdmin (CreateAdminRequest) returns (CreateAdminResponse) {
-    option (google.api.http) = {
-      post: "/v1/admin"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to create a new admin";
-      summary: "Create new admin";
-      tags: "Admin";
-    };
-  }
-  rpc UpdateAdmin (UpdateAdminRequest) returns (UpdateAdminResponse) {
-    option (google.api.http) = {
-      patch: "/v1/admin"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to create a new admin";
-      summary: "Create new admin";
-      tags: "Admin";
-    };
-  }
-  rpc AdminInfo (AdminInfoRequest) returns (AdminInfoResponse) {
-    option (google.api.http) = {
-      get: "/v1/admin/info"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Use this API to get admin info";
-      summary: "get admin info";
-      tags: "Admin";
-    };
-  }
   rpc CreateArticle (CreateArticleRequest) returns (CreateArticleResponse) {
     option (google.api.http) = {
       post: "/v1/articles"

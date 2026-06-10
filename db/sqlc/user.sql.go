@@ -12,6 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAdminUsers = `-- name: CountAdminUsers :one
+SELECT count(*) FROM users WHERE role = 'admin'
+`
+
+func (q *Queries) CountAdminUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAdminUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     id,
@@ -39,6 +50,57 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.HashedPassword,
 		arg.FullName,
 		arg.Email,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.About,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const createUserWithRole = `-- name: CreateUserWithRole :one
+INSERT INTO users (
+    id,
+    username,
+    hashed_password,
+    full_name,
+    email,
+    is_email_verified,
+    role
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at
+`
+
+type CreateUserWithRoleParams struct {
+	ID              uuid.UUID `json:"id"`
+	Username        string    `json:"username"`
+	HashedPassword  string    `json:"hashed_password"`
+	FullName        string    `json:"full_name"`
+	Email           string    `json:"email"`
+	IsEmailVerified bool      `json:"is_email_verified"`
+	Role            string    `json:"role"`
+}
+
+func (q *Queries) CreateUserWithRole(ctx context.Context, arg CreateUserWithRoleParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUserWithRole,
+		arg.ID,
+		arg.Username,
+		arg.HashedPassword,
+		arg.FullName,
+		arg.Email,
+		arg.IsEmailVerified,
+		arg.Role,
 	)
 	var i User
 	err := row.Scan(

@@ -52,6 +52,21 @@ func (mr *MockStoreMockRecorder) AddCommentLikes(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommentLikes", reflect.TypeOf((*MockStore)(nil).AddCommentLikes), arg0, arg1)
 }
 
+// CountAdminUsers mocks base method.
+func (m *MockStore) CountAdminUsers(arg0 context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountAdminUsers", arg0)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountAdminUsers indicates an expected call of CountAdminUsers.
+func (mr *MockStoreMockRecorder) CountAdminUsers(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAdminUsers", reflect.TypeOf((*MockStore)(nil).CountAdminUsers), arg0)
+}
+
 // CountAllArticles mocks base method.
 func (m *MockStore) CountAllArticles(arg0 context.Context) (int64, error) {
 	m.ctrl.T.Helper()
@@ -125,21 +140,6 @@ func (m *MockStore) CountSearchArticles(arg0 context.Context, arg1 db.CountSearc
 func (mr *MockStoreMockRecorder) CountSearchArticles(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountSearchArticles", reflect.TypeOf((*MockStore)(nil).CountSearchArticles), arg0, arg1)
-}
-
-// CreateAdmin mocks base method.
-func (m *MockStore) CreateAdmin(arg0 context.Context, arg1 db.CreateAdminParams) (db.Admin, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateAdmin", arg0, arg1)
-	ret0, _ := ret[0].(db.Admin)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateAdmin indicates an expected call of CreateAdmin.
-func (mr *MockStoreMockRecorder) CreateAdmin(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAdmin", reflect.TypeOf((*MockStore)(nil).CreateAdmin), arg0, arg1)
 }
 
 // CreateArticle mocks base method.
@@ -245,6 +245,21 @@ func (m *MockStore) CreateUserTx(arg0 context.Context, arg1 db.CreateUserTxParam
 func (mr *MockStoreMockRecorder) CreateUserTx(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserTx", reflect.TypeOf((*MockStore)(nil).CreateUserTx), arg0, arg1)
+}
+
+// CreateUserWithRole mocks base method.
+func (m *MockStore) CreateUserWithRole(arg0 context.Context, arg1 db.CreateUserWithRoleParams) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUserWithRole", arg0, arg1)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserWithRole indicates an expected call of CreateUserWithRole.
+func (mr *MockStoreMockRecorder) CreateUserWithRole(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserWithRole", reflect.TypeOf((*MockStore)(nil).CreateUserWithRole), arg0, arg1)
 }
 
 // CreateVerifyEmail mocks base method.
@@ -358,36 +373,6 @@ func (m *MockStore) DeleteCommentsByArticleID(arg0 context.Context, arg1 uuid.UU
 func (mr *MockStoreMockRecorder) DeleteCommentsByArticleID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).DeleteCommentsByArticleID), arg0, arg1)
-}
-
-// GetAdmin mocks base method.
-func (m *MockStore) GetAdmin(arg0 context.Context, arg1 string) (db.Admin, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAdmin", arg0, arg1)
-	ret0, _ := ret[0].(db.Admin)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAdmin indicates an expected call of GetAdmin.
-func (mr *MockStoreMockRecorder) GetAdmin(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdmin", reflect.TypeOf((*MockStore)(nil).GetAdmin), arg0, arg1)
-}
-
-// GetAdminById mocks base method.
-func (m *MockStore) GetAdminById(arg0 context.Context, arg1 int64) (db.Admin, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAdminById", arg0, arg1)
-	ret0, _ := ret[0].(db.Admin)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAdminById indicates an expected call of GetAdminById.
-func (mr *MockStoreMockRecorder) GetAdminById(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminById", reflect.TypeOf((*MockStore)(nil).GetAdminById), arg0, arg1)
 }
 
 // GetArticle mocks base method.
@@ -643,21 +628,6 @@ func (mr *MockStoreMockRecorder) ListCommentsByArticleID(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).ListCommentsByArticleID), arg0, arg1)
 }
 
-// ListInitSysMenus mocks base method.
-func (m *MockStore) ListInitSysMenus(arg0 context.Context, arg1 int64) ([]db.ListInitSysMenusRow, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListInitSysMenus", arg0, arg1)
-	ret0, _ := ret[0].([]db.ListInitSysMenusRow)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListInitSysMenus indicates an expected call of ListInitSysMenus.
-func (mr *MockStoreMockRecorder) ListInitSysMenus(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInitSysMenus", reflect.TypeOf((*MockStore)(nil).ListInitSysMenus), arg0, arg1)
-}
-
 // SearchArticles mocks base method.
 func (m *MockStore) SearchArticles(arg0 context.Context, arg1 db.SearchArticlesParams) ([]db.SearchArticlesRow, error) {
 	m.ctrl.T.Helper()
@@ -685,21 +655,6 @@ func (m *MockStore) SetArticleDefaultCategoryIdByCategoryId(arg0 context.Context
 func (mr *MockStoreMockRecorder) SetArticleDefaultCategoryIdByCategoryId(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetArticleDefaultCategoryIdByCategoryId", reflect.TypeOf((*MockStore)(nil).SetArticleDefaultCategoryIdByCategoryId), arg0, arg1)
-}
-
-// UpdateAdmin mocks base method.
-func (m *MockStore) UpdateAdmin(arg0 context.Context, arg1 db.UpdateAdminParams) (db.Admin, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAdmin", arg0, arg1)
-	ret0, _ := ret[0].(db.Admin)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateAdmin indicates an expected call of UpdateAdmin.
-func (mr *MockStoreMockRecorder) UpdateAdmin(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAdmin", reflect.TypeOf((*MockStore)(nil).UpdateAdmin), arg0, arg1)
 }
 
 // UpdateArticle mocks base method.

@@ -2,7 +2,7 @@ package token
 
 import (
 	"github.com/MonitorAllen/nostalgia/util"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
@@ -31,6 +31,8 @@ func TestJWTMaker(t *testing.T) {
 
 	require.NotZero(t, payload.ID)
 	require.Equal(t, userID, payload.UserID)
+	require.Equal(t, username, payload.Username)
+	require.Equal(t, role, payload.Role)
 	require.WithinDuration(t, issuedAt, payload.IssuedAt, time.Second)
 	require.WithinDuration(t, expiredAt, payload.ExpireAt, time.Second)
 }
@@ -67,4 +69,11 @@ func TestInvalidJWTTokenAlgNone(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, ErrInvalidToken.Error())
 	require.Nil(t, payload)
+}
+
+func TestJWTMakerRejectsShortSecret(t *testing.T) {
+	maker, err := NewJWTMaker(util.RandomString(31))
+	require.Error(t, err)
+	require.Nil(t, maker)
+	require.Contains(t, err.Error(), "invalid key size")
 }

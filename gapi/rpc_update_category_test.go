@@ -49,8 +49,6 @@ func EqUpdateCategoryTxParams(id int64, name string) gomock.Matcher {
 }
 
 func TestUpdateCategory(t *testing.T) {
-	admin := randomAdmin(t)
-
 	category := randomCategory()
 
 	newName := util.RandomString(6)
@@ -90,7 +88,7 @@ func TestUpdateCategory(t *testing.T) {
 					Return(db.UpdateCategoryTxResult{Category: updateCategory}, nil)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.UpdateCategoryResponse, err error) {
 				require.NoError(t, err)
@@ -140,7 +138,7 @@ func TestUpdateCategory(t *testing.T) {
 					Return(db.UpdateCategoryTxResult{}, db.ErrUniqueViolation)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.UpdateCategoryResponse, err error) {
 				require.Error(t, err)
@@ -166,7 +164,7 @@ func TestUpdateCategory(t *testing.T) {
 					Return(db.UpdateCategoryTxResult{}, db.ErrRecordNotFound)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.UpdateCategoryResponse, err error) {
 				require.Error(t, err)
@@ -191,7 +189,7 @@ func TestUpdateCategory(t *testing.T) {
 					Return(db.UpdateCategoryTxResult{}, sql.ErrConnDone)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.UpdateCategoryResponse, err error) {
 				require.Error(t, err)
@@ -213,7 +211,7 @@ func TestUpdateCategory(t *testing.T) {
 
 			tc.buildStubs(store, taskDistributor)
 
-			server := newTestServer(t, store, taskDistributor, nil)
+			server := newTestServer(t, newGAPITestStore(store), taskDistributor, nil)
 
 			ctx := tc.buildContext(t, server.tokenMaker)
 

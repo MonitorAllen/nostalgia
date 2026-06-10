@@ -3,9 +3,10 @@ package token
 import (
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 const minSecretKeySize = 32
@@ -34,63 +35,27 @@ func (maker *JWTMaker) CreateToken(userID uuid.UUID, username string, role strin
 
 func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
-		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		if !ok {
+		if token.Method != jwt.SigningMethodHS256 {
 			return nil, ErrInvalidToken
 		}
 		return []byte(maker.secretKey), nil
 	}
 
-	jwtToken, err := jwt.ParseWithClaims(token, &Payload{}, keyFunc)
+	jwtToken, err := jwt.ParseWithClaims(
+		token,
+		&Payload{},
+		keyFunc,
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+	)
 	if err != nil {
-		var vErr *jwt.ValidationError
-		ok := errors.As(err, &vErr)
-		if ok && errors.Is(vErr.Inner, ErrExpiredToken) {
+		if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, ErrExpiredToken) {
 			return nil, ErrExpiredToken
 		}
 		return nil, ErrInvalidToken
 	}
 
 	payload, ok := jwtToken.Claims.(*Payload)
-	if !ok {
-		return nil, ErrInvalidToken
-	}
-
-	return payload, nil
-}
-
-func (maker *JWTMaker) CreateAdminToken(userID int64, username string, roleId int64, duration time.Duration) (string, *AdminPayload, error) {
-	payload, err := NewAdminPayload(userID, username, roleId, duration)
-	if err != nil {
-		return "", payload, err
-	}
-
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
-	token, err := jwtToken.SignedString([]byte(maker.secretKey))
-	return token, payload, err
-}
-
-func (maker *JWTMaker) VerifyAdminToken(token string) (*AdminPayload, error) {
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
-		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		if !ok {
-			return nil, ErrInvalidToken
-		}
-		return []byte(maker.secretKey), nil
-	}
-
-	jwtToken, err := jwt.ParseWithClaims(token, &AdminPayload{}, keyFunc)
-	if err != nil {
-		var vErr *jwt.ValidationError
-		ok := errors.As(err, &vErr)
-		if ok && errors.Is(vErr.Inner, ErrExpiredToken) {
-			return nil, ErrExpiredToken
-		}
-		return nil, ErrInvalidToken
-	}
-
-	payload, ok := jwtToken.Claims.(*AdminPayload)
-	if !ok {
+	if !ok || !jwtToken.Valid {
 		return nil, ErrInvalidToken
 	}
 

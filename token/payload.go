@@ -2,8 +2,10 @@ package token
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var (
@@ -47,36 +49,30 @@ func (payload *Payload) Valid() error {
 	return nil
 }
 
-type AdminPayload struct {
-	ID       uuid.UUID `json:"id"`
-	AdminID  int64     `json:"admin_id"`
-	Username string    `json:"username"`
-	RoleID   int64     `json:"role_id"`
-	IssuedAt time.Time `json:"issued_at"`
-	ExpireAt time.Time `json:"expire_at"`
+func (payload *Payload) Validate() error {
+	return payload.Valid()
 }
 
-func NewAdminPayload(adminID int64, username string, role_id int64, duration time.Duration) (*AdminPayload, error) {
-	tokenID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
-	}
-
-	payload := &AdminPayload{
-		ID:       tokenID,
-		AdminID:  adminID,
-		Username: username,
-		RoleID:   role_id,
-		IssuedAt: time.Now(),
-		ExpireAt: time.Now().Add(duration),
-	}
-
-	return payload, nil
+func (payload *Payload) GetExpirationTime() (*jwt.NumericDate, error) {
+	return jwt.NewNumericDate(payload.ExpireAt), nil
 }
 
-func (adminPayload *AdminPayload) Valid() error {
-	if time.Now().After(adminPayload.ExpireAt) {
-		return ErrExpiredToken
-	}
-	return nil
+func (payload *Payload) GetIssuedAt() (*jwt.NumericDate, error) {
+	return jwt.NewNumericDate(payload.IssuedAt), nil
+}
+
+func (payload *Payload) GetNotBefore() (*jwt.NumericDate, error) {
+	return nil, nil
+}
+
+func (payload *Payload) GetIssuer() (string, error) {
+	return "", nil
+}
+
+func (payload *Payload) GetSubject() (string, error) {
+	return "", nil
+}
+
+func (payload *Payload) GetAudience() (jwt.ClaimStrings, error) {
+	return nil, nil
 }

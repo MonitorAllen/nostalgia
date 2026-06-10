@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { useToast } from '@/composables/useToast'
-import { useAdminAuthStore } from '../stores/adminAuth'
+import { useAuthStore } from '@/store/module/auth'
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -47,8 +47,8 @@ class AdminHttpClient {
       return adminConfig
     }
 
-    const authStore = useAdminAuthStore()
-    const authenticated = await authStore.ensureAuthenticated()
+    const authStore = useAuthStore()
+    const authenticated = await authStore.ensureAdminAuthenticated()
 
     if (!authenticated) {
       this.redirectToLogin()
@@ -81,8 +81,8 @@ class AdminHttpClient {
         config.headers.Authorization = `Bearer ${token}`
         return this.instance.request(config)
       } catch (refreshError) {
-        const authStore = useAdminAuthStore()
-        authStore.clear()
+        const authStore = useAuthStore()
+        authStore.clearTokens()
         this.redirectToLogin()
         return Promise.reject(refreshError)
       }
@@ -100,7 +100,7 @@ class AdminHttpClient {
       return this.refreshPromise
     }
 
-    const authStore = useAdminAuthStore()
+    const authStore = useAuthStore()
     this.refreshPromise = authStore.refreshAccessToken()
 
     try {

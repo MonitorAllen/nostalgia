@@ -48,8 +48,6 @@ func EqCreateCategoryTxParams(name string) gomock.Matcher {
 }
 
 func TestCreateCategory(t *testing.T) {
-	admin := randomAdmin(t)
-
 	category := randomCategory()
 
 	testCases := []struct {
@@ -78,7 +76,7 @@ func TestCreateCategory(t *testing.T) {
 					Return(db.CreateCategoryTxResult{Category: category}, nil)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.CreateCategoryResponse, err error) {
 				require.NoError(t, err)
@@ -122,7 +120,7 @@ func TestCreateCategory(t *testing.T) {
 					Return(db.CreateCategoryTxResult{}, db.ErrUniqueViolation)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.CreateCategoryResponse, err error) {
 				require.Error(t, err)
@@ -145,7 +143,7 @@ func TestCreateCategory(t *testing.T) {
 					Return(db.CreateCategoryTxResult{}, sql.ErrConnDone)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.CreateCategoryResponse, err error) {
 				require.Error(t, err)
@@ -167,7 +165,7 @@ func TestCreateCategory(t *testing.T) {
 
 			tc.buildStubs(store, taskDistributor)
 
-			server := newTestServer(t, store, taskDistributor, nil)
+			server := newTestServer(t, newGAPITestStore(store), taskDistributor, nil)
 
 			ctx := tc.buildContext(t, server.tokenMaker)
 

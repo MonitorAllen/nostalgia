@@ -12,10 +12,4 @@ type Maker interface {
 
 	// VerifyToken checks if the user token is valid or not
 	VerifyToken(token string) (*Payload, error)
-
-	// CreateAdminToken creates a new admin token for a specific username and duration
-	CreateAdminToken(AdminID int64, username string, roleId int64, duration time.Duration) (string, *AdminPayload, error)
-
-	// VerifyAdminToken checks if the admin token is valid or not
-	VerifyAdminToken(token string) (*AdminPayload, error)
 }
