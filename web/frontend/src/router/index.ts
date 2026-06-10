@@ -8,6 +8,7 @@ import NotFound from '@/views/NotFound.vue'
 import MainLayout from "@/views/layout/MainLayout.vue";
 import CategoryArticleView from "@/views/category/CategoryArticleView.vue";
 import Forbidden from "@/views/Forbidden.vue";
+import { useAdminAuthStore } from '@/admin/stores/adminAuth'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -68,12 +69,66 @@ const router = createRouter({
             meta: {hideNavbar: true}
         },
         {
+            path: '/admin/login',
+            name: 'adminLogin',
+            component: () => import('@/views/admin/AdminLoginView.vue'),
+            meta: { hideNavbar: true, hideFooter: true },
+        },
+        {
+            path: '/admin',
+            component: () => import('@/views/admin/AdminLayout.vue'),
+            meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
+            children: [
+                { path: '', redirect: { name: 'adminArticles' } },
+                {
+                    path: 'articles',
+                    name: 'adminArticles',
+                    component: () => import('@/views/admin/AdminArticleListView.vue'),
+                },
+                {
+                    path: 'articles/new',
+                    name: 'adminArticleNew',
+                    component: () => import('@/views/admin/AdminArticleEditorView.vue'),
+                },
+                {
+                    path: 'articles/:id/edit',
+                    name: 'adminArticleEdit',
+                    component: () => import('@/views/admin/AdminArticleEditorView.vue'),
+                    props: true,
+                },
+                {
+                    path: 'categories',
+                    name: 'adminCategories',
+                    component: () => import('@/views/admin/AdminCategoryView.vue'),
+                },
+                {
+                    path: ':pathMatch(.*)*',
+                    name: 'adminNotFound',
+                    redirect: { name: 'adminArticles' },
+                },
+            ],
+        },
+        {
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: NotFound,
             meta: {hideNavbar: true}
         },
     ]
+})
+
+router.beforeEach(async (to) => {
+    if (!to.meta.requiresAdmin) return true
+
+    const adminAuth = useAdminAuthStore()
+    const authenticated = await adminAuth.ensureAuthenticated()
+
+    if (authenticated) return true
+
+    return {
+        name: 'adminLogin',
+        query: { redirect: to.fullPath },
+    }
 })
 
 export default router

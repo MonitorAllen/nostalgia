@@ -1,6 +1,6 @@
 # Nostalgia 个人博客系统
 
-Nostalgia 是一个基于 Golang + gRPC + Gin + Redis + PostgreSQL + Docker 的博客系统，支持 Web 前台展示与后台内容管理，内置文件上传、任务队列、权限管理等功能。
+Nostalgia 是一个基于 Golang + gRPC + Gin + Redis + PostgreSQL + Docker 的博客系统，支持公开博客展示与 `/admin` 后台内容管理，内置文件上传、任务队列、权限管理等功能。
 
 > 🚀 适用于个人博客、中小型内容系统、全栈开发练习项目。
 
@@ -22,9 +22,8 @@ NOSTALGIA/
 ├── token/ # JWT / Paseto 认证逻辑
 ├── util/ # 配置加载与工具函数
 ├── validator/ # 自定义参数校验器
-├── web/ # 前端Dockerfile
-│   ├── backend/ # 后台管理系统页面（Vue3）
-│   └── frontend/ # 博客用户前台页面（Vue3）
+├── web/ # 前端 Dockerfile
+│   └── frontend/ # 统一 Vue3 前端，包含公开博客与 /admin 后台
 └── worker/ # 异步任务处理模块（如邮件队列）
 ```
 
@@ -94,7 +93,7 @@ docker compose up --build
 | 功能               | 地址示例                                                                               |
 |------------------|------------------------------------------------------------------------------------|
 | 前台博客首页           | [http://localhost/](http://localhost/)                                             |
-| 后台管理系统（Vue）      | [http://localhost/backend/](http://localhost/backend/)                             |
+| 后台内容管理（Vue）      | [http://localhost/admin/](http://localhost/admin/)                                 |
 | 静态资源访问           | [http://localhost/resources/{id}/xxx.jpg](http://localhost/resources/{id}/xxx.jpg) |
 | RESTful API      | [http://localhost/api/](http://localhost/api/)...                                  |
 | gRPC Gateway API | [http://localhost/v1/](http://localhost/v1/)...                                    |
@@ -125,20 +124,10 @@ make server_docker_up # 参考 Makefile
 
 ### 前端
 
-#### 前台
-
 ```bash
-cd frontend
-npm install
-npm run dev
-```
-
-#### 后台
-
-```bash
-cd backend
-npm install
-npm run dev
+cd web/frontend
+bun install
+bun run dev
 ```
 
 ## 📮 联系与支持

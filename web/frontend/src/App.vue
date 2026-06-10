@@ -16,7 +16,7 @@ const route = useRoute()
     <main class="w-full flex-1">
       <RouterView />
     </main>
-    <footer>
+    <footer v-if="!route.meta.hideFooter">
       <FooterView />
     </footer>
   </div>
