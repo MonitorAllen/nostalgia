@@ -19,6 +19,7 @@ For a personal blog where the admin area is owner-only, the legacy admin RBAC mo
 - Add a one-time setup page and API for creating the first `admin` user.
 - Protect setup with a deployment-time `SETUP_TOKEN`.
 - Preserve existing article ownership and public user data.
+- Keep the PASETO maker implementation available as a non-default token backend.
 - Remove legacy `admins`, `roles`, `role_permissions`, and `sys_menus` dependencies after code no longer reads them.
 
 ## Non-Goals
@@ -62,7 +63,30 @@ RequireRole(admin)
 
 Refresh tokens continue to be backed by `sessions`, so session blocking, token mismatch detection, user-agent/client-IP tracking, and expiry checks remain available.
 
-Both HTTP surfaces must verify the same token format. Today the Gin `/api` server creates JWT tokens while the gRPC-Gateway `/v1` server creates PASETO admin tokens. During this migration, keep JWT as the unified token format and change gRPC-Gateway admin handlers to verify the same user JWT payload. This preserves compatibility for existing public user sessions and avoids moving all admin content APIs to Gin in the same step.
+Both HTTP surfaces must verify the same token format. Today the Gin `/api` server creates JWT tokens while the gRPC-Gateway `/v1` server creates PASETO admin tokens. During this migration, keep JWT as the unified token format for both public and admin traffic, and change gRPC-Gateway admin handlers to verify the same user JWT payload. This preserves compatibility for existing public user sessions and avoids moving all admin content APIs to Gin in the same step.
+
+Keep the PASETO maker implementation in the `token` package, but remove it from the default admin login path. It can stay as a future optional backend or testable implementation as long as it does not reintroduce separate admin payloads.
+
+## JWT Library Upgrade
+
+The current dependency is `github.com/dgrijalva/jwt-go v3.2.0+incompatible`. That repository is archived and the Go vulnerability database reports GO-2020-0017 against `dgrijalva/jwt-go`, with no known fixed version for the v3 module line.
+
+Replace it with the maintained module:
+
+```text
+github.com/golang-jwt/jwt/v5 v5.3.1
+```
+
+Implementation notes:
+
+- Use v5 APIs and `RegisteredClaims` where useful, while keeping the existing payload JSON contract stable for frontend compatibility.
+- Pin validation to the expected HMAC signing method. Do not accept algorithm values merely because they are present in the token header.
+- Keep the current minimum symmetric key size check.
+- Avoid `ParseUnverified` in request authentication paths.
+- Keep existing JWT tests for wrong algorithm, expired token, malformed token, and valid token behavior.
+- Add a dependency verification step with `govulncheck ./...` during implementation.
+
+The Go vulnerability database also reports GO-2025-3553 for `golang-jwt/jwt/v5` before `v5.2.2`; `v5.3.1` is above the patched threshold.
 
 ## Setup API
 
