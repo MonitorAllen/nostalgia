@@ -37,7 +37,7 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:80,
 DB_DRIVER=postgres
 DB_USER=root
 DB_PASSWORD=secret
-DB_SOURCE=postgresql://root:secret@0.0.0.0:5432/nostalgia?sslmode=disable
+DB_SOURCE=postgresql://root:secret@0.0.0.0:15432/nostalgia?sslmode=disable
 MIGRATION_URL=file://db/migration
 RESOURCE_PATH=./resources
 DOMAIN=http://localhost:8080
@@ -45,6 +45,7 @@ HTTP_SERVER_ADDRESS=0.0.0.0:8080
 GRPC_GATEWAY_ADDRESS=0.0.0.0:9091
 GRPC_SERVER_ADDRESS=0.0.0.0:9090
 TOKEN_SYMMETRIC_KEY=...
+SETUP_TOKEN=replace-with-a-random-one-time-bootstrap-token
 ACCESS_TOKEN_DURATION=15m
 REFRESH_TOKEN_DURATION=24h
 REDIS_ADDRESS=redis:6379
@@ -60,6 +61,8 @@ DEFAULT_USER_PASSWORD=123456
 DEFAULT_USER_FULLNAME=fullname
 DEFAULT_USER_EMAIL=xxx@qq.com
 ```
+
+`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
 
 ## 🚀 快速部署
 
@@ -85,7 +88,7 @@ docker compose up --build
 | gRPC         | 9090 |
 | gRPC-Gateway | 9091 |
 | Nginx 前端     | 80   |
-| PostgreSQL   | 5432 |
+| PostgreSQL   | Docker 内部 5432；Makefile 本地映射 15432 |
 | Redis        | 6379 |
 
 #### 接口入口说明（本地docker环境）
@@ -98,6 +101,18 @@ docker compose up --build
 | RESTful API      | [http://localhost/api/](http://localhost/api/)...                                  |
 | gRPC Gateway API | [http://localhost/v1/](http://localhost/v1/)...                                    |
 | Swagger 文档       | [http://localhost/swagger/index.html](http://localhost/swagger/index.html)         |
+
+### 首次初始化管理员
+
+Nostalgia 现在使用统一的用户认证模型：公开注册用户固定为 `visitor`，后台只允许 `role = admin` 的用户访问。首次部署时通过一次性 setup 流程创建唯一管理员：
+
+1. 复制 `.env.example` 为 `.env`，设置 `TOKEN_SYMMETRIC_KEY` 和 `SETUP_TOKEN`。
+2. 启动 PostgreSQL 后运行数据库迁移。
+3. 启动 API 与前端后访问 [http://localhost/setup](http://localhost/setup)。
+4. 输入 `.env` 中的 `SETUP_TOKEN`，创建第一个管理员用户。
+5. 初始化完成后使用该账号访问 [http://localhost/admin/login](http://localhost/admin/login)。
+
+创建第一个管理员后，`/setup` 不再允许创建新的管理员；后续公开注册账号只能作为 `visitor` 使用评论等公开登录能力。
 
 ## 🧪 本地开发
 
@@ -115,7 +130,7 @@ cd nostalgia
 ```bash
 make redis # 默认镜像为 redis:7-alpine，可在 Makefile 中自行调整
 make postgres # 默认镜像为 groonga/pgroonga:3.2.3-alpine-16
-make create_db # 创建数据库
+make createdb # 创建数据库
 make migrateup # 数据库迁移
 make server # 启动 API 服务
 or
@@ -128,6 +143,8 @@ make server_docker_up # 参考 Makefile
 cd web/frontend
 bun install
 bun run dev
+bun run type-check
+bun run build
 ```
 
 ## 📮 联系与支持
