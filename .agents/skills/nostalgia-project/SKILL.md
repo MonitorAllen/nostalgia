@@ -16,7 +16,7 @@ description: Use when working in the Nostalgia repository, especially for Go/Gin
    - 后端：`README.md`、`Makefile`、相关 `api/`、`gapi/`、`db/`、`util/`、`worker/` 文件。
    - 数据库：`db/migration/`、`db/query/`、`sqlc.yaml`。
    - gRPC：`proto/`、`pb/`、`gapi/`。
-   - 前端：对应的 `web/frontend/package.json` 或 `web/backend/package.json`。
+   - 前端：`web/frontend/package.json`；公开页面与 `/admin` 后台都在统一前端内。
 3. 修改 SQL 后运行或说明 `make sqlc`；修改 proto 后运行或说明 `make proto`。
 4. 完成后运行最小相关验证；无法运行时说明缺少的服务、环境变量或依赖。
 

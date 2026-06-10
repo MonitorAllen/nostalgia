@@ -1,26 +1,14 @@
-# Stage 1: Build frontend
-FROM node:23-alpine AS build-frontend
+# Stage 1: Build unified frontend
+FROM oven/bun:1-alpine AS build-frontend
 WORKDIR /app/frontend
 
-COPY frontend/package*.json ./
-RUN npm ci
-
-COPY frontend/ ./
-RUN npm run build
-
-# Stage 2: Build backend
-FROM node:23-alpine AS build-backend
-WORKDIR /app/backend
-
-RUN npm install -g bun
-
-COPY backend/package.json backend/bun.lock ./
+COPY frontend/package.json frontend/bun.lock* ./
 RUN bun install --frozen-lockfile
 
-COPY backend/ ./
-RUN bun run build:pro
+COPY frontend/ ./
+RUN bun run build
 
-# Stage 3: Final nginx server
+# Stage 2: Final nginx server
 FROM nginx:alpine
 
 # 设置时区
@@ -33,7 +21,6 @@ RUN rm -rf /usr/share/nginx/html/*
 
 # 拷贝构建后的静态资源
 COPY --from=build-frontend /app/frontend/dist /usr/share/nginx/html/
-COPY --from=build-backend /app/backend/dist /usr/share/nginx/html/backend/
 
 # 拷贝 nginx 配置
 COPY nginx.conf /etc/nginx/nginx.conf

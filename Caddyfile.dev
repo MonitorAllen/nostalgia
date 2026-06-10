@@ -1,28 +1,27 @@
 :80 {
-    encode gzip
+	encode gzip
 
-    log {
-            output stdout
-            format json
-        }
+	log {
+		output stdout
+		format json
+	}
 
-    handle /api/* {
-        reverse_proxy api:8080
-    }
+	handle /api/* {
+		reverse_proxy api:8080
+	}
 
-    handle /v1/* {
-        reverse_proxy api:9091
-    }
+	handle /v1/* {
+		reverse_proxy api:9091
+	}
 
-    handle /backend/* {
-        reverse_proxy web:80
-    }
+	redir /backend /admin 308
+	redir /backend/* /admin 308
 
-    handle /resources/* {
-        reverse_proxy web:80
-    }
+	handle /resources/* {
+		reverse_proxy web:80
+	}
 
-    handle {
-        reverse_proxy web:80
-    }
+	handle {
+		reverse_proxy web:80
+	}
 }

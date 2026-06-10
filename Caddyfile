@@ -1,34 +1,33 @@
 www.3catz.icu {
-    encode gzip
+	encode gzip
 
-    log {
-        output file /var/log/caddy/access.log
-        format json
-    }
+	log {
+		output file /var/log/caddy/access.log
+		format json
+	}
 
-    header {
-        X-Frame-Options "SAMEORIGIN"
-        X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-    }
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		X-XSS-Protection "1; mode=block"
+	}
 
-    handle /api/* {
-        reverse_proxy api:8080
-    }
+	handle /api/* {
+		reverse_proxy api:8080
+	}
 
-    handle /v1/* {
-        reverse_proxy api:9091
-    }
+	handle /v1/* {
+		reverse_proxy api:9091
+	}
 
-    handle /backend/* {
-        reverse_proxy web:80
-    }
+	redir /backend /admin 308
+	redir /backend/* /admin 308
 
-    handle /resources/* {
-        reverse_proxy web:80
-    }
+	handle /resources/* {
+		reverse_proxy web:80
+	}
 
-    handle {
-        reverse_proxy web:80
-    }
+	handle {
+		reverse_proxy web:80
+	}
 }
