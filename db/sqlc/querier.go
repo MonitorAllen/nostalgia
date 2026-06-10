@@ -19,7 +19,6 @@ type Querier interface {
 	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
 	CountCategories(ctx context.Context) (int64, error)
 	CountSearchArticles(ctx context.Context, arg CountSearchArticlesParams) (int64, error)
-	CreateAdmin(ctx context.Context, arg CreateAdminParams) (Admin, error)
 	CreateArticle(ctx context.Context, arg CreateArticleParams) (Article, error)
 	CreateCategory(ctx context.Context, name string) (Category, error)
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
@@ -32,8 +31,6 @@ type Querier interface {
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
-	GetAdmin(ctx context.Context, username string) (Admin, error)
-	GetAdminById(ctx context.Context, id int64) (Admin, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error)
 	GetArticleBySlug(ctx context.Context, slug pgtype.Text) (GetArticleBySlugRow, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (GetArticleForUpdateRow, error)
@@ -51,10 +48,8 @@ type Querier interface {
 	ListArticlesByCategoryID(ctx context.Context, arg ListArticlesByCategoryIDParams) ([]ListArticlesByCategoryIDRow, error)
 	ListCategoriesCountArticles(ctx context.Context) ([]ListCategoriesCountArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
-	ListInitSysMenus(ctx context.Context, roleID int64) ([]ListInitSysMenusRow, error)
 	SearchArticles(ctx context.Context, arg SearchArticlesParams) ([]SearchArticlesRow, error)
 	SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, categoryID int64) error
-	UpdateAdmin(ctx context.Context, arg UpdateAdminParams) (Admin, error)
 	UpdateArticle(ctx context.Context, arg UpdateArticleParams) (Article, error)
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
