@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { buildAdminLoginRedirect } from '@/admin/adminRoutes'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/store/module/auth'
 
@@ -125,11 +126,7 @@ class AdminHttpClient {
 
   private redirectToLogin() {
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    const redirect = current.startsWith('/admin/login')
-      ? ''
-      : `?redirect=${encodeURIComponent(current)}`
-
-    window.location.href = `/admin/login${redirect}`
+    window.location.href = buildAdminLoginRedirect(current)
   }
 
   get<T = unknown>(url: string, config?: AxiosRequestConfig) {

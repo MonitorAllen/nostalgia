@@ -8,6 +8,7 @@ import NotFound from '@/views/NotFound.vue'
 import MainLayout from "@/views/layout/MainLayout.vue";
 import CategoryArticleView from "@/views/category/CategoryArticleView.vue";
 import Forbidden from "@/views/Forbidden.vue";
+import { ADMIN_BASE_PATH, ADMIN_LOGIN_PATH } from '@/admin/adminRoutes'
 import { useAuthStore } from '@/store/module/auth'
 
 const router = createRouter({
@@ -75,13 +76,13 @@ const router = createRouter({
             meta: { hideNavbar: true, hideFooter: true },
         },
         {
-            path: '/admin/login',
+            path: ADMIN_LOGIN_PATH,
             name: 'adminLogin',
             component: () => import('@/views/admin/AdminLoginView.vue'),
             meta: { hideNavbar: true, hideFooter: true },
         },
         {
-            path: '/admin',
+            path: ADMIN_BASE_PATH,
             component: () => import('@/views/admin/AdminLayout.vue'),
             meta: { hideNavbar: true, hideFooter: true, requiresAdmin: true },
             children: [
