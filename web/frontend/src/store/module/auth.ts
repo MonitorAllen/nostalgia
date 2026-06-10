@@ -4,26 +4,11 @@ import http from '@/util/http'
 import type { LoginRequest, RegisterRequest } from '@/types/request/user'
 import type { User } from '@/types/user'
 import { useUserStore } from '@/store/module/user'
-
-const STORAGE_KEYS = {
-    TOKEN: 'nostalgia_user_token',
-    TOKEN_EXPIRES: 'nostalgia_user_token_expires_at',
-    REFRESH_TOKEN: 'nostalgia_user_refresh_token',
-    REFRESH_TOKEN_EXPIRES: 'nostalgia_user_refresh_token_expires_at',
-    USER: 'nostalgia_user_info',
-} as const
-
-const LEGACY_STORAGE_KEYS = [
-    'nostalgia_access_token',
-    'nostalgia_token_expires_at',
-    'nostalgia_refresh_token',
-    'nostalgia_refresh_token_expires_at',
-    'nostalgia_admin_access_token',
-    'nostalgia_admin_access_token_expires_at',
-    'nostalgia_admin_refresh_token',
-    'nostalgia_admin_refresh_token_expires_at',
-    'nostalgia_admin_user',
-] as const
+import {
+    AUTH_STORAGE_KEYS as STORAGE_KEYS,
+    LEGACY_AUTH_STORAGE_KEYS,
+    cleanupLegacyAuthStorage,
+} from '@/store/module/authStorage'
 
 interface AuthTokens {
     access_token: string
@@ -55,6 +40,8 @@ function readStoredUser() {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+    cleanupLegacyAuthStorage()
+
     const token = ref(localStorage.getItem(STORAGE_KEYS.TOKEN) || '')
     const tokenExpiresAt = ref(localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRES) || '')
     const refreshToken = ref(localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) || '')
@@ -119,7 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refresh_token)
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN_EXPIRES, tokens.refresh_token_expires_at)
 
-        LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
+        LEGACY_AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
     }
 
     const updateAccessToken = (accessToken: string, expiresAt: string) => {
@@ -141,7 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.removeItem(key)
         })
 
-        LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
+        LEGACY_AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key))
         syncUserStore(null)
     }
 
