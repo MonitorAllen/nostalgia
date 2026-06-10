@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/MonitorAllen/nostalgia/token"
+	"github.com/MonitorAllen/nostalgia/util"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"strings"
 )
 
@@ -13,10 +16,10 @@ const (
 	authorizationBearer = "bearer"
 )
 
-func (server *Server) authorizeAdmin(ctx context.Context) (*token.AdminPayload, string, error) {
+func (server *Server) authorizeAdmin(ctx context.Context) (*token.Payload, string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, "", fmt.Errorf("missing matadata")
+		return nil, "", fmt.Errorf("missing metadata")
 	}
 
 	values := md.Get(authorizationHeader)
@@ -36,9 +39,12 @@ func (server *Server) authorizeAdmin(ctx context.Context) (*token.AdminPayload, 
 	}
 
 	accessToken := fields[1]
-	payload, err := server.tokenMaker.VerifyAdminToken(accessToken)
+	payload, err := server.tokenMaker.VerifyToken(accessToken)
 	if err != nil {
 		return nil, "", fmt.Errorf("invalid access token: %s", err)
+	}
+	if payload.Role != util.Admin {
+		return nil, "", status.Error(codes.PermissionDenied, "admin role required")
 	}
 
 	return payload, accessToken, nil

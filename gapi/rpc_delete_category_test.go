@@ -47,8 +47,6 @@ func EqDeleteCategoryTxParams(id int64) gomock.Matcher {
 }
 
 func TestDeleteCategory(t *testing.T) {
-	admin := randomAdmin(t)
-
 	category := randomCategory()
 
 	testCases := []struct {
@@ -77,7 +75,7 @@ func TestDeleteCategory(t *testing.T) {
 					Return(nil)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.DeleteCategoryResponse, err error) {
 				require.NoError(t, err)
@@ -98,7 +96,7 @@ func TestDeleteCategory(t *testing.T) {
 					Times(0)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, -time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, -time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.DeleteCategoryResponse, err error) {
 				require.Error(t, err)
@@ -147,7 +145,7 @@ func TestDeleteCategory(t *testing.T) {
 					Return(sql.ErrConnDone)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithAdminBearerToken(t, tokenMaker, admin.ID, admin.Username, admin.RoleID, time.Minute)
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.DeleteCategoryResponse, err error) {
 				require.Error(t, err)
@@ -169,7 +167,7 @@ func TestDeleteCategory(t *testing.T) {
 
 			tc.buildStubs(store, taskDistributor)
 
-			server := newTestServer(t, store, taskDistributor, nil)
+			server := newTestServer(t, newGAPITestStore(store), taskDistributor, nil)
 
 			ctx := tc.buildContext(t, server.tokenMaker)
 

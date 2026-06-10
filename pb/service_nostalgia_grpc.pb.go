@@ -19,13 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Nostalgia_LoginAdmin_FullMethodName        = "/pb.Nostalgia/LoginAdmin"
-	Nostalgia_LogoutAdmin_FullMethodName       = "/pb.Nostalgia/LogoutAdmin"
-	Nostalgia_RenewAccessToken_FullMethodName  = "/pb.Nostalgia/RenewAccessToken"
-	Nostalgia_InitSysMenu_FullMethodName       = "/pb.Nostalgia/InitSysMenu"
-	Nostalgia_CreateAdmin_FullMethodName       = "/pb.Nostalgia/CreateAdmin"
-	Nostalgia_UpdateAdmin_FullMethodName       = "/pb.Nostalgia/UpdateAdmin"
-	Nostalgia_AdminInfo_FullMethodName         = "/pb.Nostalgia/AdminInfo"
 	Nostalgia_CreateArticle_FullMethodName     = "/pb.Nostalgia/CreateArticle"
 	Nostalgia_DeleteArticle_FullMethodName     = "/pb.Nostalgia/DeleteArticle"
 	Nostalgia_ListArticles_FullMethodName      = "/pb.Nostalgia/ListArticles"
@@ -43,13 +36,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NostalgiaClient interface {
-	LoginAdmin(ctx context.Context, in *LoginAdminRequest, opts ...grpc.CallOption) (*LoginAdminResponse, error)
-	LogoutAdmin(ctx context.Context, in *LogoutAdminRequest, opts ...grpc.CallOption) (*LogoutAdminResponse, error)
-	RenewAccessToken(ctx context.Context, in *RenewAccessTokenRequest, opts ...grpc.CallOption) (*RenewAccessTokenResponse, error)
-	InitSysMenu(ctx context.Context, in *InitSysMenuRequest, opts ...grpc.CallOption) (*InitSysMenuResponse, error)
-	CreateAdmin(ctx context.Context, in *CreateAdminRequest, opts ...grpc.CallOption) (*CreateAdminResponse, error)
-	UpdateAdmin(ctx context.Context, in *UpdateAdminRequest, opts ...grpc.CallOption) (*UpdateAdminResponse, error)
-	AdminInfo(ctx context.Context, in *AdminInfoRequest, opts ...grpc.CallOption) (*AdminInfoResponse, error)
 	CreateArticle(ctx context.Context, in *CreateArticleRequest, opts ...grpc.CallOption) (*CreateArticleResponse, error)
 	DeleteArticle(ctx context.Context, in *DeleteArticleRequest, opts ...grpc.CallOption) (*DeleteArticleResponse, error)
 	ListArticles(ctx context.Context, in *ListArticlesRequest, opts ...grpc.CallOption) (*ListArticlesResponse, error)
@@ -69,76 +55,6 @@ type nostalgiaClient struct {
 
 func NewNostalgiaClient(cc grpc.ClientConnInterface) NostalgiaClient {
 	return &nostalgiaClient{cc}
-}
-
-func (c *nostalgiaClient) LoginAdmin(ctx context.Context, in *LoginAdminRequest, opts ...grpc.CallOption) (*LoginAdminResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LoginAdminResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_LoginAdmin_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nostalgiaClient) LogoutAdmin(ctx context.Context, in *LogoutAdminRequest, opts ...grpc.CallOption) (*LogoutAdminResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LogoutAdminResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_LogoutAdmin_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nostalgiaClient) RenewAccessToken(ctx context.Context, in *RenewAccessTokenRequest, opts ...grpc.CallOption) (*RenewAccessTokenResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RenewAccessTokenResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_RenewAccessToken_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nostalgiaClient) InitSysMenu(ctx context.Context, in *InitSysMenuRequest, opts ...grpc.CallOption) (*InitSysMenuResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InitSysMenuResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_InitSysMenu_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nostalgiaClient) CreateAdmin(ctx context.Context, in *CreateAdminRequest, opts ...grpc.CallOption) (*CreateAdminResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateAdminResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_CreateAdmin_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nostalgiaClient) UpdateAdmin(ctx context.Context, in *UpdateAdminRequest, opts ...grpc.CallOption) (*UpdateAdminResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateAdminResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_UpdateAdmin_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *nostalgiaClient) AdminInfo(ctx context.Context, in *AdminInfoRequest, opts ...grpc.CallOption) (*AdminInfoResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminInfoResponse)
-	err := c.cc.Invoke(ctx, Nostalgia_AdminInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *nostalgiaClient) CreateArticle(ctx context.Context, in *CreateArticleRequest, opts ...grpc.CallOption) (*CreateArticleResponse, error) {
@@ -255,13 +171,6 @@ func (c *nostalgiaClient) ListAllCategories(ctx context.Context, in *ListAllCate
 // All implementations must embed UnimplementedNostalgiaServer
 // for forward compatibility.
 type NostalgiaServer interface {
-	LoginAdmin(context.Context, *LoginAdminRequest) (*LoginAdminResponse, error)
-	LogoutAdmin(context.Context, *LogoutAdminRequest) (*LogoutAdminResponse, error)
-	RenewAccessToken(context.Context, *RenewAccessTokenRequest) (*RenewAccessTokenResponse, error)
-	InitSysMenu(context.Context, *InitSysMenuRequest) (*InitSysMenuResponse, error)
-	CreateAdmin(context.Context, *CreateAdminRequest) (*CreateAdminResponse, error)
-	UpdateAdmin(context.Context, *UpdateAdminRequest) (*UpdateAdminResponse, error)
-	AdminInfo(context.Context, *AdminInfoRequest) (*AdminInfoResponse, error)
 	CreateArticle(context.Context, *CreateArticleRequest) (*CreateArticleResponse, error)
 	DeleteArticle(context.Context, *DeleteArticleRequest) (*DeleteArticleResponse, error)
 	ListArticles(context.Context, *ListArticlesRequest) (*ListArticlesResponse, error)
@@ -283,27 +192,6 @@ type NostalgiaServer interface {
 // pointer dereference when methods are called.
 type UnimplementedNostalgiaServer struct{}
 
-func (UnimplementedNostalgiaServer) LoginAdmin(context.Context, *LoginAdminRequest) (*LoginAdminResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LoginAdmin not implemented")
-}
-func (UnimplementedNostalgiaServer) LogoutAdmin(context.Context, *LogoutAdminRequest) (*LogoutAdminResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LogoutAdmin not implemented")
-}
-func (UnimplementedNostalgiaServer) RenewAccessToken(context.Context, *RenewAccessTokenRequest) (*RenewAccessTokenResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenewAccessToken not implemented")
-}
-func (UnimplementedNostalgiaServer) InitSysMenu(context.Context, *InitSysMenuRequest) (*InitSysMenuResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method InitSysMenu not implemented")
-}
-func (UnimplementedNostalgiaServer) CreateAdmin(context.Context, *CreateAdminRequest) (*CreateAdminResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateAdmin not implemented")
-}
-func (UnimplementedNostalgiaServer) UpdateAdmin(context.Context, *UpdateAdminRequest) (*UpdateAdminResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateAdmin not implemented")
-}
-func (UnimplementedNostalgiaServer) AdminInfo(context.Context, *AdminInfoRequest) (*AdminInfoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AdminInfo not implemented")
-}
 func (UnimplementedNostalgiaServer) CreateArticle(context.Context, *CreateArticleRequest) (*CreateArticleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateArticle not implemented")
 }
@@ -356,132 +244,6 @@ func RegisterNostalgiaServer(s grpc.ServiceRegistrar, srv NostalgiaServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Nostalgia_ServiceDesc, srv)
-}
-
-func _Nostalgia_LoginAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoginAdminRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).LoginAdmin(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_LoginAdmin_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).LoginAdmin(ctx, req.(*LoginAdminRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Nostalgia_LogoutAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LogoutAdminRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).LogoutAdmin(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_LogoutAdmin_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).LogoutAdmin(ctx, req.(*LogoutAdminRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Nostalgia_RenewAccessToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenewAccessTokenRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).RenewAccessToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_RenewAccessToken_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).RenewAccessToken(ctx, req.(*RenewAccessTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Nostalgia_InitSysMenu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InitSysMenuRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).InitSysMenu(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_InitSysMenu_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).InitSysMenu(ctx, req.(*InitSysMenuRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Nostalgia_CreateAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateAdminRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).CreateAdmin(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_CreateAdmin_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).CreateAdmin(ctx, req.(*CreateAdminRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Nostalgia_UpdateAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateAdminRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).UpdateAdmin(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_UpdateAdmin_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).UpdateAdmin(ctx, req.(*UpdateAdminRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Nostalgia_AdminInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NostalgiaServer).AdminInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Nostalgia_AdminInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NostalgiaServer).AdminInfo(ctx, req.(*AdminInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Nostalgia_CreateArticle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -689,34 +451,6 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Nostalgia",
 	HandlerType: (*NostalgiaServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "LoginAdmin",
-			Handler:    _Nostalgia_LoginAdmin_Handler,
-		},
-		{
-			MethodName: "LogoutAdmin",
-			Handler:    _Nostalgia_LogoutAdmin_Handler,
-		},
-		{
-			MethodName: "RenewAccessToken",
-			Handler:    _Nostalgia_RenewAccessToken_Handler,
-		},
-		{
-			MethodName: "InitSysMenu",
-			Handler:    _Nostalgia_InitSysMenu_Handler,
-		},
-		{
-			MethodName: "CreateAdmin",
-			Handler:    _Nostalgia_CreateAdmin_Handler,
-		},
-		{
-			MethodName: "UpdateAdmin",
-			Handler:    _Nostalgia_UpdateAdmin_Handler,
-		},
-		{
-			MethodName: "AdminInfo",
-			Handler:    _Nostalgia_AdminInfo_Handler,
-		},
 		{
 			MethodName: "CreateArticle",
 			Handler:    _Nostalgia_CreateArticle_Handler,
