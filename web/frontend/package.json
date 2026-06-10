@@ -8,6 +8,7 @@
     "build": "bun run type-check && bun run build-only",
     "preview": "bunx --bun vite preview",
     "build-only": "bunx --bun vite build",
+    "test": "bun test",
     "type-check": "bunx --bun vue-tsc --build --force",
     "lint": "bunx --bun eslint --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "bunx --bun prettier --write src"
