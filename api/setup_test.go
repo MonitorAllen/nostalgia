@@ -214,6 +214,31 @@ func TestCreateSetupAdminAPI(t *testing.T) {
 			},
 		},
 		{
+			name:       "ConcurrentAdminCreated",
+			setupToken: setupToken,
+			body: gin.H{
+				"setup_token": setupToken,
+				"username":    admin.Username,
+				"password":    password,
+				"full_name":   admin.FullName,
+				"email":       admin.Email,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					CountAdminUsers(gomock.Any()).
+					Times(1).
+					Return(int64(0), nil)
+
+				store.EXPECT().
+					CreateUserWithRole(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.User{}, db.ErrUniqueViolation)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusConflict, recorder.Code)
+			},
+		},
+		{
 			name:       "MissingConfiguredSetupToken",
 			setupToken: "",
 			body: gin.H{

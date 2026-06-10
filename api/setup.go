@@ -87,7 +87,7 @@ func (server *Server) createSetupAdmin(ctx *gin.Context) {
 	})
 	if err != nil {
 		if db.ErrorCode(err) == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusConflict, errorResponse(fmt.Errorf("setup already initialized")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

@@ -49,6 +49,9 @@ VALUES ('基本管理', '', 'pi pi-sliders-h', true, 1, 1);
 INSERT INTO sys_menus (name, path, icon, is_active, type, parent_id, sort)
 VALUES ('文章管理', '/manage/articles', 'pi pi-book', true, 2, 1, 2);
 
+INSERT INTO sys_menus (id, name, path, icon, is_active, type, parent_id, sort)
+VALUES (3, '分类管理', '/manage/categories', 'pi pi-tag', true, 2, 1, 3);
+
 CREATE TABLE "role_permissions" (
                                     "id" bigserial PRIMARY KEY,
                                     "role_id" bigint NOT NULL,
@@ -62,6 +65,9 @@ VALUES (1, 1, 1);
 
 INSERT INTO role_permissions (role_id, menu_id, created_by)
 VALUES (1, 2, 1);
+
+INSERT INTO role_permissions (role_id, menu_id, created_by)
+VALUES (1, 3, 1);
 
 CREATE UNIQUE INDEX ON "sys_menus" ("name", "parent_id");
 
