@@ -1,7 +1,15 @@
 .reading-prose {
+  --prose-measure: 72ch;
+
   color: rgb(var(--color-foreground));
   overflow-wrap: break-word;
   word-break: break-word;
+}
+
+.reading-prose::after {
+  display: block;
+  clear: both;
+  content: '';
 }
 
 .reading-prose > :first-child {
@@ -181,6 +189,73 @@
   background: rgb(var(--color-border));
 }
 
+.reading-prose > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote) {
+  max-width: min(100%, var(--prose-measure));
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.reading-prose > :where(pre, figure, table, hr) {
+  max-width: 100%;
+}
+
+.reading-prose figure.image {
+  text-align: center;
+}
+
+.reading-prose figure.image img {
+  width: auto;
+}
+
+.reading-prose figure.image-style-align-left {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.reading-prose figure.image-style-align-right {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+.reading-prose figure.image-style-align-center {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.reading-prose figure.image-style-side,
+.reading-prose figure.image-style-align-right {
+  float: right;
+  max-width: min(50%, 24rem);
+  margin: 0.35rem 0 1rem 1.5rem;
+}
+
+.reading-prose figure.image-style-align-left {
+  float: left;
+  max-width: min(50%, 24rem);
+  margin: 0.35rem 1.5rem 1rem 0;
+}
+
+.reading-prose figure.image-style-side img,
+.reading-prose figure.image-style-align-left img,
+.reading-prose figure.image-style-align-right img {
+  width: 100%;
+}
+
+.reading-prose figure.table {
+  display: block;
+  overflow-x: auto;
+  border-radius: 0.8rem;
+}
+
+.reading-prose figure.table table {
+  min-width: min(44rem, 100%);
+  margin: 0;
+}
+
+.reading-prose--compact {
+  --prose-measure: 58ch;
+}
+
 .reading-prose--compact h1,
 .reading-prose--compact h2,
 .reading-prose--compact h3,
@@ -204,6 +279,20 @@
   margin: 0.85rem 0;
 }
 
+.reading-prose--compact > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote) {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.comment-editor-content.ck-editor__editable_inline {
+  min-height: 8rem;
+  padding: 1rem;
+}
+
+.comment-editor-content.reading-prose p {
+  margin: 0.45rem 0;
+}
+
 .admin-editor-content .ck.ck-editor {
   color: rgb(var(--color-foreground));
 }
@@ -213,14 +302,41 @@
   background: rgb(var(--color-surface-raised));
 }
 
+.admin-editor-content .ck.ck-button,
+.admin-editor-content .ck.ck-dropdown__button {
+  border-radius: 0.55rem;
+  color: rgb(var(--color-muted-foreground));
+}
+
+.admin-editor-content .ck.ck-button:hover,
+.admin-editor-content .ck.ck-dropdown__button:hover {
+  background: rgb(var(--color-muted));
+  color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck.ck-button.ck-on,
+.admin-editor-content .ck.ck-dropdown__button.ck-on {
+  background: rgb(var(--color-accent) / 0.14);
+  color: rgb(var(--color-accent));
+}
+
 .admin-editor-content .ck.ck-editor__main > .ck-editor__editable {
   border-color: rgb(var(--color-border));
   background: rgb(var(--color-surface));
 }
 
+.admin-editor-content .ck.ck-editor__editable.ck-focused {
+  border-color: rgb(var(--color-accent)) !important;
+  box-shadow: 0 0 0 2px rgb(var(--color-accent) / 0.18) !important;
+}
+
 .admin-editor-content .ck-content {
   min-height: 58vh;
   padding: 2rem min(3vw, 2.5rem);
+}
+
+.admin-editor-content .ck-content.reading-prose {
+  --prose-measure: 72ch;
 }
 
 .admin-editor-content .ck-content,
@@ -259,5 +375,17 @@
   .reading-prose p,
   .reading-prose li {
     font-size: 1rem;
+  }
+
+  .reading-prose figure.image-style-side,
+  .reading-prose figure.image-style-align-left,
+  .reading-prose figure.image-style-align-right {
+    float: none;
+    max-width: 100%;
+    margin: 1.25rem auto;
+  }
+
+  .admin-editor-content .ck-content {
+    padding: 1.25rem;
   }
 }

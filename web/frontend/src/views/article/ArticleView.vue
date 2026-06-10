@@ -349,6 +349,11 @@ const updateScrollProgress = () => {
 
 const onEditorReady = (editorInstance: ClassicEditor) => {
   editor.value = editorInstance
+  editorInstance.ui.view.editable.element?.classList.add(
+    'reading-prose',
+    'reading-prose--compact',
+    'comment-editor-content'
+  )
   editorInstance.editing.view.document.on('keydown', (event: any, data: any) => {
     const domEvent = data.domEvent as KeyboardEvent
     if ((domEvent.ctrlKey || domEvent.metaKey) && domEvent.key === 'Enter') {
