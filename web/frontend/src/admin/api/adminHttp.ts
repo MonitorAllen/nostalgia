@@ -1,5 +1,10 @@
 import axios from 'axios'
-import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import type {
+  AxiosError,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig
+} from 'axios'
 import { buildAdminLoginRedirect } from '@/admin/adminRoutes'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/store/module/auth'
@@ -20,7 +25,7 @@ interface AdminInternalRequestConfig extends InternalAxiosRequestConfig {
 class AdminHttpClient {
   private instance = axios.create({
     baseURL: '/v1',
-    timeout: 10000,
+    timeout: 10000
   })
 
   private refreshPromise: Promise<string> | null = null
@@ -32,12 +37,12 @@ class AdminHttpClient {
   private setupInterceptors() {
     this.instance.interceptors.request.use(
       this.handleRequest.bind(this),
-      this.handleRequestError.bind(this),
+      this.handleRequestError.bind(this)
     )
 
     this.instance.interceptors.response.use(
       this.handleResponse.bind(this),
-      this.handleResponseError.bind(this),
+      this.handleResponseError.bind(this)
     )
   }
 
@@ -120,7 +125,7 @@ class AdminHttpClient {
       severity: 'error',
       summary: '错误',
       detail: message,
-      life: 3000,
+      life: 3000
     })
   }
 

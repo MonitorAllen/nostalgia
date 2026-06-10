@@ -44,6 +44,6 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     refreshAccessToken: authStore.refreshAccessToken,
     ensureAuthenticated: authStore.ensureAdminAuthenticated,
     login,
-    logout,
+    logout
   }
 })
