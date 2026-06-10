@@ -1,4 +1,4 @@
-DB_URL=postgresql://root:secret@localhost:15432/nostalgia?sslmode=disable
+DB_URL ?= postgresql://root:secret@localhost:15432/nostalgia?sslmode=disable
 
 postgres:
 	docker run --name postgres --network nostalgia-network -p 15432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d groonga/pgroonga:3.2.3-alpine-16
