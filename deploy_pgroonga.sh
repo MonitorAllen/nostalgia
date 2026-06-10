@@ -12,7 +12,7 @@ echo "✅ 环境变量检查通过: DB_USER=${DB_USER}"
 # ================= 配置区 =================
 # 定义服务名称 (docker-compose.yaml 中的 service key)
 DB_SERVICE="postgres"
-APP_SERVICES="api web caddy redis"
+APP_SERVICES="api web redis"
 
 # 定义文件和卷名
 BACKUP_FILE="nostalgia_data_$(date +%Y%m%d_%H%M%S).sql"
@@ -117,7 +117,7 @@ fi
 
 # ---------------- 6. 收尾 ----------------
 echo "🚀 9. 启动所有应用服务..."
-docker-compose up -d "${APP_SERVICES}"
+docker-compose up -d ${APP_SERVICES}
 
 echo "🧹 10. 清理备份文件..."
 # 建议先保留，确认无误后再手动删，或者移动到 /tmp

@@ -49,6 +49,8 @@ The expected host certificate layout is:
 
 These files must stay untracked. Compose mounts `./certs` read-only into `/etc/nginx/certs`.
 
+Development images generate a local self-signed certificate during image build so `docker-compose.dev.yaml` can run without Cloudflare certificate files. Production Compose still mounts the Cloudflare Origin CA files read-only.
+
 ## Nginx Routing
 
 Nginx owns the behavior previously split between Caddy and Nginx:

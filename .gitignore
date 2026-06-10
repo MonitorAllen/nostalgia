@@ -30,6 +30,7 @@ logs
 .env.prod
 
 postgres_data
+certs/
 
 # Ignore env files containing sensitive data
 /resources/

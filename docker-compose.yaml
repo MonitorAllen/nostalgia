@@ -1,20 +1,4 @@
 services:
-  caddy:
-    image: caddy:2
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    ports:
-      - "80:80"
-      - "443:443"
-    networks:
-      - nostalgia
-    depends_on:
-      - web
-      - api
-    restart: unless-stopped
-
   postgres:
     image: groonga/pgroonga:3.2.3-alpine-16
     environment:
@@ -55,6 +39,10 @@ services:
     volumes:
       - ./resources:/usr/share/nginx/resources
       - ./logs/nginx:/var/log/nginx
+      - ./certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
     networks:
       - nostalgia
     depends_on:
@@ -63,8 +51,6 @@ services:
 
 volumes:
   data-volume:
-  caddy_data:
-  caddy_config:
 
 networks:
   nostalgia:

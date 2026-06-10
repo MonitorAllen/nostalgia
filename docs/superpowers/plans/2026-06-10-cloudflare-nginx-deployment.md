@@ -33,7 +33,7 @@
 - Modify: `docker-compose.yaml`
   - Removes Caddy, exposes `web` on `80/443`, mounts Cloudflare Origin certs.
 - Modify: `docker-compose.dev.yaml`
-  - Removes Caddy, exposes `web` on `80/443`, mounts Cloudflare Origin certs.
+  - Removes Caddy and exposes `web` on `80/443`; development uses the self-signed certificate generated in the dev image.
 - Delete: `Caddyfile`
   - No longer used.
 - Delete: `Caddyfile.dev`
@@ -232,6 +232,10 @@ git commit -m "refactor(frontend): use backend admin route base"
 - Modify: `docker-compose.dev.yaml`
 - Delete: `Caddyfile`
 - Delete: `Caddyfile.dev`
+- Modify: `web/Dockerfile`
+- Modify: `web/Dockerfile.dev`
+- Modify: `.gitignore`
+- Modify: `deploy_pgroonga.sh`
 
 - [ ] **Step 1: Write failing deployment config tests**
 
@@ -342,11 +346,13 @@ In both Compose files:
       - "443:443"
 ```
 
-- Add to `web.volumes`:
+Add to production `web.volumes` only:
 
 ```yaml
       - ./certs:/etc/nginx/certs:ro
 ```
+
+Do not add the cert mount to `docker-compose.dev.yaml`; the dev image generates a local self-signed certificate during build.
 
 - [ ] **Step 5: Delete Caddy files**
 
