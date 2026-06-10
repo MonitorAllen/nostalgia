@@ -73,7 +73,10 @@ DEFAULT_USER_EMAIL=xxx@qq.com
 ```bash
 git clone https://github.com/MonitorAllen/nostalgia.git
 cd nostalgia
+cp .env.example .env
 ```
+
+编辑 `.env` 并设置数据库、令牌、首次 setup token、邮件等运行时配置后再启动服务。
 
 ### 2. 启动所有服务（API + Redis + PostgreSQL + Nginx + Vue 前端）
 ```bash
@@ -87,7 +90,7 @@ certs/cloudflare-origin.pem
 certs/cloudflare-origin.key
 ```
 
-`certs/` 已加入 `.gitignore`，不要提交证书、私钥或真实部署凭据。开发 Compose 会使用镜像内生成的本地自签证书，方便在移除 Caddy 后继续测试 HTTPS 入口。
+`certs/` 已加入 `.gitignore`，不要提交证书、私钥或真实部署凭据。生产镜像构建不会解密、复制或打包 `.env`；API 容器通过 Compose 的 `env_file` 在运行时读取宿主机 `.env`，也可以由部署平台以等价的环境变量方式注入。开发 Compose 会使用镜像内生成的本地自签证书，方便在移除 Caddy 后继续测试 HTTPS 入口。
 
 #### 默认服务端口：
 
@@ -115,7 +118,7 @@ certs/cloudflare-origin.key
 
 Nostalgia 现在使用统一的用户认证模型：公开注册用户固定为 `visitor`，后台只允许 `role = admin` 的用户访问。首次部署时通过一次性 setup 流程创建唯一管理员：
 
-1. 复制 `.env.example` 为 `.env`，设置 `TOKEN_SYMMETRIC_KEY` 和 `SETUP_TOKEN`。
+1. 确认 `.env` 已设置 `TOKEN_SYMMETRIC_KEY` 和 `SETUP_TOKEN`。
 2. 启动 PostgreSQL 后运行数据库迁移。
 3. 启动 API 与前端后访问 [http://localhost/setup](http://localhost/setup)。
 4. 输入 `.env` 中的 `SETUP_TOKEN`，创建第一个管理员用户。

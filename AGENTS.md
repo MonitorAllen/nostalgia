@@ -87,6 +87,7 @@ bun run lint
 - 可参考 `.env.example` 了解配置项名称，但不要把真实值写入上下文文档。
 - 加密环境文件通过 `make decrypt_env` / `make encrypt_env` 管理，使用前确认权限与密钥来源。
 - 部署工作流依赖 GitHub Secrets，不要在仓库中硬编码替代值。
+- Docker 镜像构建阶段不得解密、复制或打包生产 `.env`；生产配置通过 Compose `env_file` 或等价运行时环境变量注入。
 
 ## Git 与提交规范
 

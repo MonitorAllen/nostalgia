@@ -23,3 +23,4 @@ description: Use when working in the Nostalgia repository, especially for Go/Gin
 ## 安全提醒
 
 不要读取或传播 `.env` 中的真实敏感值。需要配置项名称时参考 `.env.example`。
+Docker 镜像构建阶段不得解密、复制或打包生产 `.env`；生产配置通过 Compose `env_file` 或等价运行时环境变量注入。
