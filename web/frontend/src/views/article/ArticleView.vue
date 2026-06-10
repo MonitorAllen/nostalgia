@@ -98,12 +98,24 @@ const liked = ref(false)
 const isOutdated = ref(false)
 let timer: ReturnType<typeof setTimeout>
 let copyTimer: ReturnType<typeof setTimeout> | undefined
+const COMMENT_EDITOR_SCROLL_ATTEMPTS = 20
+const COMMENT_EDITOR_SCROLL_DELAY_MS = 50
 
-const scrollToCommentEditor = async () => {
+const waitForCommentEditorMount = () =>
+  new Promise((resolve) => window.setTimeout(resolve, COMMENT_EDITOR_SCROLL_DELAY_MS))
+
+const scrollToCommentEditor = async (attempt = 0): Promise<void> => {
   await nextTick()
-  document
-    .getElementById('comment-editor')
-    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const editorElement = document.getElementById('comment-editor')
+  if (editorElement) {
+    editorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
+
+  if (attempt >= COMMENT_EDITOR_SCROLL_ATTEMPTS) return
+
+  await waitForCommentEditorMount()
+  return scrollToCommentEditor(attempt + 1)
 }
 
 const activateCommentEditor = async () => {

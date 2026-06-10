@@ -54,7 +54,10 @@ const onEditorReady = (editorInstance: ClassicEditor) => {
     const keyEvent = event as { stop: () => void }
     const keyData = data as { domEvent: KeyboardEvent; preventDefault: () => void }
 
-    if ((keyData.domEvent.ctrlKey || keyData.domEvent.metaKey) && keyData.domEvent.key === 'Enter') {
+    if (
+      (keyData.domEvent.ctrlKey || keyData.domEvent.metaKey) &&
+      keyData.domEvent.key === 'Enter'
+    ) {
       keyData.preventDefault()
       keyEvent.stop()
       emit('submit')
