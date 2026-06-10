@@ -71,6 +71,9 @@ func (server *Server) setupRouter() {
 
 	public := router.Group("/api")
 	{
+		public.GET("/setup/status", server.setupStatus)
+		public.POST("/setup/admin", server.createSetupAdmin)
+
 		public.POST("/users", server.createUser)
 		public.POST("/users/login", server.loginUser)
 		public.POST("/tokens/renew_access", server.renewAccessToken)

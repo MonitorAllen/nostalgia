@@ -52,6 +52,21 @@ func (mr *MockStoreMockRecorder) AddCommentLikes(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommentLikes", reflect.TypeOf((*MockStore)(nil).AddCommentLikes), arg0, arg1)
 }
 
+// CountAdminUsers mocks base method.
+func (m *MockStore) CountAdminUsers(arg0 context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountAdminUsers", arg0)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountAdminUsers indicates an expected call of CountAdminUsers.
+func (mr *MockStoreMockRecorder) CountAdminUsers(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAdminUsers", reflect.TypeOf((*MockStore)(nil).CountAdminUsers), arg0)
+}
+
 // CountAllArticles mocks base method.
 func (m *MockStore) CountAllArticles(arg0 context.Context) (int64, error) {
 	m.ctrl.T.Helper()
@@ -245,6 +260,21 @@ func (m *MockStore) CreateUserTx(arg0 context.Context, arg1 db.CreateUserTxParam
 func (mr *MockStoreMockRecorder) CreateUserTx(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserTx", reflect.TypeOf((*MockStore)(nil).CreateUserTx), arg0, arg1)
+}
+
+// CreateUserWithRole mocks base method.
+func (m *MockStore) CreateUserWithRole(arg0 context.Context, arg1 db.CreateUserWithRoleParams) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUserWithRole", arg0, arg1)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserWithRole indicates an expected call of CreateUserWithRole.
+func (mr *MockStoreMockRecorder) CreateUserWithRole(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserWithRole", reflect.TypeOf((*MockStore)(nil).CreateUserWithRole), arg0, arg1)
 }
 
 // CreateVerifyEmail mocks base method.

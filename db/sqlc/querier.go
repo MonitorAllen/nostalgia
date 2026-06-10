@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	AddCommentLikes(ctx context.Context, id int64) (Comment, error)
+	CountAdminUsers(ctx context.Context) (int64, error)
 	CountAllArticles(ctx context.Context) (int64, error)
 	CountArticles(ctx context.Context, arg CountArticlesParams) (int64, error)
 	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
@@ -24,6 +25,7 @@ type Querier interface {
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateUserWithRole(ctx context.Context, arg CreateUserWithRoleParams) (User, error)
 	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
 	DeleteArticle(ctx context.Context, id uuid.UUID) error
 	DeleteCategory(ctx context.Context, id int64) error

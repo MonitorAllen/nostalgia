@@ -9,6 +9,22 @@ INSERT INTO users (
     $1, $2, $3, $4, $5
 ) RETURNING *;
 
+-- name: CountAdminUsers :one
+SELECT count(*) FROM users WHERE role = 'admin';
+
+-- name: CreateUserWithRole :one
+INSERT INTO users (
+    id,
+    username,
+    hashed_password,
+    full_name,
+    email,
+    is_email_verified,
+    role
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING *;
+
 -- name: GetUser :one
 SELECT * FROM users
 WHERE id = $1 LIMIT 1;
