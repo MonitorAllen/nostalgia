@@ -38,6 +38,17 @@ describe('nginx deployment ingress config', () => {
     expect(webDevDockerfile).toContain('COPY security-headers.conf /etc/nginx/security-headers.conf')
   })
 
+  test('routes operational health endpoints through nginx', () => {
+    const nginx = readRepoFile('web/nginx.conf')
+
+    expect(nginx).toContain('location = /healthz')
+    expect(nginx).toContain('location = /readyz')
+    expect(nginx).toContain('proxy_pass http://api:8080/healthz')
+    expect(nginx).toContain('proxy_pass http://api:8080/readyz')
+    expect(nginx).toMatch(/listen 80 default_server;[\s\S]*location = \/healthz[\s\S]*return 200 "ok\\n";/)
+    expect(nginx).toMatch(/listen 80 default_server;[\s\S]*location \/ \{[\s\S]*return 301 https:\/\/\$host\$request_uri;/)
+  })
+
   test('production compose exposes web as the only public ingress', () => {
     const compose = readRepoFile('docker-compose.yaml')
 
@@ -64,6 +75,19 @@ describe('nginx deployment ingress config', () => {
 
     expect(productionCompose).toMatch(/api:\n[\s\S]*env_file:\n[\s\S]*path: \.env/)
     expect(developmentCompose).toMatch(/api:\n[\s\S]*env_file:\n[\s\S]*path: \.env/)
+  })
+
+  test('compose declares healthchecks for all runtime services', () => {
+    const productionCompose = readRepoFile('docker-compose.yaml')
+    const developmentCompose = readRepoFile('docker-compose.dev.yaml')
+
+    for (const compose of [productionCompose, developmentCompose]) {
+      expect(compose).toMatch(/postgres:\n[\s\S]*healthcheck:\n[\s\S]*pg_isready/)
+      expect(compose).toMatch(/redis:\n[\s\S]*healthcheck:\n[\s\S]*redis-cli ping/)
+      expect(compose).toMatch(/api:\n[\s\S]*healthcheck:\n[\s\S]*\/healthz/)
+      expect(compose).toMatch(/web:\n[\s\S]*healthcheck:\n[\s\S]*\/healthz/)
+      expect(compose).toContain('condition: service_healthy')
+    }
   })
 
   test('api and web images declare their runtime-only responsibilities', () => {

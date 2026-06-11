@@ -22,6 +22,10 @@ func NewRedisCache(config util.Config) *RedisCache {
 	}
 }
 
+func (r *RedisCache) Ping(ctx context.Context) error {
+	return r.rdb.Ping(ctx).Err()
+}
+
 func (r *RedisCache) Get(ctx context.Context, key string, dest any) (bool, error) {
 	val, err := r.rdb.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
