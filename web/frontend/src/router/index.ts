@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginUser from '@/components/LoginUser.vue'
-import ArticleView from '@/views/article/ArticleView.vue'
 import RegisterUser from '@/components/RegisterUser.vue'
 import VerifyEmail from '@/views/auth/VerifyEmail.vue'
 import NotFound from '@/views/NotFound.vue'
@@ -53,7 +52,7 @@ const router = createRouter({
     {
       path: '/article/:id?',
       name: 'articleView',
-      component: ArticleView,
+      component: () => import('@/views/article/ArticleView.vue'),
       props: true
     },
     {
