@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ArchivePanel from '@/components/ui/ArchivePanel.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import { ADMIN_ARTICLES_PATH } from '@/admin/adminRoutes'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/store/module/auth'
 
@@ -22,14 +23,14 @@ const redirectPath = computed(() => {
   const redirect = route.query.redirect
 
   if (typeof redirect !== 'string') {
-    return '/admin/articles'
+    return ADMIN_ARTICLES_PATH
   }
 
   const resolved = router.resolve(redirect)
   const isAdminProtectedRoute =
     resolved.name !== 'adminLogin' && resolved.matched.some((record) => record.meta.requiresAdmin)
 
-  return isAdminProtectedRoute ? resolved.fullPath : '/admin/articles'
+  return isAdminProtectedRoute ? resolved.fullPath : ADMIN_ARTICLES_PATH
 })
 
 const isSubmitDisabled = computed(() => {
@@ -42,7 +43,9 @@ const extractErrorDetail = (error: unknown) => {
   }
 
   if (typeof error === 'object' && error && 'response' in error) {
-    const response = (error as { response?: { data?: { error?: string; message?: string } | string } }).response
+    const response = (
+      error as { response?: { data?: { error?: string; message?: string } | string } }
+    ).response
     const data = response?.data
 
     if (typeof data === 'string' && data) return data
@@ -66,7 +69,7 @@ const handleSubmit = async () => {
   try {
     const response = await authStore.login({
       username: username.value,
-      password: password.value,
+      password: password.value
     })
 
     if (response.data.user.role !== 'admin') {
@@ -81,7 +84,7 @@ const handleSubmit = async () => {
       severity: 'error',
       summary: '登录失败',
       detail: errorMessage.value,
-      life: 3000,
+      life: 3000
     })
   } finally {
     isSubmitting.value = false
@@ -111,7 +114,11 @@ onMounted(async () => {
         </div>
       </div>
 
-      <form class="space-y-4" :aria-busy="isSubmitting || isCheckingSession" @submit.prevent="handleSubmit">
+      <form
+        class="space-y-4"
+        :aria-busy="isSubmitting || isCheckingSession"
+        @submit.prevent="handleSubmit"
+      >
         <label class="block space-y-2">
           <span class="text-sm font-bold">用户名</span>
           <AppInput

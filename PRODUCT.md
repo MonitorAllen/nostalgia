@@ -13,7 +13,7 @@ Nostalgia serves two closely related user contexts:
 
 ## Product Purpose
 
-Nostalgia is a personal blog system that keeps public reading and private authoring in one coherent frontend. Success means the public site feels polished and comfortable to read, while `/admin` gives the owner a focused writing and content-management workspace that is fast to maintain.
+Nostalgia is a personal blog system that keeps public reading and private authoring in one coherent frontend. Success means the public site feels polished and comfortable to read, while `/backend` gives the owner a focused writing and content-management workspace that is fast to maintain.
 
 ## Brand Personality
 

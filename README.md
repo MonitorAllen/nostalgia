@@ -1,6 +1,6 @@
 # Nostalgia 个人博客系统
 
-Nostalgia 是一个基于 Golang + gRPC + Gin + Redis + PostgreSQL + Docker 的博客系统，支持公开博客展示与 `/admin` 后台内容管理，内置文件上传、任务队列、权限管理等功能。
+Nostalgia 是一个基于 Golang + gRPC + Gin + Redis + PostgreSQL + Docker 的博客系统，支持公开博客展示与 `/backend` 后台内容管理，内置文件上传、任务队列、权限管理等功能。
 
 > 🚀 适用于个人博客、中小型内容系统、全栈开发练习项目。
 
@@ -23,7 +23,7 @@ NOSTALGIA/
 ├── util/ # 配置加载与工具函数
 ├── validator/ # 自定义参数校验器
 ├── web/ # 前端 Dockerfile
-│   └── frontend/ # 统一 Vue3 前端，包含公开博客与 /admin 后台
+│   └── frontend/ # 统一 Vue3 前端，包含公开博客与 /backend 后台
 └── worker/ # 异步任务处理模块（如邮件队列）
 ```
 
@@ -73,12 +73,24 @@ DEFAULT_USER_EMAIL=xxx@qq.com
 ```bash
 git clone https://github.com/MonitorAllen/nostalgia.git
 cd nostalgia
+cp .env.example .env
 ```
+
+编辑 `.env` 并设置数据库、令牌、首次 setup token、邮件等运行时配置后再启动服务。
 
 ### 2. 启动所有服务（API + Redis + PostgreSQL + Nginx + Vue 前端）
 ```bash
 docker compose up --build
 ```
+
+生产环境入口由 `web` 容器内的 Nginx 提供，推荐通过 Cloudflare 橙云代理访问，并将 Cloudflare SSL/TLS 模式设置为 `Full (strict)`。把 Cloudflare Origin CA 证书放到以下路径后再启动生产 Compose：
+
+```text
+certs/cloudflare-origin.pem
+certs/cloudflare-origin.key
+```
+
+`certs/` 已加入 `.gitignore`，不要提交证书、私钥或真实部署凭据。生产镜像构建不会解密、复制或打包 `.env`；API 容器通过 Compose 的 `env_file` 在运行时读取宿主机 `.env`，也可以由部署平台以等价的环境变量方式注入。开发 Compose 会使用镜像内生成的本地自签证书，方便在移除 Caddy 后继续测试 HTTPS 入口。
 
 #### 默认服务端口：
 
@@ -87,7 +99,7 @@ docker compose up --build
 | Gin API      | 8080 |
 | gRPC         | 9090 |
 | gRPC-Gateway | 9091 |
-| Nginx 前端     | 80   |
+| Nginx 入口     | 80 / 443 |
 | PostgreSQL   | Docker 内部 5432；Makefile 本地映射 15432 |
 | Redis        | 6379 |
 
@@ -96,7 +108,7 @@ docker compose up --build
 | 功能               | 地址示例                                                                               |
 |------------------|------------------------------------------------------------------------------------|
 | 前台博客首页           | [http://localhost/](http://localhost/)                                             |
-| 后台内容管理（Vue）      | [http://localhost/admin/](http://localhost/admin/)                                 |
+| 后台内容管理（Vue）      | [http://localhost/backend/](http://localhost/backend/)                             |
 | 静态资源访问           | [http://localhost/resources/{id}/xxx.jpg](http://localhost/resources/{id}/xxx.jpg) |
 | RESTful API      | [http://localhost/api/](http://localhost/api/)...                                  |
 | gRPC Gateway API | [http://localhost/v1/](http://localhost/v1/)...                                    |
@@ -106,11 +118,11 @@ docker compose up --build
 
 Nostalgia 现在使用统一的用户认证模型：公开注册用户固定为 `visitor`，后台只允许 `role = admin` 的用户访问。首次部署时通过一次性 setup 流程创建唯一管理员：
 
-1. 复制 `.env.example` 为 `.env`，设置 `TOKEN_SYMMETRIC_KEY` 和 `SETUP_TOKEN`。
+1. 确认 `.env` 已设置 `TOKEN_SYMMETRIC_KEY` 和 `SETUP_TOKEN`。
 2. 启动 PostgreSQL 后运行数据库迁移。
 3. 启动 API 与前端后访问 [http://localhost/setup](http://localhost/setup)。
 4. 输入 `.env` 中的 `SETUP_TOKEN`，创建第一个管理员用户。
-5. 初始化完成后使用该账号访问 [http://localhost/admin/login](http://localhost/admin/login)。
+5. 初始化完成后使用该账号访问 [http://localhost/backend/login](http://localhost/backend/login)。
 
 创建第一个管理员后，`/setup` 不再允许创建新的管理员；后续公开注册账号只能作为 `visitor` 使用评论等公开登录能力。
 

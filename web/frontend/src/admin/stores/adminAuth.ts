@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { defineStore } from 'pinia'
+import { ADMIN_LOGIN_PATH } from '@/admin/adminRoutes'
 import { useAuthStore } from '@/store/module/auth'
 import type { AdminLoginRequest } from '../types'
 
@@ -24,7 +25,7 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
 
   const logout = () => {
     clear()
-    window.location.href = '/admin/login'
+    window.location.href = ADMIN_LOGIN_PATH
   }
 
   return {
@@ -43,6 +44,6 @@ export const useAdminAuthStore = defineStore('admin-auth', () => {
     refreshAccessToken: authStore.refreshAccessToken,
     ensureAuthenticated: authStore.ensureAdminAuthenticated,
     login,
-    logout,
+    logout
   }
 })

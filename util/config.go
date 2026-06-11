@@ -1,6 +1,9 @@
 package util
 
 import (
+	"os"
+	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/spf13/viper"
@@ -38,16 +41,34 @@ type Config struct {
 }
 
 func LoadConfig(path string) (config Config, err error) {
+	configReader := viper.New()
+	configReader.SetConfigFile(filepath.Join(path, ".env"))
+	configReader.AutomaticEnv()
 
-	viper.SetConfigFile(path + ".env")
+	for _, key := range configEnvKeys() {
+		if bindErr := configReader.BindEnv(key); bindErr != nil {
+			return config, bindErr
+		}
+	}
 
-	err = viper.ReadInConfig()
-	if err != nil {
+	err = configReader.ReadInConfig()
+	if err != nil && !os.IsNotExist(err) {
 		return
 	}
 
-	viper.AutomaticEnv()
-
-	err = viper.Unmarshal(&config)
+	err = configReader.Unmarshal(&config)
 	return
+}
+
+func configEnvKeys() []string {
+	configType := reflect.TypeOf(Config{})
+	keys := make([]string, 0, configType.NumField())
+
+	for i := 0; i < configType.NumField(); i++ {
+		if key := configType.Field(i).Tag.Get("mapstructure"); key != "" {
+			keys = append(keys, key)
+		}
+	}
+
+	return keys
 }
