@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
@@ -40,7 +41,7 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	_, err = server.store.GetArticle(ctx, articleId)
+	previousArticle, err := server.store.GetArticle(ctx, articleId)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, "article not found")
@@ -117,10 +118,17 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 			keys := []string{
 				key.GetArticleIDKey(article.ID),
 			}
+			if previousArticle.Slug.Valid {
+				keys = append(keys, key.GetArticleSlugKey(previousArticle.Slug.String))
+			}
 			if article.Slug.Valid {
 				keys = append(keys, key.GetArticleSlugKey(article.Slug.String))
 			}
-			return server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, keys...)
+			keys = append(uniqueCacheKeys(keys), key.CategoryAllKey)
+			if err := server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, keys...); err != nil {
+				return err
+			}
+			return cachepkg.NewArticleCache(server.cache).BumpListVersion(ctx, previousArticle.CategoryID, article.CategoryID)
 		},
 	}
 
@@ -142,6 +150,22 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 	}
 
 	return resp, nil
+}
+
+func uniqueCacheKeys(keys []string) []string {
+	seen := make(map[string]struct{}, len(keys))
+	unique := make([]string, 0, len(keys))
+	for _, cacheKey := range keys {
+		if cacheKey == "" {
+			continue
+		}
+		if _, ok := seen[cacheKey]; ok {
+			continue
+		}
+		seen[cacheKey] = struct{}{}
+		unique = append(unique, cacheKey)
+	}
+	return unique
 }
 
 func validateUpdateArticleRequest(req *pb.UpdateArticleRequest) (violations []*errdetails.BadRequest_FieldViolation) {

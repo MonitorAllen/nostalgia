@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"time"
 
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
@@ -314,9 +315,20 @@ func contributionResponse(contributions githubContributions) githubContributions
 			break
 		}
 	}
+
+	years := contributions.Years
+	if len(years) > 1 {
+		years = years[:1]
+	}
+
+	end := prefixPoint + 90
+	if end > len(contributions.Contributions) {
+		end = len(contributions.Contributions)
+	}
+
 	return githubContributions{
-		Years:         contributions.Years[:1],
-		Contributions: contributions.Contributions[prefixPoint : prefixPoint+90],
+		Years:         years,
+		Contributions: contributions.Contributions[prefixPoint:end],
 	}
 }
 
@@ -386,9 +398,7 @@ func (server *Server) contributions(ctx *gin.Context) {
 		return
 	}
 
-	contributions = contributionResponse(contributions)
-
-	err = server.cache.Set(ctx, userContributionsKey, contributions, 12*time.Hour)
+	err = server.cache.Set(ctx, userContributionsKey, contributions, cachepkg.WithJitter(cachepkg.ContributionsTTL))
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -398,5 +408,5 @@ func (server *Server) contributions(ctx *gin.Context) {
 			Msg("设置用户 github 活动数据缓存失败")
 	}
 
-	ctx.JSON(http.StatusOK, contributions)
+	ctx.JSON(http.StatusOK, contributionResponse(contributions))
 }

@@ -40,7 +40,13 @@ func (processor *RedisTaskProcessor) ProcessTaskDelayDeleteCache(ctx context.Con
 	}
 
 	for _, key := range payload.Keys {
-		_ = processor.cache.Del(ctx, key)
+		if err := processor.cache.Del(ctx, key); err != nil {
+			log.Error().
+				Err(err).
+				Str("cache_key", key).
+				Str("task", TaskDelayDeleteCache).
+				Msg("failed to delete cache key")
+		}
 	}
 
 	return nil
