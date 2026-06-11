@@ -27,6 +27,7 @@ COPY --from=build-frontend /app/frontend/dist /usr/share/nginx/html/
 
 # 拷贝 nginx 配置
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY security-headers.conf /etc/nginx/security-headers.conf
 
 # 日志文件夹
 RUN mkdir -p /etc/nginx/logs && touch /etc/nginx/logs/error.log && \

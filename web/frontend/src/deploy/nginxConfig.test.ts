@@ -21,6 +21,23 @@ describe('nginx deployment ingress config', () => {
     expect(nginx).toContain('/etc/nginx/certs/cloudflare-origin.key')
   })
 
+  test('ships a baseline content security policy with cacheable responses', () => {
+    const nginx = readRepoFile('web/nginx.conf')
+    const securityHeaders = readRepoFile('web/security-headers.conf')
+    const webDockerfile = readRepoFile('web/Dockerfile')
+    const webDevDockerfile = readRepoFile('web/Dockerfile.dev')
+
+    expect(securityHeaders).toContain('Content-Security-Policy')
+    expect(securityHeaders).toContain("default-src 'self'")
+    expect(securityHeaders).toContain("script-src 'self'")
+    expect(securityHeaders).toContain("object-src 'none'")
+    expect(securityHeaders).toContain("frame-ancestors 'self'")
+    expect(nginx).toContain('include /etc/nginx/security-headers.conf;')
+    expect(nginx.match(/include \/etc\/nginx\/security-headers\.conf;/g)?.length).toBeGreaterThanOrEqual(4)
+    expect(webDockerfile).toContain('COPY security-headers.conf /etc/nginx/security-headers.conf')
+    expect(webDevDockerfile).toContain('COPY security-headers.conf /etc/nginx/security-headers.conf')
+  })
+
   test('production compose exposes web as the only public ingress', () => {
     const compose = readRepoFile('docker-compose.yaml')
 
