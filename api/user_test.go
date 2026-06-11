@@ -19,6 +19,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type eqCreateUserTxParamsMatcher struct {
@@ -55,6 +56,37 @@ func (expected eqCreateUserTxParamsMatcher) String() string {
 
 func EqCreateUserTxParams(arg db.CreateUserTxParams, user db.User, password string) gomock.Matcher {
 	return eqCreateUserTxParamsMatcher{arg, user, password}
+}
+
+func TestContributionResponseBoundsShortData(t *testing.T) {
+	currentDate := time.Now().Format(time.DateOnly)
+	contributions := githubContributions{
+		Years: []struct {
+			Year  string `json:"year"`
+			Total int64  `json:"total"`
+			Range struct {
+				Start string `json:"start"`
+				End   string `json:"end"`
+			} `json:"range"`
+		}{
+			{Year: time.Now().Format("2006"), Total: 2},
+		},
+		Contributions: []struct {
+			Date      string `json:"date"`
+			Count     int64  `json:"count"`
+			Color     string `json:"color"`
+			Intensity string `json:"intensity"`
+		}{
+			{Date: currentDate, Count: 1},
+			{Date: time.Now().AddDate(0, 0, 1).Format(time.DateOnly), Count: 2},
+		},
+	}
+
+	require.NotPanics(t, func() {
+		resp := contributionResponse(contributions)
+		require.Len(t, resp.Years, 1)
+		require.Len(t, resp.Contributions, 2)
+	})
 }
 
 func TestCreateUserAPI(t *testing.T) {

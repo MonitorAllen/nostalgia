@@ -2,17 +2,20 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	mockcache "github.com/MonitorAllen/nostalgia/internal/cache/mock"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -55,7 +58,7 @@ func TestGetArticleAPI(t *testing.T) {
 					Return(article, nil)
 
 				cache.EXPECT().
-					Set(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(article), time.Duration(0)).
+					Set(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(article), durationBetween(cachepkg.ArticleDetailTTL, cachepkg.ArticleDetailTTL+cachepkg.ArticleDetailTTL/10)).
 					Times(1).
 					Return(nil)
 			},
@@ -317,6 +320,224 @@ func TestListArticleAPI(t *testing.T) {
 	}
 }
 
+func TestListArticleAPICacheHit(t *testing.T) {
+	user, _ := randomUser(t)
+	article := randomArticle(t, user.ID, true)
+	cachedPage := cachepkg.ArticleListPage{
+		Count: 1,
+		Articles: []db.ListArticlesRow{
+			{
+				ID:        article.ID,
+				Title:     article.Title,
+				Summary:   article.Summary,
+				Views:     article.Views,
+				Likes:     article.Likes,
+				IsPublish: article.IsPublish,
+				Owner:     article.Owner,
+				CreatedAt: article.CreatedAt,
+				UpdatedAt: article.UpdatedAt,
+				DeletedAt: article.DeletedAt,
+			},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	redisCache := mockcache.NewMockCache(ctrl)
+
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListVersionKey(int64(0))), gomock.Any()).
+		Times(1).
+		DoAndReturn(func(_ any, _ string, dest *int64) (bool, error) {
+			*dest = 2
+			return true, nil
+		})
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListKey(2, 0, 1, 10)), gomock.Any()).
+		Times(1).
+		DoAndReturn(func(_ any, _ string, dest *cachepkg.ArticleListPage) (bool, error) {
+			*dest = cachedPage
+			return true, nil
+		})
+	store.EXPECT().ListArticles(gomock.Any(), gomock.Any()).Times(0)
+	store.EXPECT().CountArticles(gomock.Any(), gomock.Any()).Times(0)
+	redisCache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+	server := newTestServer(t, store, nil, redisCache)
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodGet, "/api/articles?page=1&limit=10", nil)
+	require.NoError(t, err)
+
+	server.router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	requireBodyMatchArticles(t, recorder.Body, cachedPage.Articles)
+}
+
+func TestListArticleAPICacheMissStoresPage(t *testing.T) {
+	user, _ := randomUser(t)
+	article := randomArticle(t, user.ID, true)
+	articles := []db.ListArticlesRow{
+		{
+			ID:        article.ID,
+			Title:     article.Title,
+			Summary:   article.Summary,
+			Views:     article.Views,
+			Likes:     article.Likes,
+			IsPublish: article.IsPublish,
+			Owner:     article.Owner,
+			CreatedAt: article.CreatedAt,
+			UpdatedAt: article.UpdatedAt,
+			DeletedAt: article.DeletedAt,
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	redisCache := mockcache.NewMockCache(ctrl)
+
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListVersionKey(int64(0))), gomock.Any()).
+		Times(2).
+		Return(false, nil)
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListKey(0, 0, 1, 10)), gomock.Any()).
+		Times(1).
+		Return(false, nil)
+
+	arg := db.ListArticlesParams{
+		Limit:  10,
+		Offset: 0,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+	store.EXPECT().ListArticles(gomock.Any(), gomock.Eq(arg)).Times(1).Return(articles, nil)
+	store.EXPECT().CountArticles(gomock.Any(), gomock.Any()).Times(1).Return(int64(1), nil)
+	redisCache.EXPECT().
+		Set(gomock.Any(), gomock.Eq(key.GetArticleListKey(0, 0, 1, 10)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(nil)
+
+	server := newTestServer(t, store, nil, redisCache)
+	recorder := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodGet, "/api/articles?page=1&limit=10", nil)
+	require.NoError(t, err)
+
+	server.router.ServeHTTP(recorder, request)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	requireBodyMatchArticles(t, recorder.Body, articles)
+}
+
+func TestListArticleAPICacheMissUsesSingleflight(t *testing.T) {
+	user, _ := randomUser(t)
+	article := randomArticle(t, user.ID, true)
+	articles := []db.ListArticlesRow{
+		{
+			ID:        article.ID,
+			Title:     article.Title,
+			Summary:   article.Summary,
+			Views:     article.Views,
+			Likes:     article.Likes,
+			IsPublish: article.IsPublish,
+			Owner:     article.Owner,
+			CreatedAt: article.CreatedAt,
+			UpdatedAt: article.UpdatedAt,
+			DeletedAt: article.DeletedAt,
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	redisCache := mockcache.NewMockCache(ctrl)
+
+	listCacheGets := make(chan struct{}, 2)
+	loadStarted := make(chan struct{})
+	releaseLoad := make(chan struct{})
+
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListVersionKey(int64(0))), gomock.Any()).
+		Times(3).
+		Return(false, nil)
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListKey(0, 0, 1, 10)), gomock.Any()).
+		Times(2).
+		DoAndReturn(func(context.Context, string, any) (bool, error) {
+			listCacheGets <- struct{}{}
+			return false, nil
+		})
+
+	arg := db.ListArticlesParams{
+		Limit:  10,
+		Offset: 0,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+	store.EXPECT().
+		ListArticles(gomock.Any(), gomock.Eq(arg)).
+		Times(1).
+		DoAndReturn(func(context.Context, db.ListArticlesParams) ([]db.ListArticlesRow, error) {
+			close(loadStarted)
+			<-releaseLoad
+			return articles, nil
+		})
+	store.EXPECT().CountArticles(gomock.Any(), gomock.Any()).Times(1).Return(int64(1), nil)
+	redisCache.EXPECT().
+		Set(gomock.Any(), gomock.Eq(key.GetArticleListKey(0, 0, 1, 10)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(nil)
+
+	server := newTestServer(t, store, nil, redisCache)
+	recorders := make([]*httptest.ResponseRecorder, 2)
+	var wg sync.WaitGroup
+	runRequest := func(index int) {
+		defer wg.Done()
+		recorder := httptest.NewRecorder()
+		request, err := http.NewRequest(http.MethodGet, "/api/articles?page=1&limit=10", nil)
+		require.NoError(t, err)
+		server.router.ServeHTTP(recorder, request)
+		recorders[index] = recorder
+	}
+
+	wg.Add(1)
+	go runRequest(0)
+
+	select {
+	case <-loadStarted:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for first article list load")
+	}
+
+	wg.Add(1)
+	go runRequest(1)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case <-listCacheGets:
+		case <-time.After(time.Second):
+			t.Fatal("timed out waiting for concurrent article list cache miss")
+		}
+	}
+
+	close(releaseLoad)
+	wg.Wait()
+
+	for _, recorder := range recorders {
+		require.Equal(t, http.StatusOK, recorder.Code)
+		requireBodyMatchArticles(t, recorder.Body, articles)
+	}
+}
+
 func TestSearchArticleAPI(t *testing.T) {
 	user, _ := randomUser(t)
 	n := 3
@@ -552,7 +773,7 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 					Return(getArticleBySlugRow, nil)
 
 				cache.EXPECT().
-					Set(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(getArticleBySlugRow), time.Duration(7*24*time.Hour)).
+					Set(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(getArticleBySlugRow), durationBetween(cachepkg.ArticleDetailTTL, cachepkg.ArticleDetailTTL+cachepkg.ArticleDetailTTL/10)).
 					Times(1).
 					Return(nil)
 			},
@@ -781,4 +1002,22 @@ func requireBodyMatchGetArticleRow(t *testing.T, body *bytes.Buffer, article db.
 	require.Equal(t, article.Content, resp.Article.Content)
 	require.Equal(t, article.IsPublish, resp.Article.IsPublish)
 	require.Equal(t, article.Owner, resp.Article.Owner)
+}
+
+type durationRangeMatcher struct {
+	min time.Duration
+	max time.Duration
+}
+
+func durationBetween(min time.Duration, max time.Duration) gomock.Matcher {
+	return durationRangeMatcher{min: min, max: max}
+}
+
+func (m durationRangeMatcher) Matches(value interface{}) bool {
+	duration, ok := value.(time.Duration)
+	return ok && duration >= m.min && duration <= m.max
+}
+
+func (m durationRangeMatcher) String() string {
+	return fmt.Sprintf("is duration between %s and %s", m.min, m.max)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
@@ -31,7 +32,7 @@ func (server *Server) DeleteArticle(ctx context.Context, req *pb.DeleteArticleRe
 		return nil, status.Error(codes.InvalidArgument, "invalid id")
 	}
 
-	_, err = server.store.GetArticle(ctx, articleId)
+	article, err := server.store.GetArticle(ctx, articleId)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			return nil, status.Error(codes.NotFound, "article not found")
@@ -49,7 +50,15 @@ func (server *Server) DeleteArticle(ctx context.Context, req *pb.DeleteArticleRe
 				return fmt.Errorf("failed to remove article resources: %w", err)
 			}
 
-			return server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, key.GetArticleIDKey(articleId))
+			keys := []string{key.GetArticleIDKey(articleId)}
+			if article.Slug.Valid {
+				keys = append(keys, key.GetArticleSlugKey(article.Slug.String))
+			}
+			keys = append(keys, key.CategoryAllKey)
+			if err := server.taskDistributor.DistributeTaskDelayDeleteCacheDefault(ctx, keys...); err != nil {
+				return err
+			}
+			return cachepkg.NewArticleCache(server.cache).BumpListVersion(ctx, article.CategoryID)
 		},
 	}
 

@@ -3,12 +3,12 @@ package api
 import (
 	"errors"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"net/http"
-	"time"
 )
 
 var AllCategoriesKey = "categories:all"
@@ -20,7 +20,8 @@ type listCategoriesResponse struct {
 
 func (server *Server) listCategories(ctx *gin.Context) {
 	var resp listCategoriesResponse
-	ok, err := server.cache.Get(ctx, key.CategoryAllKey, &resp)
+	categoryCache := cachepkg.NewCategoryCache(server.cache)
+	ok, err := categoryCache.GetList(ctx, &resp)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
@@ -34,25 +35,38 @@ func (server *Server) listCategories(ctx *gin.Context) {
 		return
 	}
 
-	categories, err := server.store.ListCategoriesCountArticles(ctx)
+	value, err, _ := server.cacheLoadGroup.Do(key.CategoryAllKey, func() (any, error) {
+		categories, err := server.store.ListCategoriesCountArticles(ctx)
+		if err != nil {
+			return listCategoriesResponse{}, err
+		}
+
+		resp := listCategoriesResponse{
+			Categories: categories,
+			Count:      int64(len(categories)),
+		}
+
+		err = categoryCache.SetList(ctx, resp)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("key", key.CategoryAllKey).
+				Str("module", "category").
+				Str("action", "cache_set").
+				Msg("设置分类缓存失败，降级为仅数据库")
+		}
+
+		return resp, nil
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	count := len(categories)
-
-	resp.Categories = categories
-	resp.Count = int64(count)
-
-	err = server.cache.Set(ctx, key.CategoryAllKey, resp, 7*24*time.Hour)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("key", key.CategoryAllKey).
-			Str("module", "category").
-			Str("action", "cache_set").
-			Msg("设置分类缓存失败，降级为仅数据库")
+	resp, ok = value.(listCategoriesResponse)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(errors.New("unexpected category cache load result")))
+		return
 	}
 
 	ctx.JSON(http.StatusOK, resp)

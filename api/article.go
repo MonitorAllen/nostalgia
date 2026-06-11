@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/go-ego/gse"
 	"github.com/redis/go-redis/v9"
@@ -20,6 +20,8 @@ import (
 )
 
 var segmenter gse.Segmenter
+
+var errArticleAccessRestricted = errors.New("访问受限")
 
 func init() {
 	segmenter.LoadDict()
@@ -47,10 +49,10 @@ func (server *Server) getArticle(ctx *gin.Context) {
 		return
 	}
 
-	var article db.GetArticleRow
 	cacheKey := key.GetArticleIDKey(articleID)
+	articleCache := cachepkg.NewArticleCache(server.cache)
 
-	ok, err := server.cache.Get(ctx, cacheKey, &article)
+	article, ok, err := articleCache.GetByID(ctx, articleID)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
@@ -66,10 +68,35 @@ func (server *Server) getArticle(ctx *gin.Context) {
 		return
 	}
 
-	article, err = server.store.GetArticle(ctx, articleID)
+	value, err, _ := server.cacheLoadGroup.Do(cacheKey, func() (any, error) {
+		article, err := server.store.GetArticle(ctx, articleID)
+		if err != nil {
+			return db.GetArticleRow{}, err
+		}
+
+		if !article.IsPublish {
+			return db.GetArticleRow{}, errArticleAccessRestricted
+		}
+
+		if err := articleCache.SetByID(ctx, article); err != nil {
+			log.Error().
+				Err(err).
+				Str("key", cacheKey).
+				Str("module", "article").
+				Str("action", "cache_set").
+				Str("article_id", req.ID).
+				Msg("根据 ID 设置文章缓存失败")
+		}
+
+		return article, nil
+	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if errors.Is(err, errArticleAccessRestricted) {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
 
@@ -77,19 +104,10 @@ func (server *Server) getArticle(ctx *gin.Context) {
 		return
 	}
 
-	if !article.IsPublish {
-		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("访问受限")))
+	article, ok = value.(db.GetArticleRow)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("unexpected article cache load result")))
 		return
-	}
-
-	if err := server.cache.Set(ctx, cacheKey, article, 0); err != nil {
-		log.Error().
-			Err(err).
-			Str("key", cacheKey).
-			Str("module", "article").
-			Str("action", "cache_set").
-			Str("article_id", req.ID).
-			Msg("根据 ID 设置文章缓存失败")
 	}
 
 	ctx.JSON(http.StatusOK, getArticleResponse{Article: article})
@@ -139,21 +157,66 @@ func (server *Server) listArticle(ctx *gin.Context) {
 		Valid: req.CategoryID != 0,
 	}
 
-	articles, err := server.store.ListArticles(ctx, arg)
+	articleCache := cachepkg.NewArticleCache(server.cache)
+	cacheParams := cachepkg.ArticleListParams{
+		CategoryID: req.CategoryID,
+		Page:       req.Page,
+		Limit:      req.Limit,
+	}
+	cachedPage, ok, err := articleCache.GetList(ctx, cacheParams)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		log.Error().
+			Err(err).
+			Str("module", "article").
+			Str("action", "cache_get").
+			Str("cache_namespace", "article_list").
+			Msg("获取文章分页缓存失败，降级为仅数据库")
+	}
+	if ok {
+		ctx.JSON(http.StatusOK, listArticleResponse{
+			Count:    cachedPage.Count,
+			Articles: cachedPage.Articles,
+		})
+		return
+	}
+
+	groupKey := fmt.Sprintf("cache:article:list:%d:%d:%d", req.CategoryID, req.Page, req.Limit)
+	value, err, _ := server.cacheLoadGroup.Do(groupKey, func() (any, error) {
+		articles, err := server.store.ListArticles(ctx, arg)
+		if err != nil {
+			return listArticleResponse{}, err
+		}
+
+		countArticles, err := server.store.CountArticles(ctx, countArg)
+		if err != nil {
+			return listArticleResponse{}, err
+		}
+
+		resp := listArticleResponse{
+			Count:    countArticles,
+			Articles: articles,
+		}
+
+		if err := articleCache.SetList(ctx, cacheParams, cachepkg.ArticleListPage(resp)); err != nil {
+			log.Error().
+				Err(err).
+				Str("module", "article").
+				Str("action", "cache_set").
+				Str("cache_namespace", "article_list").
+				Msg("设置文章分页缓存失败，降级为仅数据库")
+		}
+
+		return resp, nil
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	countArticles, err := server.store.CountArticles(ctx, countArg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+	resp, ok := value.(listArticleResponse)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("unexpected article list cache load result")))
 		return
-	}
-
-	resp := listArticleResponse{
-		Count:    countArticles,
-		Articles: articles,
 	}
 
 	ctx.JSON(http.StatusOK, resp)
@@ -170,22 +233,19 @@ func (server *Server) incrementArticleLikes(ctx *gin.Context) {
 		return
 	}
 
-	// 验证唯一标识（已登陆用 userID，为登陆用 IP）
-	var cacheKey string
-	var ttl time.Duration
-
+	// 验证唯一标识（已登陆用 userID，未登陆用 IP）
+	idempotencyCache := cachepkg.NewIdempotencyCache(server.cache)
 	authPayload, exists := ctx.Get(authorizationPayloadKey)
+	var ok bool
+	var err error
 	if exists {
 		user := authPayload.(*token.Payload)
-		cacheKey = key.GetArticleLikeOnceUserIDKey(req.ID, user.UserID)
-		ttl = 0
+		ok, err = idempotencyCache.MarkArticleLikeByUser(ctx, req.ID, user.UserID)
 	} else {
 		ip := ctx.ClientIP()
-		cacheKey = key.GetArticleLikeOnceGuestKey(req.ID, ip)
-		ttl = time.Hour * 24 * 7
+		ok, err = idempotencyCache.MarkArticleLikeByGuest(ctx, req.ID, ip)
 	}
 
-	ok, err := server.cache.SetNX(ctx, cacheKey, 1, ttl)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -215,19 +275,19 @@ func (server *Server) incrementArticleViews(ctx *gin.Context) {
 		return
 	}
 
-	// 验证唯一标识（已登陆用 userID，为登陆用 IP）
-	var cacheKey string
-
+	// 验证唯一标识（已登陆用 userID，未登陆用 IP）
+	idempotencyCache := cachepkg.NewIdempotencyCache(server.cache)
 	authPayload, exists := ctx.Get(authorizationPayloadKey)
+	var ok bool
+	var err error
 	if exists {
 		user := authPayload.(*token.Payload)
-		cacheKey = key.GetArticleViewOnceUserIDKey(req.ID, user.UserID)
+		ok, err = idempotencyCache.MarkArticleViewByUser(ctx, req.ID, user.UserID)
 	} else {
 		ip := ctx.ClientIP()
-		cacheKey = key.GetArticleViewOnceGuestKey(req.ID, ip)
+		ok, err = idempotencyCache.MarkArticleViewByGuest(ctx, req.ID, ip)
 	}
 
-	ok, err := server.cache.SetNX(ctx, cacheKey, 1, time.Hour*24)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -328,11 +388,10 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 		return
 	}
 
-	var article db.GetArticleBySlugRow
-
 	cacheKey := key.GetArticleSlugKey(req.Slug)
+	articleCache := cachepkg.NewArticleCache(server.cache)
 
-	ok, err := server.cache.Get(ctx, cacheKey, &article)
+	article, ok, err := articleCache.GetBySlug(ctx, req.Slug)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
@@ -348,13 +407,38 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 		return
 	}
 
-	article, err = server.store.GetArticleBySlug(ctx, pgtype.Text{
-		String: req.Slug,
-		Valid:  true,
+	value, err, _ := server.cacheLoadGroup.Do(cacheKey, func() (any, error) {
+		article, err := server.store.GetArticleBySlug(ctx, pgtype.Text{
+			String: req.Slug,
+			Valid:  true,
+		})
+		if err != nil {
+			return db.GetArticleBySlugRow{}, err
+		}
+
+		if !article.IsPublish {
+			return db.GetArticleBySlugRow{}, errArticleAccessRestricted
+		}
+
+		if err := articleCache.SetBySlug(ctx, req.Slug, article); err != nil {
+			log.Error().
+				Err(err).                      // 1. 记录错误堆栈
+				Str("module", "article").      // 2. 模块：文章模块
+				Str("action", "cache_set").    // 3. 动作：写入缓存
+				Str("key", cacheKey).          // 4. 上下文：具体的 Redis Key
+				Str("article_slug", req.Slug). // 5. 业务ID：关联的文章ID
+				Msg("未能设置文章缓存，降级为仅数据库")        // 6. 消息：简明扼要
+		}
+
+		return article, nil
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if errors.Is(err, errArticleAccessRestricted) {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
 
@@ -362,19 +446,10 @@ func (server *Server) getArticleBySlug(ctx *gin.Context) {
 		return
 	}
 
-	if !article.IsPublish {
-		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("访问受限")))
+	article, ok = value.(db.GetArticleBySlugRow)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("unexpected article slug cache load result")))
 		return
-	}
-
-	if err := server.cache.Set(ctx, cacheKey, article, 7*24*time.Hour); err != nil {
-		log.Error().
-			Err(err).                      // 1. 记录错误堆栈
-			Str("module", "article").      // 2. 模块：文章模块
-			Str("action", "cache_set").    // 3. 动作：写入缓存
-			Str("key", cacheKey).          // 4. 上下文：具体的 Redis Key
-			Str("article_slug", req.Slug). // 5. 业务ID：关联的文章ID
-			Msg("未能设置文章缓存，降级为仅数据库")        // 6. 消息：简明扼要
 	}
 
 	ctx.JSON(http.StatusOK, getArticleBySlugResponse{Article: article})

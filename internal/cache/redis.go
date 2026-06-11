@@ -18,6 +18,7 @@ func NewRedisCache(config util.Config) *RedisCache {
 	return &RedisCache{
 		rdb: redis.NewClient(&redis.Options{
 			Addr: config.RedisAddress,
+			DB:   config.RedisCacheDB,
 		}),
 	}
 }
@@ -69,19 +70,26 @@ func (r *RedisCache) SetNX(ctx context.Context, key string, value interface{}, t
 	return ok, nil
 }
 
+func (r *RedisCache) Incr(ctx context.Context, key string) (int64, error) {
+	return r.rdb.Incr(ctx, key).Result()
+}
+
 func (r *RedisCache) IsExpired(ctx context.Context, key string) (bool, error) {
 	ttl, err := r.rdb.TTL(ctx, key).Result()
 	if err != nil {
 		return false, err
 	}
 
-	if ttl <= 0 {
-		return true, nil
-	}
-
-	return false, nil
+	return isExpiredTTL(ttl), nil
 }
 
 func (r *RedisCache) Close() error {
 	return r.rdb.Close()
+}
+
+func isExpiredTTL(ttl time.Duration) bool {
+	if ttl == time.Duration(-1) {
+		return false
+	}
+	return ttl <= 0
 }

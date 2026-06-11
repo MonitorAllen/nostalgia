@@ -49,6 +49,8 @@ func TestLoadConfigFromEnvironmentWhenDotEnvIsMissing(t *testing.T) {
 	require.Equal(t, 24*time.Hour, config.RefreshTokenDuration)
 	require.Equal(t, int64(5242880), config.UploadFileSizeLimit)
 	require.Equal(t, []string{"image/jpeg", "image/png"}, config.UploadFileAllowedMime)
+	require.Equal(t, 0, config.RedisCacheDB)
+	require.Equal(t, 1, config.RedisQueueDB)
 }
 
 func TestLoadConfigEnvironmentOverridesDotEnvFile(t *testing.T) {
@@ -78,6 +80,26 @@ func TestConfigDoesNotExposeDefaultUserBootstrapEnv(t *testing.T) {
 	for _, key := range removedKeys {
 		require.NotContains(t, keys, key)
 	}
+}
+
+func TestLoadConfigRedisDatabaseOverrides(t *testing.T) {
+	configPath := t.TempDir() + string(os.PathSeparator)
+
+	setConfigEnv(t, map[string]string{
+		"REDIS_CACHE_DB": "2",
+		"REDIS_QUEUE_DB": "3",
+	})
+
+	config, err := LoadConfig(configPath)
+	require.NoError(t, err)
+	require.Equal(t, 2, config.RedisCacheDB)
+	require.Equal(t, 3, config.RedisQueueDB)
+}
+
+func TestConfigExposesRedisDatabaseEnvKeys(t *testing.T) {
+	keys := configEnvKeys()
+	require.Contains(t, keys, "REDIS_CACHE_DB")
+	require.Contains(t, keys, "REDIS_QUEUE_DB")
 }
 
 func setConfigEnv(t *testing.T, values map[string]string) {

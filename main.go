@@ -81,6 +81,7 @@ func main() {
 
 	redisOpt := asynq.RedisClientOpt{
 		Addr: config.RedisAddress,
+		DB:   config.RedisQueueDB,
 	}
 
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
