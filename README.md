@@ -55,11 +55,6 @@ EMAIL_SENDER_PASSWORD=...
 UPLOAD_FILE_SIZE_LIMIT=5242880
 UPLOAD_FILE_ALLOWED_MIME=image/jpeg,image/png
 HTTP_PROXY_ADDR=http://host.docker.internal:10808
-DEFAULT_USER_ID=uuid
-DEFAULT_USERNAME=username
-DEFAULT_USER_PASSWORD=123456
-DEFAULT_USER_FULLNAME=fullname
-DEFAULT_USER_EMAIL=xxx@qq.com
 ```
 
 `TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
