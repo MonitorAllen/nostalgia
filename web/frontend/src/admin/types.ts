@@ -3,8 +3,7 @@ export type AdminInt64 = string | number
 export interface AdminUser {
   id: AdminInt64
   username: string
-  is_active?: boolean
-  role_id?: AdminInt64
+  role?: string
   created_at?: string
 }
 
