@@ -49,6 +49,8 @@ SETUP_TOKEN=replace-with-a-random-one-time-bootstrap-token
 ACCESS_TOKEN_DURATION=15m
 REFRESH_TOKEN_DURATION=24h
 REDIS_ADDRESS=redis:6379
+REDIS_CACHE_DB=0
+REDIS_QUEUE_DB=1
 EMAIL_SENDER_NAME=name
 EMAIL_SENDER_ADDRESS=...
 EMAIL_SENDER_PASSWORD=...
@@ -57,7 +59,7 @@ UPLOAD_FILE_ALLOWED_MIME=image/jpeg,image/png
 HTTP_PROXY_ADDR=http://host.docker.internal:10808
 ```
 
-`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
+`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。Redis 仍使用一个服务实例，默认 `REDIS_CACHE_DB=0` 存放缓存与幂等键，`REDIS_QUEUE_DB=1` 存放 Asynq 队列数据。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
 
 ## 🚀 快速部署
 

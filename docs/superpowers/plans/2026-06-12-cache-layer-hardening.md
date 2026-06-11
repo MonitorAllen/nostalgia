@@ -1,6 +1,6 @@
 # Cache Layer Hardening Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Harden Redis-backed cache behavior, add bounded versioned article pagination cache, and split cache/queue Redis DB indexes.
 
@@ -35,7 +35,7 @@
 
 ## Task 1: Redis DB Split and Primitive Semantics
 
-- [ ] **Step 1: Write failing config and cache primitive tests**
+- [x] **Step 1: Write failing config and cache primitive tests**
 
 Add tests that expect `util.Config` to expose `RedisCacheDB` and `RedisQueueDB`, and tests that expect cache TTL inspection to distinguish missing keys from permanent keys.
 
@@ -47,7 +47,7 @@ go test ./util ./internal/cache
 
 Expected: fail because the new config fields and cache primitive behavior are not implemented.
 
-- [ ] **Step 2: Implement config fields and Redis DB selection**
+- [x] **Step 2: Implement config fields and Redis DB selection**
 
 Add `RedisCacheDB int` and `RedisQueueDB int` to `util.Config`. Set defaults in `LoadConfig` before unmarshalling:
 
@@ -58,7 +58,7 @@ configReader.SetDefault("REDIS_QUEUE_DB", 1)
 
 Update `cache.NewRedisCache` to use `redis.Options{Addr: config.RedisAddress, DB: config.RedisCacheDB}`. Update Asynq Redis options in `main.go` to set `DB: config.RedisQueueDB`.
 
-- [ ] **Step 3: Implement cache primitive updates**
+- [x] **Step 3: Implement cache primitive updates**
 
 Add `Incr(ctx, key)` and replace ambiguous expiration inspection with a method that can represent missing, expiring, and permanent keys. Regenerate `internal/cache/mock/redis.go` with:
 
@@ -66,7 +66,7 @@ Add `Incr(ctx, key)` and replace ambiguous expiration inspection with a method t
 make mock
 ```
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 
@@ -79,7 +79,7 @@ git commit -m "feat: split redis cache and queue databases"
 
 ## Task 2: Key Naming and TTL Policy
 
-- [ ] **Step 1: Write failing key and TTL tests**
+- [x] **Step 1: Write failing key and TTL tests**
 
 Add tests proving:
 
@@ -97,7 +97,7 @@ go test ./internal/cache/...
 
 Expected: fail because key formats and TTL helpers are not implemented.
 
-- [ ] **Step 2: Implement key constants and TTL helpers**
+- [x] **Step 2: Implement key constants and TTL helpers**
 
 Update `internal/cache/key/article.go` with distinct key patterns and add list key helpers:
 
@@ -108,7 +108,7 @@ func GetArticleListKey(version int64, categoryID int64, page int32, limit int32)
 
 Add `internal/cache/ttl.go` with constants for article detail, article list, empty list, category list, contributions, likes, and views.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run:
 
@@ -121,7 +121,7 @@ git commit -m "feat: define cache keys and ttl policy"
 
 ## Task 3: Typed Cache Helpers and Public Article List Cache
 
-- [ ] **Step 1: Write failing typed cache tests**
+- [x] **Step 1: Write failing typed cache tests**
 
 Add tests for `ArticleCache` that prove:
 
@@ -138,11 +138,11 @@ go test ./internal/cache
 
 Expected: fail because typed helpers do not exist.
 
-- [ ] **Step 2: Implement typed cache helpers**
+- [x] **Step 2: Implement typed cache helpers**
 
 Create typed helpers in `internal/cache/article.go`, `category.go`, `contribution.go`, and `idempotency.go`. They should wrap the existing `Cache` interface and own key/TTL decisions.
 
-- [ ] **Step 3: Update public article list handler**
+- [x] **Step 3: Update public article list handler**
 
 Modify `api/article.go` so `listArticle`:
 
@@ -152,7 +152,7 @@ Modify `api/article.go` so `listArticle`:
 4. Calls `ArticleCache.SetList`.
 5. Returns the same response shape as before.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 
@@ -165,7 +165,7 @@ git commit -m "feat: cache public article list pages"
 
 ## Task 4: Invalidation Completeness and Contributions Fix
 
-- [ ] **Step 1: Write failing invalidation and contribution tests**
+- [x] **Step 1: Write failing invalidation and contribution tests**
 
 Add tests proving:
 
@@ -181,15 +181,15 @@ go test ./api ./gapi ./internal/cache
 
 Expected: fail because invalidation and contribution behavior are not complete.
 
-- [ ] **Step 2: Implement invalidation updates**
+- [x] **Step 2: Implement invalidation updates**
 
 Update article update/delete flows to fetch the previous article state before mutation and pass both previous and updated state into typed invalidation helpers. Do not bump article list versions for like/view increments.
 
-- [ ] **Step 3: Implement contribution cache fix**
+- [x] **Step 3: Implement contribution cache fix**
 
 Cache the raw GitHub contributions response. Slice only at response time and clamp indexes so short upstream data cannot panic.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 
@@ -202,7 +202,7 @@ git commit -m "fix: complete cache invalidation semantics"
 
 ## Task 5: Singleflight, Docs, and Full Verification
 
-- [ ] **Step 1: Write failing singleflight tests**
+- [x] **Step 1: Write failing singleflight tests**
 
 Add tests for cache helpers or API handlers proving concurrent misses share one loader for article list and contributions where practical.
 
@@ -214,15 +214,15 @@ go test ./internal/cache ./api
 
 Expected: fail before singleflight is added.
 
-- [ ] **Step 2: Implement singleflight**
+- [x] **Step 2: Implement singleflight**
 
 Add process-local `singleflight.Group` use around article detail, article list, category list, and contributions read-through paths. Keep cache failures as fallback events rather than request failures.
 
-- [ ] **Step 3: Update environment docs**
+- [x] **Step 3: Update environment docs**
 
 Update `.env.example`, `docker-compose.yaml`, `docker-compose.dev.yaml`, and `README.md` with `REDIS_CACHE_DB` and `REDIS_QUEUE_DB`.
 
-- [ ] **Step 4: Full verification and commit**
+- [x] **Step 4: Full verification and commit**
 
 Run:
 

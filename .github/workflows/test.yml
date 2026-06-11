@@ -30,6 +30,8 @@ jobs:
       ACCESS_TOKEN_DURATION: 15m
       REFRESH_TOKEN_DURATION: 24h
       REDIS_ADDRESS: localhost:6379
+      REDIS_CACHE_DB: "0"
+      REDIS_QUEUE_DB: "1"
       EMAIL_SENDER_NAME: Nostalgia CI
       EMAIL_SENDER_ADDRESS: noreply@example.com
       EMAIL_SENDER_PASSWORD: ci-mail-password
