@@ -58,4 +58,22 @@ describe('nginx deployment ingress config', () => {
     expect(webDockerfile).not.toContain('openssl req -x509')
     expect(webDevDockerfile).toContain('openssl req -x509')
   })
+
+  test('docs and env example do not list obsolete bootstrap variables', () => {
+    const envExample = readRepoFile('.env.example')
+    const readme = readRepoFile('README.md')
+    const obsoleteKeys = [
+      'DEFAULT_USER_ID',
+      'DEFAULT_USERNAME',
+      'DEFAULT_USER_PASSWORD',
+      'DEFAULT_USER_FULLNAME',
+      'DEFAULT_USER_EMAIL',
+      'LETSENCRYPT_EMAIL',
+    ]
+
+    for (const key of obsoleteKeys) {
+      expect(envExample).not.toContain(key)
+      expect(readme).not.toContain(key)
+    }
+  })
 })
