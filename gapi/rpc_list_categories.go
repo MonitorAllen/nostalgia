@@ -3,8 +3,8 @@ package gapi
 import (
 	"context"
 	"errors"
-	"time"
 
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/redis/go-redis/v9"
@@ -20,7 +20,8 @@ func (server *Server) ListCategories(ctx context.Context, req *pb.ListCategories
 	}
 
 	resp := &pb.ListCategoriesResponse{}
-	ok, err := server.cache.Get(ctx, key.CategoryAllKey, resp)
+	categoryCache := cachepkg.NewCategoryCache(server.cache)
+	ok, err := categoryCache.GetList(ctx, resp)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
@@ -43,7 +44,7 @@ func (server *Server) ListCategories(ctx context.Context, req *pb.ListCategories
 	resp.Categories = convertCategoriesCountArticleRow(categories)
 	resp.Count = int64(countCategories)
 
-	err = server.cache.Set(ctx, key.CategoryAllKey, resp, 7*24*time.Hour)
+	err = categoryCache.SetList(ctx, resp)
 	if err != nil {
 		log.Error().
 			Err(err).

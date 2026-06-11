@@ -10,7 +10,6 @@ import (
 	"time"
 
 	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
-	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -335,12 +334,12 @@ func contributionResponse(contributions githubContributions) githubContributions
 func (server *Server) contributions(ctx *gin.Context) {
 	// 先在 redis 获取
 	var contributions githubContributions
-	userContributionsKey := key.GetUserContributionsKey()
-	ok, err := server.cache.Get(ctx, userContributionsKey, &contributions)
+	contributionCache := cachepkg.NewContributionCache(server.cache)
+	ok, err := contributionCache.Get(ctx, &contributions)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
-			Str("key", userContributionsKey).
+			Str("key", "cache:user:contributions").
 			Str("module", "user").
 			Str("action", "cache_get").
 			Msg("获取用户 github 活动数据失败")
@@ -398,11 +397,11 @@ func (server *Server) contributions(ctx *gin.Context) {
 		return
 	}
 
-	err = server.cache.Set(ctx, userContributionsKey, contributions, cachepkg.WithJitter(cachepkg.ContributionsTTL))
+	err = contributionCache.Set(ctx, contributions)
 	if err != nil {
 		log.Error().
 			Err(err).
-			Str("key", userContributionsKey).
+			Str("key", "cache:user:contributions").
 			Str("module", "user").
 			Str("action", "cache_set").
 			Msg("设置用户 github 活动数据缓存失败")

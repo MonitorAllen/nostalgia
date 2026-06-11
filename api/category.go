@@ -3,12 +3,12 @@ package api
 import (
 	"errors"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"net/http"
-	"time"
 )
 
 var AllCategoriesKey = "categories:all"
@@ -20,7 +20,8 @@ type listCategoriesResponse struct {
 
 func (server *Server) listCategories(ctx *gin.Context) {
 	var resp listCategoriesResponse
-	ok, err := server.cache.Get(ctx, key.CategoryAllKey, &resp)
+	categoryCache := cachepkg.NewCategoryCache(server.cache)
+	ok, err := categoryCache.GetList(ctx, &resp)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
@@ -45,7 +46,7 @@ func (server *Server) listCategories(ctx *gin.Context) {
 	resp.Categories = categories
 	resp.Count = int64(count)
 
-	err = server.cache.Set(ctx, key.CategoryAllKey, resp, 7*24*time.Hour)
+	err = categoryCache.SetList(ctx, resp)
 	if err != nil {
 		log.Error().
 			Err(err).
