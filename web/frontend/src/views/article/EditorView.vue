@@ -101,23 +101,17 @@ const toast = useToast();
 
 // 当编辑器准备好时的回调
 const onEditorReady = (editorInstance: ClassicEditor) => {
-  console.log("editorInstance", editorInstance)
   editor.value = editorInstance
   if (id !== '') {
     articleStore.getArticle(id as string).then((res: any) => {
       post.value = res.data
       editorData.value = post.value.content
       isPublish.value = post.value.is_publish
-      console.log(res)
     })
   }
 }
 
 const editorComponent = ref(null)
-
-/*editor.value.plugins.get('FileRepository').on('uploadComplete', (event, data) => {
-  console.log('Image upload completed:', data);
-});*/
 
 const save = () => {
   if (id != "") {

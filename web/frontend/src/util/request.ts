@@ -77,7 +77,6 @@ async function refreshToken() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5秒超时
 
-    console.log('刷新token')
     const response = await axios.post('/tokens/renew_access', {
       refresh_token: storageService.get(storageService.USER_REFRESH_TOKEN)
     }, { signal: controller.signal })
@@ -90,7 +89,6 @@ async function refreshToken() {
     // 通知所有等待请求 token 刷新完毕
     subscribers.forEach((callback) => callback());
     subscribers = [];
-    console.log('刷新成功')
   } catch (error) {
     console.error('刷新 token 失败，登出' + error)
     logout()

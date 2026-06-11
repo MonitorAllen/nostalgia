@@ -25,7 +25,7 @@ const displayedChildren = computed(() => {
   if (!props.comment.child) return []
   return showAllChildren.value ? props.comment.child : props.comment.child.slice(0, 2)
 })
-const sanitizedContent = computed(() => sanitizeHtml(props.comment.content || ''))
+const sanitizedContent = computed(() => sanitizeHtml(props.comment.content || '', { profile: 'comment' }))
 
 const deleteComment = inject<(id: number) => void>('deleteComment')
 
