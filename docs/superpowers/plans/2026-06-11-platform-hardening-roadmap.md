@@ -305,3 +305,39 @@ git commit -m "ci: cover frontend and compose checks"
 - [x] Run `cd web/frontend && bun run build`.
 - [x] Run Nginx syntax validation with mounted config and temporary local certificates.
 - [x] Run `docker compose config --quiet && docker compose -f docker-compose.dev.yaml config --quiet`.
+
+## Phase 5 File Structure
+
+- Add `web/frontend/src/deploy/databaseLegacyAudit.test.ts`: guard current schema docs, frontend admin types, and sqlc runtime models against removed admin/RBAC tables.
+- Modify `doc/db.dbml` and `doc/schema.sql`: update current database documentation after `000009_remove_legacy_admin_rbac`.
+- Modify `web/frontend/src/admin/types.ts`: remove legacy `role_id` from admin user types and model the unified `role` string.
+
+## Phase 5 Tasks
+
+### Task 1: Audit Legacy Admin/RBAC References
+
+- [x] Scan migrations, sqlc output, db queries, frontend admin code, and docs for `admins`, `roles`, `role_permissions`, `sys_menus`, `role_id`, and related legacy RBAC assumptions.
+- [x] Confirm runtime sqlc models and queries no longer expose legacy admin/RBAC tables.
+- [x] Confirm historical migrations still mention old tables because they are part of the migration chain and should not be rewritten.
+- [x] Identify stale current docs in `doc/db.dbml` and `doc/schema.sql`.
+- [x] Identify stale frontend admin API type `role_id`.
+
+### Task 2: Add Legacy Structure Guard Tests
+
+- [x] Add tests proving current schema docs do not expose removed admin/RBAC tables.
+- [x] Add tests proving frontend admin API types no longer model `role_id`.
+- [x] Add tests proving sqlc runtime models do not include legacy admin/RBAC structs.
+- [x] Verify the new tests fail before implementation.
+
+### Task 3: Clean Current Schema Docs and Types
+
+- [x] Update `doc/db.dbml` to current post-migration tables.
+- [x] Update `doc/schema.sql` to current post-migration SQL structure.
+- [x] Remove `role_id` from frontend admin types and use unified `role?: string`.
+
+### Task 4: Verify Phase 5
+
+- [x] Run targeted legacy audit tests.
+- [x] Run `cd web/frontend && bun test`.
+- [x] Run `cd web/frontend && bun run type-check`.
+- [x] Run `make test`.
