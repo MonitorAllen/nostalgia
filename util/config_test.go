@@ -36,11 +36,6 @@ func TestLoadConfigFromEnvironmentWhenDotEnvIsMissing(t *testing.T) {
 		"UPLOAD_FILE_SIZE_LIMIT":   "5242880",
 		"UPLOAD_FILE_ALLOWED_MIME": "image/jpeg,image/png",
 		"HTTP_PROXY_ADDR":          "http://host.docker.internal:10808",
-		"DEFAULT_USER_ID":          "00000000-0000-0000-0000-000000000001",
-		"DEFAULT_USERNAME":         "admin",
-		"DEFAULT_USER_PASSWORD":    "password",
-		"DEFAULT_USER_FULLNAME":    "Admin",
-		"DEFAULT_USER_EMAIL":       "admin@example.com",
 	})
 
 	config, err := LoadConfig(configPath)
@@ -68,6 +63,21 @@ func TestLoadConfigEnvironmentOverridesDotEnvFile(t *testing.T) {
 
 	require.Equal(t, "production", config.Environment)
 	require.Equal(t, "0.0.0.0:8080", config.HTTPServerAddress)
+}
+
+func TestConfigDoesNotExposeDefaultUserBootstrapEnv(t *testing.T) {
+	removedKeys := []string{
+		"DEFAULT_USER_ID",
+		"DEFAULT_USERNAME",
+		"DEFAULT_USER_PASSWORD",
+		"DEFAULT_USER_FULLNAME",
+		"DEFAULT_USER_EMAIL",
+	}
+
+	keys := configEnvKeys()
+	for _, key := range removedKeys {
+		require.NotContains(t, keys, key)
+	}
 }
 
 func setConfigEnv(t *testing.T, values map[string]string) {

@@ -33,11 +33,6 @@ type Config struct {
 	UploadFileSizeLimit   int64         `mapstructure:"UPLOAD_FILE_SIZE_LIMIT"`
 	UploadFileAllowedMime []string      `mapstructure:"UPLOAD_FILE_ALLOWED_MIME"`
 	HTTPProxyAddr         string        `mapstructure:"HTTP_PROXY_ADDR"`
-	DefaultUserID         string        `mapstructure:"DEFAULT_USER_ID"`
-	DefaultUsername       string        `mapstructure:"DEFAULT_USERNAME"`
-	DefaultUserPassword   string        `mapstructure:"DEFAULT_USER_PASSWORD"`
-	DefaultUserFullname   string        `mapstructure:"DEFAULT_USER_FULLNAME"`
-	DefaultUserEmail      string        `mapstructure:"DEFAULT_USER_EMAIL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

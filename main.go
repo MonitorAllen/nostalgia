@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"net"
 	"net/http"
@@ -23,11 +22,9 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hibiken/asynq"
 	_ "github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 	fs2 "github.com/rakyll/statik/fs"
@@ -81,11 +78,6 @@ func main() {
 	}
 
 	store := db.NewStore(connPool)
-
-	err = ensureDefaultUserExists(ctx, store, config)
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot create default user:")
-	}
 
 	redisOpt := asynq.RedisClientOpt{
 		Addr: config.RedisAddress,
@@ -301,56 +293,4 @@ func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Co
 
 		return nil
 	})
-}
-
-func ensureDefaultUserExists(ctx context.Context, store db.Store, config util.Config) error {
-	defaultUserID, err := uuid.Parse(config.DefaultUserID)
-	if err != nil {
-		return fmt.Errorf("failed to parse default user ID: %w", err)
-	}
-
-	_, err = store.GetUser(ctx, defaultUserID)
-	if err == nil {
-		log.Info().Msg("defult user already exists")
-		return nil
-	}
-
-	if !errors.Is(err, db.ErrRecordNotFound) {
-		return fmt.Errorf("failed to check default user: %w", err)
-	}
-
-	hashedPassword, err := util.HashPassword(config.DefaultUserPassword)
-	if err != nil {
-		return fmt.Errorf("failed to hash default user password: %w", err)
-	}
-
-	arg := db.CreateUserParams{
-		ID:             defaultUserID,
-		Username:       config.DefaultUsername,
-		HashedPassword: hashedPassword,
-		FullName:       config.DefaultUserFullname,
-		Email:          config.DefaultUserEmail,
-	}
-
-	_, err = store.CreateUser(ctx, arg)
-	if err != nil {
-		return fmt.Errorf("failed to create default user: %w", err)
-	}
-
-	updateArg := db.UpdateUserParams{
-		ID: arg.ID,
-		IsEmailVerified: pgtype.Bool{
-			Bool:  true,
-			Valid: true,
-		},
-	}
-
-	_, err = store.UpdateUser(ctx, updateArg)
-	if err != nil {
-		return fmt.Errorf("failed to active default user email: %w", err)
-	}
-
-	log.Info().Msgf("default user '%s' created", arg.Username)
-
-	return nil
 }
