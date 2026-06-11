@@ -628,6 +628,20 @@ func (mr *MockStoreMockRecorder) ListCommentsByArticleID(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).ListCommentsByArticleID), arg0, arg1)
 }
 
+// Ping mocks base method.
+func (m *MockStore) Ping(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockStoreMockRecorder) Ping(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockStore)(nil).Ping), arg0)
+}
+
 // SearchArticles mocks base method.
 func (m *MockStore) SearchArticles(arg0 context.Context, arg1 db.SearchArticlesParams) ([]db.SearchArticlesRow, error) {
 	m.ctrl.T.Helper()

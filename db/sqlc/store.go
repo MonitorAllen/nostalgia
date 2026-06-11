@@ -9,6 +9,7 @@ import (
 // Store provides all functions to execute db queries and transactions
 type Store interface {
 	Querier
+	Ping(ctx context.Context) error
 	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
 	VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error)
 	UpdateArticleTx(ctx context.Context, arg UpdateArticleTxParams) (UpdateArticleTxResult, error)
@@ -29,4 +30,8 @@ func NewStore(connPool *pgxpool.Pool) Store {
 		connPool: connPool,
 		Queries:  New(connPool),
 	}
+}
+
+func (store *SQLStore) Ping(ctx context.Context) error {
+	return store.connPool.Ping(ctx)
 }

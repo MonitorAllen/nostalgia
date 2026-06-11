@@ -6,6 +6,7 @@ import (
 )
 
 type Cache interface {
+	Ping(ctx context.Context) error
 	Get(ctx context.Context, key string, dest any) (bool, error)
 	Set(ctx context.Context, key string, value any, ttl time.Duration) error
 	Del(ctx context.Context, key string) error

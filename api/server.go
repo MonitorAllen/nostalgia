@@ -69,6 +69,9 @@ func (server *Server) setupRouter() {
 	router.Static("/temp/upload", "./temp/upload")
 	router.Static("/resources/", "./resources")
 
+	router.GET("/healthz", server.healthz)
+	router.GET("/readyz", server.readyz)
+
 	public := router.Group("/api")
 	{
 		public.GET("/setup/status", server.setupStatus)

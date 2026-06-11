@@ -93,6 +93,20 @@ func (mr *MockCacheMockRecorder) IsExpired(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsExpired", reflect.TypeOf((*MockCache)(nil).IsExpired), arg0, arg1)
 }
 
+// Ping mocks base method.
+func (m *MockCache) Ping(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Ping", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockCacheMockRecorder) Ping(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockCache)(nil).Ping), arg0)
+}
+
 // Set mocks base method.
 func (m *MockCache) Set(arg0 context.Context, arg1 string, arg2 interface{}, arg3 time.Duration) error {
 	m.ctrl.T.Helper()
