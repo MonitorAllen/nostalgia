@@ -78,6 +78,21 @@ func (mr *MockCacheMockRecorder) Get(arg0, arg1, arg2 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCache)(nil).Get), arg0, arg1, arg2)
 }
 
+// Incr mocks base method.
+func (m *MockCache) Incr(arg0 context.Context, arg1 string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Incr", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Incr indicates an expected call of Incr.
+func (mr *MockCacheMockRecorder) Incr(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Incr", reflect.TypeOf((*MockCache)(nil).Incr), arg0, arg1)
+}
+
 // IsExpired mocks base method.
 func (m *MockCache) IsExpired(arg0 context.Context, arg1 string) (bool, error) {
 	m.ctrl.T.Helper()

@@ -20,6 +20,8 @@ type Config struct {
 	ResourcePath          string        `mapstructure:"RESOURCE_PATH"`
 	Domain                string        `mapstructure:"DOMAIN"`
 	RedisAddress          string        `mapstructure:"REDIS_ADDRESS"`
+	RedisCacheDB          int           `mapstructure:"REDIS_CACHE_DB"`
+	RedisQueueDB          int           `mapstructure:"REDIS_QUEUE_DB"`
 	HTTPServerAddress     string        `mapstructure:"HTTP_SERVER_ADDRESS"`
 	GrpcGatewayAddress    string        `mapstructure:"GRPC_GATEWAY_ADDRESS"`
 	GRPCServerAddress     string        `mapstructure:"GRPC_SERVER_ADDRESS"`
@@ -39,6 +41,8 @@ func LoadConfig(path string) (config Config, err error) {
 	configReader := viper.New()
 	configReader.SetConfigFile(filepath.Join(path, ".env"))
 	configReader.AutomaticEnv()
+	configReader.SetDefault("REDIS_CACHE_DB", 0)
+	configReader.SetDefault("REDIS_QUEUE_DB", 1)
 
 	for _, key := range configEnvKeys() {
 		if bindErr := configReader.BindEnv(key); bindErr != nil {
