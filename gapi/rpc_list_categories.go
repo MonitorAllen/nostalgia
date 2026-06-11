@@ -34,24 +34,36 @@ func (server *Server) ListCategories(ctx context.Context, req *pb.ListCategories
 		return resp, nil
 	}
 
-	categories, err := server.store.ListCategoriesCountArticles(ctx)
+	value, err, _ := server.cacheLoadGroup.Do(key.CategoryAllKey, func() (any, error) {
+		categories, err := server.store.ListCategoriesCountArticles(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		resp := &pb.ListCategoriesResponse{
+			Categories: convertCategoriesCountArticleRow(categories),
+			Count:      int64(len(categories)),
+		}
+
+		err = categoryCache.SetList(ctx, resp)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("key", key.CategoryAllKey).
+				Str("module", "category").
+				Str("action", "cache_set").
+				Msg("设置分类缓存失败，降级为仅数据库")
+		}
+
+		return resp, nil
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to list categories: %s", err)
 	}
 
-	countCategories := len(categories)
-
-	resp.Categories = convertCategoriesCountArticleRow(categories)
-	resp.Count = int64(countCategories)
-
-	err = categoryCache.SetList(ctx, resp)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("key", key.CategoryAllKey).
-			Str("module", "category").
-			Str("action", "cache_set").
-			Msg("设置分类缓存失败，降级为仅数据库")
+	resp, ok = value.(*pb.ListCategoriesResponse)
+	if !ok {
+		return nil, status.Error(codes.Internal, "unexpected category cache load result")
 	}
 
 	return resp, nil

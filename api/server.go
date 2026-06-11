@@ -18,6 +18,7 @@ import (
 	fs2 "github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/singleflight"
 )
 
 // Server serves HTTP requests for our banking service.
@@ -29,6 +30,7 @@ type Server struct {
 	router          *gin.Engine
 	taskDistributor worker.TaskDistributor
 	cache           cache.Cache
+	cacheLoadGroup  singleflight.Group
 }
 
 // NewServer creates a new HTTPS server and setup routing

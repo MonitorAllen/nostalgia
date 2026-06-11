@@ -35,25 +35,38 @@ func (server *Server) listCategories(ctx *gin.Context) {
 		return
 	}
 
-	categories, err := server.store.ListCategoriesCountArticles(ctx)
+	value, err, _ := server.cacheLoadGroup.Do(key.CategoryAllKey, func() (any, error) {
+		categories, err := server.store.ListCategoriesCountArticles(ctx)
+		if err != nil {
+			return listCategoriesResponse{}, err
+		}
+
+		resp := listCategoriesResponse{
+			Categories: categories,
+			Count:      int64(len(categories)),
+		}
+
+		err = categoryCache.SetList(ctx, resp)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("key", key.CategoryAllKey).
+				Str("module", "category").
+				Str("action", "cache_set").
+				Msg("设置分类缓存失败，降级为仅数据库")
+		}
+
+		return resp, nil
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	count := len(categories)
-
-	resp.Categories = categories
-	resp.Count = int64(count)
-
-	err = categoryCache.SetList(ctx, resp)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("key", key.CategoryAllKey).
-			Str("module", "category").
-			Str("action", "cache_set").
-			Msg("设置分类缓存失败，降级为仅数据库")
+	resp, ok = value.(listCategoriesResponse)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(errors.New("unexpected category cache load result")))
+		return
 	}
 
 	ctx.JSON(http.StatusOK, resp)

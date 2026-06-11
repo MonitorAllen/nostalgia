@@ -10,6 +10,7 @@ import (
 	"time"
 
 	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/util"
@@ -339,7 +340,7 @@ func (server *Server) contributions(ctx *gin.Context) {
 	if err != nil && !errors.Is(err, redis.Nil) {
 		log.Error().
 			Err(err).
-			Str("key", "cache:user:contributions").
+			Str("key", key.GetUserContributionsKey()).
 			Str("module", "user").
 			Str("action", "cache_get").
 			Msg("获取用户 github 活动数据失败")
@@ -350,61 +351,71 @@ func (server *Server) contributions(ctx *gin.Context) {
 		return
 	}
 
-	reqUrl := "https://github-contributions.vercel.app/api/v1/MonitorAllen"
+	value, err, _ := server.cacheLoadGroup.Do(key.GetUserContributionsKey(), func() (any, error) {
+		reqUrl := "https://github-contributions.vercel.app/api/v1/MonitorAllen"
 
-	proxyUrl, err := url.Parse(server.config.HTTPProxyAddr)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	transport := &http.Transport{
-		Proxy: http.ProxyURL(proxyUrl),
-	}
-
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   10 * time.Second,
-	}
-
-	resp, err := client.Get(reqUrl)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("执行请求活动数据失败：%s", err.Error())))
-		return
-	}
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+		proxyUrl, err := url.Parse(server.config.HTTPProxyAddr)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to close response body")
+			return githubContributions{}, err
 		}
-	}(resp.Body)
 
-	if resp.StatusCode != http.StatusOK {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
 
-	body, err := io.ReadAll(resp.Body)
+		client := &http.Client{
+			Transport: transport,
+			Timeout:   10 * time.Second,
+		}
+
+		resp, err := client.Get(reqUrl)
+		if err != nil {
+			return githubContributions{}, fmt.Errorf("执行请求活动数据失败：%s", err.Error())
+		}
+
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				log.Error().Err(err).Msg("failed to close response body")
+			}
+		}(resp.Body)
+
+		if resp.StatusCode != http.StatusOK {
+			return githubContributions{}, fmt.Errorf("github contributions returned status: %s", resp.Status)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return githubContributions{}, err
+		}
+
+		var contributions githubContributions
+		err = json.Unmarshal(body, &contributions)
+		if err != nil {
+			return githubContributions{}, err
+		}
+
+		err = contributionCache.Set(ctx, contributions)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("key", key.GetUserContributionsKey()).
+				Str("module", "user").
+				Str("action", "cache_set").
+				Msg("设置用户 github 活动数据缓存失败")
+		}
+
+		return contributions, nil
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	err = json.Unmarshal(body, &contributions)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+	contributions, ok = value.(githubContributions)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("unexpected contributions cache load result")))
 		return
-	}
-
-	err = contributionCache.Set(ctx, contributions)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("key", "cache:user:contributions").
-			Str("module", "user").
-			Str("action", "cache_set").
-			Msg("设置用户 github 活动数据缓存失败")
 	}
 
 	ctx.JSON(http.StatusOK, contributionResponse(contributions))

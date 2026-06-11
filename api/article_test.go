@@ -2,12 +2,14 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -431,6 +433,109 @@ func TestListArticleAPICacheMissStoresPage(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	requireBodyMatchArticles(t, recorder.Body, articles)
+}
+
+func TestListArticleAPICacheMissUsesSingleflight(t *testing.T) {
+	user, _ := randomUser(t)
+	article := randomArticle(t, user.ID, true)
+	articles := []db.ListArticlesRow{
+		{
+			ID:        article.ID,
+			Title:     article.Title,
+			Summary:   article.Summary,
+			Views:     article.Views,
+			Likes:     article.Likes,
+			IsPublish: article.IsPublish,
+			Owner:     article.Owner,
+			CreatedAt: article.CreatedAt,
+			UpdatedAt: article.UpdatedAt,
+			DeletedAt: article.DeletedAt,
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	redisCache := mockcache.NewMockCache(ctrl)
+
+	listCacheGets := make(chan struct{}, 2)
+	loadStarted := make(chan struct{})
+	releaseLoad := make(chan struct{})
+
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListVersionKey(int64(0))), gomock.Any()).
+		Times(3).
+		Return(false, nil)
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Eq(key.GetArticleListKey(0, 0, 1, 10)), gomock.Any()).
+		Times(2).
+		DoAndReturn(func(context.Context, string, any) (bool, error) {
+			listCacheGets <- struct{}{}
+			return false, nil
+		})
+
+	arg := db.ListArticlesParams{
+		Limit:  10,
+		Offset: 0,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+	store.EXPECT().
+		ListArticles(gomock.Any(), gomock.Eq(arg)).
+		Times(1).
+		DoAndReturn(func(context.Context, db.ListArticlesParams) ([]db.ListArticlesRow, error) {
+			close(loadStarted)
+			<-releaseLoad
+			return articles, nil
+		})
+	store.EXPECT().CountArticles(gomock.Any(), gomock.Any()).Times(1).Return(int64(1), nil)
+	redisCache.EXPECT().
+		Set(gomock.Any(), gomock.Eq(key.GetArticleListKey(0, 0, 1, 10)), gomock.Any(), gomock.Any()).
+		Times(1).
+		Return(nil)
+
+	server := newTestServer(t, store, nil, redisCache)
+	recorders := make([]*httptest.ResponseRecorder, 2)
+	var wg sync.WaitGroup
+	runRequest := func(index int) {
+		defer wg.Done()
+		recorder := httptest.NewRecorder()
+		request, err := http.NewRequest(http.MethodGet, "/api/articles?page=1&limit=10", nil)
+		require.NoError(t, err)
+		server.router.ServeHTTP(recorder, request)
+		recorders[index] = recorder
+	}
+
+	wg.Add(1)
+	go runRequest(0)
+
+	select {
+	case <-loadStarted:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for first article list load")
+	}
+
+	wg.Add(1)
+	go runRequest(1)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case <-listCacheGets:
+		case <-time.After(time.Second):
+			t.Fatal("timed out waiting for concurrent article list cache miss")
+		}
+	}
+
+	close(releaseLoad)
+	wg.Wait()
+
+	for _, recorder := range recorders {
+		require.Equal(t, http.StatusOK, recorder.Code)
+		requireBodyMatchArticles(t, recorder.Body, articles)
+	}
 }
 
 func TestSearchArticleAPI(t *testing.T) {
