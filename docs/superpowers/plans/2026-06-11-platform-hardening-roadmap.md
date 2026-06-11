@@ -225,3 +225,40 @@ git commit -m "ci: cover frontend and compose checks"
 - [x] Run `cd web/frontend && bun run type-check`.
 - [x] Run `cd web/frontend && bun run build`.
 - [x] Confirm build output includes separate `ArticleView`, `content-rendering`, `admin-editor`, and `ckeditor` chunks.
+
+## Phase 3 File Structure
+
+- Add `web/frontend/src/util/sanitizeHtmlPolicy.ts`: central rich-text sanitization policy for URL protocols, target link rel values, and profile-aware DOMPurify config.
+- Modify `web/frontend/src/util/sanitizeHtml.ts`: apply the centralized sanitization policy from the DOMPurify hook.
+- Add `web/frontend/src/util/sanitizeHtmlPolicy.test.ts`: guard dangerous HTML/URL policy behavior.
+- Add `web/frontend/src/deploy/frontendSourceHygiene.test.ts`: prevent stray production `console.log`/`console.debug`/`console.info` calls.
+- Add `web/security-headers.conf`: shared Nginx security header and CSP include.
+- Modify `web/nginx.conf`, `web/Dockerfile`, and `web/Dockerfile.dev`: include and ship the CSP/security header file.
+
+## Phase 3 Tasks
+
+### Task 1: Add XSS, CSP, and Console Guard Tests
+
+- [x] Add sanitizer policy tests for allowed URL protocols and same-origin references.
+- [x] Add sanitizer policy tests rejecting `javascript:`, obfuscated `javascript:`, `data:`, `vbscript:`, and `ftp:` URLs.
+- [x] Add sanitizer policy tests for `rel="noopener noreferrer"` normalization and article/comment profiles.
+- [x] Add Nginx deployment tests requiring a shipped baseline CSP include.
+- [x] Add frontend source hygiene tests blocking stray production `console.log`/`console.debug`/`console.info` calls.
+- [x] Verify the new tests fail before implementation.
+
+### Task 2: Harden Frontend Rich Text and Nginx Headers
+
+- [x] Centralize DOMPurify config and URL/rel policy, preserving CKEditor article styles while making comment rendering stricter.
+- [x] Apply the policy from the existing DOMPurify `afterSanitizeAttributes` hook.
+- [x] Add an Nginx Content-Security-Policy baseline compatible with app scripts, CKEditor styles, uploaded/self-hosted assets, and HTTPS images/media.
+- [x] Include security headers in cacheable/static response locations so Nginx header inheritance cannot drop them.
+- [x] Copy the security header include into production and development web images.
+- [x] Remove stray production `console.log` calls.
+
+### Task 3: Verify Phase 3
+
+- [x] Run `cd web/frontend && bun test`.
+- [x] Run `cd web/frontend && bun run type-check`.
+- [x] Run `cd web/frontend && bun run build`.
+- [x] Run Nginx syntax validation with mounted `web/nginx.conf`, `web/security-headers.conf`, and temporary local certificates.
+- [x] Run `docker compose config --quiet && docker compose -f docker-compose.dev.yaml config --quiet`.
