@@ -262,3 +262,46 @@ git commit -m "ci: cover frontend and compose checks"
 - [x] Run `cd web/frontend && bun run build`.
 - [x] Run Nginx syntax validation with mounted `web/nginx.conf`, `web/security-headers.conf`, and temporary local certificates.
 - [x] Run `docker compose config --quiet && docker compose -f docker-compose.dev.yaml config --quiet`.
+
+## Phase 4 File Structure
+
+- Add `api/health.go`: Gin liveness and readiness endpoints.
+- Add `api/health_test.go`: API behavior tests for `/healthz` and `/readyz`.
+- Modify `db/sqlc/store.go`: expose `Ping(ctx)` on `Store` for database readiness.
+- Modify `internal/cache/cache.go` and `internal/cache/redis.go`: expose Redis `Ping(ctx)` through the cache interface.
+- Regenerate `db/mock/store.go` and `internal/cache/mock/redis.go`.
+- Modify `web/nginx.conf`: route HTTPS health endpoints to API and keep local HTTP `/healthz` for web container checks.
+- Modify `docker-compose.yaml` and `docker-compose.dev.yaml`: add healthchecks and healthy dependency conditions.
+- Add `docs/deployment-healthchecks.md`: document operational signals.
+
+## Phase 4 Tasks
+
+### Task 1: Add Healthcheck Guard Tests
+
+- [x] Add API tests for `/healthz`.
+- [x] Add API tests for `/readyz` success, database failure, and Redis failure.
+- [x] Add deployment tests for Nginx `/healthz` and `/readyz` routing.
+- [x] Add deployment tests for Compose healthchecks on `postgres`, `redis`, `api`, and `web`.
+- [x] Verify the new tests fail before implementation.
+
+### Task 2: Implement Health and Readiness Signals
+
+- [x] Add database `Ping(ctx)` to the store abstraction.
+- [x] Add Redis `Ping(ctx)` to the cache abstraction.
+- [x] Implement `GET /healthz` without external dependency checks.
+- [x] Implement `GET /readyz` with PostgreSQL and Redis checks.
+- [x] Regenerate Go mocks after interface changes.
+- [x] Add Nginx health endpoint routing.
+- [x] Add Docker Compose healthchecks and `condition: service_healthy` dependencies.
+- [x] Document expected operational signals.
+
+### Task 3: Verify Phase 4
+
+- [x] Run targeted API health tests.
+- [x] Run targeted Nginx/Compose guard tests.
+- [x] Run `make test`.
+- [x] Run `cd web/frontend && bun test`.
+- [x] Run `cd web/frontend && bun run type-check`.
+- [x] Run `cd web/frontend && bun run build`.
+- [x] Run Nginx syntax validation with mounted config and temporary local certificates.
+- [x] Run `docker compose config --quiet && docker compose -f docker-compose.dev.yaml config --quiet`.
