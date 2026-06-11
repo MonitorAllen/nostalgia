@@ -197,3 +197,31 @@ Commit:
 git add .github/workflows/test.yml web/frontend/src/deploy/nginxConfig.test.ts docs/superpowers/plans/2026-06-11-platform-hardening-roadmap.md
 git commit -m "ci: cover frontend and compose checks"
 ```
+
+## Phase 2 File Structure
+
+- Modify `web/frontend/vite.config.ts`: add Rollup `manualChunks` rules for CKEditor, content rendering, and admin editor modules.
+- Modify `web/frontend/src/router/index.ts`: lazy-load article detail routes so Prism/content rendering code is not pulled into the app shell route table.
+- Add `web/frontend/src/deploy/viteBuildConfig.test.ts`: guard the bundle-splitting contract.
+
+## Phase 2 Tasks
+
+### Task 1: Add Bundle Splitting Guard Tests
+
+- [x] Add a Vite config guard that requires manual chunks for CKEditor, Prism/content rendering, and admin editor code.
+- [x] Add a router guard that prevents article detail from being statically imported into the public route table.
+- [x] Verify the new guard fails before implementation with `cd web/frontend && bun test src/deploy/viteBuildConfig.test.ts`.
+
+### Task 2: Split Frontend Bundles
+
+- [x] Add `manualChunks` rules that isolate CKEditor dependencies in `ckeditor`.
+- [x] Add `manualChunks` rules that isolate Prism, DOMPurify, and sanitization in `content-rendering`.
+- [x] Add `manualChunks` rules that isolate admin article editor shell code in `admin-editor`.
+- [x] Lazy-load `ArticleView.vue` from the router so article highlighting code loads on demand.
+
+### Task 3: Verify Phase 2
+
+- [x] Run `cd web/frontend && bun test`.
+- [x] Run `cd web/frontend && bun run type-check`.
+- [x] Run `cd web/frontend && bun run build`.
+- [x] Confirm build output includes separate `ArticleView`, `content-rendering`, `admin-editor`, and `ckeditor` chunks.
