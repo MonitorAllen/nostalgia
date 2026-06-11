@@ -11,6 +11,7 @@ This design strengthens the cache layer without replacing Redis or introducing a
 - Make cache keys explicit, collision-resistant, and grouped by namespace.
 - Move TTL and jitter decisions out of handlers into typed cache helpers.
 - Fix stale-cache risks around article ID keys, article slug keys, category list keys, and GitHub contributions.
+- Add bounded cache support for public article pagination responses.
 - Add singleflight protection for expensive read-through cache misses.
 - Keep public reads resilient: cache errors should normally degrade to DB or upstream fetch.
 - Keep idempotency behavior correct for likes and views.
@@ -50,6 +51,9 @@ Article cache keys will no longer share one ambiguous pattern.
 
 - Article by ID: `cache:article:id:{uuid}`
 - Article by slug: `cache:article:slug:{slug}`
+- Article list version for all articles: `cache:article:list:version:all`
+- Article list version for one category: `cache:article:list:version:category:{categoryID}`
+- Article list page: `cache:article:list:v:{version}:category:{all|categoryID}:page:{page}:limit:{limit}`
 - Category list: `cache:category:all`
 - GitHub contributions: `cache:user:contributions`
 - Article like by user: `idempotency:article:like:user:{articleID}:{userID}`
@@ -65,6 +69,8 @@ TTL decisions should live in cache-specific helpers instead of API handlers.
 
 - Article by ID: 24 hours plus jitter.
 - Article by slug: 24 hours plus jitter.
+- Article list page: 15 minutes plus jitter.
+- Empty article list page: 5 minutes plus jitter.
 - Category list: 12 hours plus jitter.
 - GitHub contributions: 12 hours plus jitter.
 - Authenticated article like idempotency: 365 days.
@@ -92,6 +98,9 @@ Business code should move toward typed cache helpers:
   - `SetByID`
   - `GetBySlug`
   - `SetBySlug`
+  - `GetList`
+  - `SetList`
+  - `BumpListVersion`
   - `Invalidate`
 - `CategoryCache`
   - `GetList`
@@ -106,6 +115,33 @@ Business code should move toward typed cache helpers:
 
 Handlers and RPC methods should call these helpers instead of building raw cache keys and TTL values directly.
 
+## Article Pagination Cache
+
+Public article pagination should cache the complete list response:
+
+- `count`
+- `articles`
+
+The cache applies only to the public `/api/articles` list endpoint. Backend management lists and article search are not cached in this phase. Search has high-cardinality keyword input and should be designed separately.
+
+The cache must be bounded:
+
+- Cache only pages `1` through `5`.
+- Include `limit` in the cache key.
+- Treat `category_id=0` as the `all` category bucket.
+- Use a shorter TTL than article detail cache because list responses include `views` and `likes`.
+
+Article list cache invalidation should use versioned keys rather than enumerating page keys. The active version is stored separately for all articles and per category:
+
+- `cache:article:list:version:all`
+- `cache:article:list:version:category:{categoryID}`
+
+The list response key includes the current version:
+
+- `cache:article:list:v:{version}:category:{all|categoryID}:page:{page}:limit:{limit}`
+
+When article writes affect public list membership or list display, the implementation increments the relevant version keys. Old page keys become unreachable and expire naturally.
+
 ## Invalidation Rules
 
 Article update must invalidate:
@@ -113,13 +149,19 @@ Article update must invalidate:
 - Article ID key for the article.
 - New slug key when the article has a slug.
 - Previous slug key when slug changes.
-- Category list key when any field affecting public list output changes, including title, summary, cover, category, publish status, likes, views, slug, and timestamps.
+- Article list version for all articles when any field affecting public list output changes, including title, summary, cover, category, publish status, slug, read time, check-outdated state, and timestamps.
+- Article list version for the old category and the new category when category membership may change.
+- Category list key when category article counts may change.
 
 Article delete must invalidate:
 
 - Article ID key.
 - Article slug key if present.
+- Article list version for all articles.
+- Article list version for the article category.
 - Category list key.
+
+Article list cache should not be invalidated for view or like increments. Those values may lag briefly in list responses to avoid making hot articles constantly invalidate pagination cache.
 
 Category create, update, and delete must invalidate:
 
@@ -141,6 +183,7 @@ Use in-process `singleflight.Group` for read-through cache misses on:
 
 - Article by ID.
 - Article by slug.
+- Article list page.
 - Category list.
 - GitHub contributions.
 
@@ -199,14 +242,16 @@ Initial implementation should use logs only. Metrics can be added later when the
 
 ### Phase 3: Typed Cache Helpers and Contributions Fix
 
-- Introduce typed helpers for article, category, contribution, and idempotency cache use.
+- Introduce typed helpers for article detail, article list, category, contribution, and idempotency cache use.
 - Move handler-level key and TTL decisions into these helpers.
+- Cache bounded public article list pages with versioned page keys.
 - Cache raw GitHub contributions and slice only at response time.
 - Add tests for contribution cache hits and short upstream data.
 
 ### Phase 4: Invalidation Completeness
 
 - Update article update/delete invalidation to include old slug, new slug, article ID, and category list keys.
+- Update article update/delete invalidation to bump relevant article list versions.
 - Keep category create/update/delete invalidating the category list.
 - Improve delayed deletion task logging.
 - Add tests for update/delete invalidation key sets.
@@ -224,6 +269,8 @@ Initial implementation should use logs only. Metrics can be added later when the
 - Runtime code no longer writes `cache:article:{value}` keys.
 - Article ID and slug cache keys are distinct and covered by tests.
 - Article cache TTLs are finite and include jitter.
+- Public article list page cache is bounded to pages 1 through 5 and uses versioned keys.
+- Article writes that affect public list output bump relevant list versions instead of scanning Redis keys.
 - Contributions cache stores raw upstream data and does not double-slice on cache hits.
 - Article slug updates invalidate the old slug key and the new slug key.
 - Article deletion invalidates both ID and slug cache keys.
