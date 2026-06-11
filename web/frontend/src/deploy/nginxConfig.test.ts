@@ -76,4 +76,17 @@ describe('nginx deployment ingress config', () => {
       expect(readme).not.toContain(key)
     }
   })
+
+  test('test workflow covers backend frontend and compose checks without env decryption', () => {
+    const workflow = readRepoFile('.github/workflows/test.yml')
+
+    expect(workflow).not.toContain('paths-ignore:')
+    expect(workflow).not.toContain('make decrypt_env env=dev')
+    expect(workflow).toContain('make test')
+    expect(workflow).toContain('bun test')
+    expect(workflow).toContain('bun run type-check')
+    expect(workflow).toContain('bun run build')
+    expect(workflow).toContain('docker compose config --quiet')
+    expect(workflow).toContain('docker compose -f docker-compose.dev.yaml config --quiet')
+  })
 })

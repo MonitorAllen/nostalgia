@@ -1,56 +1,65 @@
-name: Run unit tests
+name: Run tests
 
 on:
   push:
     branches: [ master ]
-    paths-ignore:
-      - 'web/**'
   pull_request:
     branches: [ master ]
-    paths-ignore:
-      - 'web/**'
 
 jobs:
-  test:
+  backend:
     name: Test
     runs-on: ubuntu-latest
 
     env:
-      ENV_PASSPHRASE: ${{ secrets.ENV_PASSPHRASE }}
+      ENVIRONMENT: test
+      ALLOWED_ORIGINS: http://localhost
+      DB_DRIVER: postgres
+      DB_USER: root
+      DB_PASSWORD: secret
+      DB_SOURCE: postgresql://root:secret@localhost:5432/nostalgia?sslmode=disable
+      DB_URL: postgresql://root:secret@localhost:5432/nostalgia?sslmode=disable
+      MIGRATION_URL: file://db/migration
+      RESOURCE_PATH: ./resources
+      DOMAIN: http://localhost:8080
+      HTTP_SERVER_ADDRESS: 0.0.0.0:8080
+      GRPC_GATEWAY_ADDRESS: 0.0.0.0:9091
+      GRPC_SERVER_ADDRESS: 0.0.0.0:9090
+      TOKEN_SYMMETRIC_KEY: 12345678901234567890123456789012
+      SETUP_TOKEN: ci-setup-token
+      ACCESS_TOKEN_DURATION: 15m
+      REFRESH_TOKEN_DURATION: 24h
+      REDIS_ADDRESS: localhost:6379
+      EMAIL_SENDER_NAME: Nostalgia CI
+      EMAIL_SENDER_ADDRESS: noreply@example.com
+      EMAIL_SENDER_PASSWORD: ci-mail-password
+      UPLOAD_FILE_SIZE_LIMIT: "5242880"
+      UPLOAD_FILE_ALLOWED_MIME: image/jpeg,image/png
+      HTTP_PROXY_ADDR: ""
 
-    # Service containers to run with `container-job`
     services:
-      # Label used to access the service container
       postgres:
-        # Docker Hub image
         image: groonga/pgroonga:3.2.3-alpine-16
-        # Provide the password for postgres
         env:
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: secret
           POSTGRES_DB: nostalgia
-        # Set health checks to wait until postgres has started
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U root -d nostalgia"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          # Maps tcp port 5432 on service container to the host
           - 5432:5432
+
     steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.24.x
-        id: go
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-
-      - name: Decrypt ENV
-        run: |
-          make decrypt_env env=dev
 
       - name: Install golang-migrate
         run: |
@@ -59,9 +68,51 @@ jobs:
           which migrate
 
       - name: Run migrations
-        env:
-          DB_URL: postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/nostalgia?sslmode=disable
         run: make migrateup
 
-      - name: Test
+      - name: Run backend tests
         run: make test
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        working-directory: web/frontend
+        run: bun install --frozen-lockfile
+
+      - name: Run frontend tests
+        working-directory: web/frontend
+        run: bun test
+
+      - name: Run type check
+        working-directory: web/frontend
+        run: bun run type-check
+
+      - name: Build frontend
+        working-directory: web/frontend
+        run: bun run build
+
+  compose-config:
+    name: Compose Config
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Prepare compose environment
+        run: cp .env.example .env
+
+      - name: Validate production compose config
+        run: docker compose config --quiet
+
+      - name: Validate development compose config
+        run: docker compose -f docker-compose.dev.yaml config --quiet
