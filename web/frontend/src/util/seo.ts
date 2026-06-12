@@ -212,6 +212,61 @@ export function buildRouteSeoMetadata(route: RouteSeoInput, options: BuildSeoOpt
   }
 }
 
+export function buildCategorySeoMetadata(
+  categoryId: number,
+  categoryName: string,
+  options: BuildSeoOptions = {}
+): SeoMetadata {
+  const siteOrigin = resolveSiteOrigin(options.siteOrigin || getConfiguredSiteOrigin())
+  const safeName = truncateText(categoryName || '分类', 40)
+  const title = `${safeName} 分类文章 | ${SITE_NAME}`
+  const description = `浏览 Nostalgia 中 ${safeName} 分类下的技术文章与项目实践。`
+  const canonicalPath = `/category/${categoryId}`
+  const canonicalUrl = canonicalFromPath(canonicalPath, siteOrigin)
+
+  return {
+    title,
+    description,
+    canonicalPath,
+    canonicalUrl,
+    robots: 'index,follow',
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: canonicalUrl
+    },
+    twitterCard: 'summary'
+  }
+}
+
+export function buildSearchSeoMetadata(keyword: string, options: BuildSeoOptions = {}): SeoMetadata {
+  const siteOrigin = resolveSiteOrigin(options.siteOrigin || getConfiguredSiteOrigin())
+  const safeKeyword = truncateText(keyword || '全部', 48)
+  const hasKeyword = safeKeyword !== '全部'
+  const title = hasKeyword ? `${safeKeyword} 搜索结果 | ${SITE_NAME}` : `搜索文章 | ${SITE_NAME}`
+  const description = hasKeyword
+    ? `在 Nostalgia 中搜索 ${safeKeyword} 相关的技术文章。`
+    : '搜索 Nostalgia 公开文章，按关键词查找技术笔记与项目实践。'
+  const canonicalPath = hasKeyword ? `/search?q=${encodeURIComponent(safeKeyword)}` : '/search'
+  const canonicalUrl = canonicalFromPath(canonicalPath, siteOrigin)
+
+  return {
+    title,
+    description,
+    canonicalPath,
+    canonicalUrl,
+    robots: 'index,follow',
+    openGraph: {
+      type: 'website',
+      title,
+      description,
+      url: canonicalUrl
+    },
+    twitterCard: 'summary'
+  }
+}
+
 export function createSeoHeadDescriptors(metadata: SeoMetadata): SeoHeadDescriptor[] {
   const canonicalUrl =
     metadata.canonicalUrl ||

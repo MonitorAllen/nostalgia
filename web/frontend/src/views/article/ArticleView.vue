@@ -57,6 +57,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { sanitizeHtml } from '@/util/sanitizeHtml'
 import { shouldRenderCommentEditor } from '@/components/article/commentEditorGate'
+import { applySeoMetadata, buildArticleSeoMetadata } from '@/util/seo'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -395,6 +396,7 @@ onMounted(async () => {
       }
 
       article.value = articleRes.data.article
+      applySeoMetadata(buildArticleSeoMetadata(article.value))
       checkOutdated(article.value.check_outdated, article.value.last_updated)
 
       const commentRes = await listComments({ articleId: articleId.value })

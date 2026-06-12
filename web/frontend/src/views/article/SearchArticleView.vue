@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import ArticleList from '@/components/article/ArticleList.vue'
 import ArchiveTrail from '@/components/ui/ArchiveTrail.vue'
+import { applySeoMetadata, buildSearchSeoMetadata } from '@/util/seo'
 
 const route = useRoute()
 const keyword = computed(() => (route.query.q as string) || '')
 const items = computed(() => [{ label: '搜索结果' }, { label: keyword.value || '全部' }])
+
+watchEffect(() => {
+  applySeoMetadata(buildSearchSeoMetadata(keyword.value))
+})
 </script>
 
 <template>
