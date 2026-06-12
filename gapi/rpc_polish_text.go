@@ -26,15 +26,32 @@ func (server *Server) PolishText(ctx context.Context, req *pb.PolishTextRequest)
 		ArticleExcerpt: req.GetArticleExcerpt(),
 		Locale:         req.GetLocale(),
 	}
-	if err := ai.ValidateRequest(polishReq, server.config.AIPolishMaxInputChars); err != nil {
+
+	cfg := server.runtimeAIPolishConfig()
+	polisher := server.textPolisher
+	if polisher == nil {
+		var resolveErr error
+		cfg, resolveErr = server.resolveAIPolishConfig(ctx)
+		if resolveErr != nil {
+			return nil, status.Error(codes.Internal, "failed to load AI config")
+		}
+	}
+
+	if err := ai.ValidateRequest(polishReq, cfg.MaxInputChars); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid AI polish request")
 	}
 
-	if server.textPolisher == nil {
+	if polisher == nil {
+		if !cfg.usable() {
+			return nil, status.Error(codes.FailedPrecondition, "AI 润色尚未配置")
+		}
+		polisher = ai.NewOpenAICompatiblePolisher(cfg.toRuntimeConfig(server.config))
+	}
+	if polisher == nil {
 		return nil, status.Error(codes.FailedPrecondition, "AI 润色尚未配置")
 	}
 
-	result, err := server.textPolisher.Polish(ctx, polishReq)
+	result, err := polisher.Polish(ctx, polishReq)
 	if err != nil {
 		return nil, mapAIPolishError(err)
 	}

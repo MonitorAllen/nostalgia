@@ -435,6 +435,21 @@ func (mr *MockStoreMockRecorder) DeleteCommentsByArticleID(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).DeleteCommentsByArticleID), arg0, arg1)
 }
 
+// GetAIProviderConfig mocks base method.
+func (m *MockStore) GetAIProviderConfig(arg0 context.Context, arg1 string) (db.AiProviderConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAIProviderConfig", arg0, arg1)
+	ret0, _ := ret[0].(db.AiProviderConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAIProviderConfig indicates an expected call of GetAIProviderConfig.
+func (mr *MockStoreMockRecorder) GetAIProviderConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAIProviderConfig", reflect.TypeOf((*MockStore)(nil).GetAIProviderConfig), arg0, arg1)
+}
+
 // GetArticle mocks base method.
 func (m *MockStore) GetArticle(arg0 context.Context, arg1 uuid.UUID) (db.GetArticleRow, error) {
 	m.ctrl.T.Helper()
@@ -894,6 +909,21 @@ func (m *MockStore) UpdateVerifyEmail(arg0 context.Context, arg1 db.UpdateVerify
 func (mr *MockStoreMockRecorder) UpdateVerifyEmail(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVerifyEmail", reflect.TypeOf((*MockStore)(nil).UpdateVerifyEmail), arg0, arg1)
+}
+
+// UpsertAIProviderConfig mocks base method.
+func (m *MockStore) UpsertAIProviderConfig(arg0 context.Context, arg1 db.UpsertAIProviderConfigParams) (db.AiProviderConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertAIProviderConfig", arg0, arg1)
+	ret0, _ := ret[0].(db.AiProviderConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertAIProviderConfig indicates an expected call of UpsertAIProviderConfig.
+func (mr *MockStoreMockRecorder) UpsertAIProviderConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertAIProviderConfig", reflect.TypeOf((*MockStore)(nil).UpsertAIProviderConfig), arg0, arg1)
 }
 
 // VerifyEmailTx mocks base method.

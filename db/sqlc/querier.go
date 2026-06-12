@@ -34,6 +34,7 @@ type Querier interface {
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
+	GetAIProviderConfig(ctx context.Context, purpose string) (AiProviderConfig, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error)
 	GetArticleBySlug(ctx context.Context, slug pgtype.Text) (GetArticleBySlugRow, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (GetArticleForUpdateRow, error)
@@ -62,6 +63,7 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
+	UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProviderConfigParams) (AiProviderConfig, error)
 }
 
 var _ Querier = (*Queries)(nil)

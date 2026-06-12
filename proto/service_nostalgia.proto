@@ -112,6 +112,17 @@ service Nostalgia {
       tags: "AI";
     };
   }
+  rpc UpdateAIConfig (UpdateAIConfigRequest) returns (GetAIConfigResponse) {
+    option (google.api.http) = {
+      patch: "/v1/ai/config"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update encrypted runtime AI provider configuration";
+      summary: "update AI config";
+      tags: "AI";
+    };
+  }
   rpc CreateCategory (CreateCategoryRequest) returns (CreateCategoryResponse) {
     option (google.api.http) = {
       post: "/v1/categories"

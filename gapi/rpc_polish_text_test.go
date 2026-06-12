@@ -2,15 +2,21 @@ package gapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	mockdb "github.com/MonitorAllen/nostalgia/db/mock"
+	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/internal/ai"
+	"github.com/MonitorAllen/nostalgia/internal/secrets"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/golang/mock/gomock"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,12 +37,30 @@ func (polisher *fakeTextPolisher) Polish(ctx context.Context, req ai.PolishReque
 }
 
 func newPolishTextTestServer(t *testing.T, polisher ai.TextPolisher) *Server {
-	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
-	store := mockdb.NewMockStore(ctrl)
-	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	server := newTestServer(t, nil, nil, nil)
 	server.textPolisher = polisher
 	return server
+}
+
+func encryptTestAIKey(t *testing.T, server *Server, apiKey string) string {
+	ciphertext, err := secrets.EncryptString(apiKey, server.config.TokenSymmetricKey, "nostalgia:ai-polish-api-key")
+	require.NoError(t, err)
+	return ciphertext
+}
+
+func testAIConfigRow(t *testing.T, server *Server, baseURL string, apiKey string) db.AiProviderConfig {
+	return db.AiProviderConfig{
+		Purpose:          "ai_polish",
+		Provider:         "openai_compatible",
+		BaseUrl:          baseURL,
+		Model:            "writer-model",
+		ApiKeyCiphertext: encryptTestAIKey(t, server, apiKey),
+		TimeoutMs:        int32((2 * time.Second) / time.Millisecond),
+		MaxInputChars:    6000,
+		MaxContextChars:  4000,
+		MaxSuggestions:   3,
+		Enabled:          true,
+	}
 }
 
 func TestPolishTextRequiresAdmin(t *testing.T) {
@@ -164,6 +188,188 @@ func TestGetAIConfigMasksProviderSecret(t *testing.T) {
 	require.Equal(t, int32(5000), resp.GetMaxContextChars())
 	require.Equal(t, int32(2), resp.GetMaxSuggestions())
 	require.NotContains(t, resp.String(), "secret-key")
+}
+
+func TestGetAIConfigUsesDatabaseConfigAndMasksSecret(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	row := testAIConfigRow(t, server, "https://db-ai.example.com/v1", "database-secret")
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(row, nil)
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	resp, err := server.GetAIConfig(ctx, &pb.GetAIConfigRequest{})
+
+	require.NoError(t, err)
+	require.Equal(t, "openai_compatible", resp.GetProvider())
+	require.Equal(t, "https://db-ai.example.com/v1", resp.GetBaseUrl())
+	require.Equal(t, "writer-model", resp.GetModel())
+	require.True(t, resp.GetApiKeyConfigured())
+	require.True(t, resp.GetEnabled())
+	require.Equal(t, "2s", resp.GetTimeout())
+	require.Equal(t, "database", resp.GetSource())
+	require.NotContains(t, resp.String(), "database-secret")
+}
+
+func TestGetAIConfigTreatsUndecryptableDatabaseSecretAsUnconfigured(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(db.AiProviderConfig{
+			Purpose:          "ai_polish",
+			Provider:         "openai_compatible",
+			BaseUrl:          "https://db-ai.example.com/v1",
+			Model:            "writer-model",
+			ApiKeyCiphertext: "v1:invalid:invalid",
+			TimeoutMs:        int32((2 * time.Second) / time.Millisecond),
+			MaxInputChars:    6000,
+			MaxContextChars:  4000,
+			MaxSuggestions:   3,
+			Enabled:          true,
+		}, nil)
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	resp, err := server.GetAIConfig(ctx, &pb.GetAIConfigRequest{})
+
+	require.NoError(t, err)
+	require.False(t, resp.GetApiKeyConfigured())
+	require.False(t, resp.GetEnabled())
+	require.Equal(t, "database", resp.GetSource())
+}
+
+func TestUpdateAIConfigStoresEncryptedSecretAndMasksResponse(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(db.AiProviderConfig{}, pgx.ErrNoRows)
+	store.EXPECT().
+		UpsertAIProviderConfig(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, arg db.UpsertAIProviderConfigParams) (db.AiProviderConfig, error) {
+			require.Equal(t, "ai_polish", arg.Purpose)
+			require.Equal(t, "openai_compatible", arg.Provider)
+			require.Equal(t, "https://ai.example.com/v1", arg.BaseUrl)
+			require.Equal(t, "writer-model", arg.Model)
+			require.Equal(t, int32(45000), arg.TimeoutMs)
+			require.Equal(t, int32(7000), arg.MaxInputChars)
+			require.Equal(t, int32(5000), arg.MaxContextChars)
+			require.Equal(t, int32(2), arg.MaxSuggestions)
+			require.True(t, arg.Enabled)
+			require.True(t, arg.UpdatedBy.Valid)
+			require.NotEmpty(t, arg.ApiKeyCiphertext)
+			require.NotContains(t, arg.ApiKeyCiphertext, "new-secret")
+
+			plaintext, err := secrets.DecryptString(arg.ApiKeyCiphertext, server.config.TokenSymmetricKey, "nostalgia:ai-polish-api-key")
+			require.NoError(t, err)
+			require.Equal(t, "new-secret", plaintext)
+
+			return db.AiProviderConfig{
+				Purpose:          arg.Purpose,
+				Provider:         arg.Provider,
+				BaseUrl:          arg.BaseUrl,
+				Model:            arg.Model,
+				ApiKeyCiphertext: arg.ApiKeyCiphertext,
+				TimeoutMs:        arg.TimeoutMs,
+				MaxInputChars:    arg.MaxInputChars,
+				MaxContextChars:  arg.MaxContextChars,
+				MaxSuggestions:   arg.MaxSuggestions,
+				Enabled:          arg.Enabled,
+				UpdatedBy:        arg.UpdatedBy,
+			}, nil
+		})
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	resp, err := server.UpdateAIConfig(ctx, &pb.UpdateAIConfigRequest{
+		Provider:        "openai_compatible",
+		BaseUrl:         "https://ai.example.com/v1",
+		Model:           "writer-model",
+		ApiKey:          "new-secret",
+		Timeout:         "45s",
+		MaxInputChars:   7000,
+		MaxContextChars: 5000,
+		MaxSuggestions:  2,
+		Enabled:         true,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "database", resp.GetSource())
+	require.True(t, resp.GetApiKeyConfigured())
+	require.True(t, resp.GetEnabled())
+	require.NotContains(t, resp.String(), "new-secret")
+}
+
+func TestUpdateAIConfigRejectsEnabledConfigWithoutAPIKey(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(db.AiProviderConfig{}, pgx.ErrNoRows)
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	_, err := server.UpdateAIConfig(ctx, &pb.UpdateAIConfigRequest{
+		Provider:        "openai_compatible",
+		BaseUrl:         "https://ai.example.com/v1",
+		Model:           "writer-model",
+		Timeout:         "30s",
+		MaxInputChars:   6000,
+		MaxContextChars: 4000,
+		MaxSuggestions:  3,
+		Enabled:         true,
+	})
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.InvalidArgument, st.Code())
+}
+
+func TestPolishTextUsesDatabaseConfig(t *testing.T) {
+	var gotAuth string
+	var gotModel string
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+
+		var payload struct {
+			Model string `json:"model"`
+		}
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		gotModel = payload.Model
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"suggestions\":[{\"content\":\"新表达\",\"reason\":\"更清楚\"}]}"}}]}`))
+	}))
+	defer provider.Close()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	row := testAIConfigRow(t, server, provider.URL, "database-secret")
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(row, nil)
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	resp, err := server.PolishText(ctx, &pb.PolishTextRequest{
+		Mode:   ai.ModeImprove,
+		Target: ai.TargetContentSelection,
+		Text:   "原始表达",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "Bearer database-secret", gotAuth)
+	require.Equal(t, "writer-model", gotModel)
+	require.Len(t, resp.GetSuggestions(), 1)
+	require.Equal(t, "新表达", resp.GetSuggestions()[0].GetContent())
 }
 
 func TestGetAIConfigRequiresAdmin(t *testing.T) {

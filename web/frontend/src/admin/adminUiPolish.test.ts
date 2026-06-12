@@ -60,7 +60,12 @@ describe('admin UI polish contracts', () => {
     expect(routerSource).toContain("name: 'adminAiSettings'")
     expect(pageSource).toContain('AI 提供商')
     expect(pageSource).toContain('getAdminAIConfig')
+    expect(pageSource).toContain('updateAdminAIConfig')
+    expect(pageSource).toContain('@submit.prevent="saveConfig"')
+    expect(pageSource).toContain('apiKeyDraft')
+    expect(pageSource).toContain('clearApiKey')
     expect(apiSource).toContain('getAdminAIConfig')
+    expect(apiSource).toContain('updateAdminAIConfig')
   })
 })
 

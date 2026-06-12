@@ -134,3 +134,16 @@ export interface AdminAIConfigResponse {
   max_suggestions: number
   source: 'runtime_env' | string
 }
+
+export interface AdminAIConfigUpdateRequest {
+  provider: string
+  base_url: string
+  model: string
+  api_key?: string
+  timeout: string
+  max_input_chars: number
+  max_context_chars: number
+  max_suggestions: number
+  enabled: boolean
+  clear_api_key?: boolean
+}

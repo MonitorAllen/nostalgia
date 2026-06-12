@@ -2,9 +2,10 @@ package gapi
 
 import (
 	"context"
-	"strings"
 
 	"github.com/MonitorAllen/nostalgia/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (server *Server) GetAIConfig(ctx context.Context, _ *pb.GetAIConfigRequest) (*pb.GetAIConfigResponse, error) {
@@ -13,21 +14,10 @@ func (server *Server) GetAIConfig(ctx context.Context, _ *pb.GetAIConfigRequest)
 		return nil, unauthenticatedError(err)
 	}
 
-	provider := strings.TrimSpace(server.config.AIPolishProvider)
-	baseURL := strings.TrimSpace(server.config.AIPolishBaseURL)
-	model := strings.TrimSpace(server.config.AIPolishModel)
-	apiKeyConfigured := strings.TrimSpace(server.config.AIPolishAPIKey) != ""
+	cfg, err := server.resolveAIPolishConfig(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to load AI config")
+	}
 
-	return &pb.GetAIConfigResponse{
-		Provider:         provider,
-		BaseUrl:          baseURL,
-		Model:            model,
-		ApiKeyConfigured: apiKeyConfigured,
-		Enabled:          provider != "" && baseURL != "" && model != "" && apiKeyConfigured,
-		Timeout:          server.config.AIPolishTimeout.String(),
-		MaxInputChars:    int32(server.config.AIPolishMaxInputChars),
-		MaxContextChars:  int32(server.config.AIPolishMaxContextChars),
-		MaxSuggestions:   int32(server.config.AIPolishMaxSuggestions),
-		Source:           "runtime_env",
-	}, nil
+	return cfg.toResponse(), nil
 }
