@@ -167,6 +167,54 @@ func TestCountAutomationDraftsToday(t *testing.T) {
 	require.Equal(t, before+1, after)
 }
 
+func TestUpdateAutomationArticleMarksPublished(t *testing.T) {
+	owner := createRandomAdminUser(t)
+	category := createRandomCategory(t)
+	result, err := testStore.CreateAutomationArticleTx(context.Background(), CreateAutomationArticleTxParams{
+		Request: CreateAutomationArticleRequestParams{
+			IdempotencyKey:  "draft-" + uuid.NewString(),
+			RequestHash:     util.RandomString(64),
+			KeyID:           "codex-daily-writer",
+			Status:          "received",
+			Title:           "Automation draft " + util.RandomString(6),
+			SourceTopic:     "Go cache",
+			SourcePrompt:    "Write a practical article about cache invalidation.",
+			GenerationModel: "codex-automation",
+			ClientIp:        "127.0.0.1",
+			UserAgent:       "codex-automation-test",
+		},
+		Article: CreateAutomationArticleDraftParams{
+			ID:            uuid.New(),
+			Title:         "Automation draft title",
+			Summary:       "Automation draft summary",
+			Content:       "<p>Automation draft content</p>",
+			Owner:         owner.ID,
+			CategoryID:    category.ID,
+			Cover:         "",
+			Slug:          pgtype.Text{String: "automation-" + util.RandomString(8), Valid: true},
+			CheckOutdated: true,
+			ReadTime:      "3 min",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "pending_review", result.Article.AutomationStatus)
+
+	updatedArticle, err := testStore.UpdateArticle(context.Background(), UpdateArticleParams{
+		ID: result.Article.ID,
+		IsPublish: pgtype.Bool{
+			Bool:  true,
+			Valid: true,
+		},
+		UpdatedAt: pgtype.Timestamptz{
+			Time:  time.Now(),
+			Valid: true,
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, updatedArticle.IsPublish)
+	require.Equal(t, "published", updatedArticle.AutomationStatus)
+}
+
 func TestGetFirstAdminUser(t *testing.T) {
 	first := createRandomAdminUser(t)
 	time.Sleep(10 * time.Millisecond)

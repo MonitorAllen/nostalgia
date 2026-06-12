@@ -759,7 +759,13 @@ SET title          = COALESCE($1, title),
     slug           = COALESCE($7, slug),
     check_outdated = COALESCE($8, check_outdated),
     last_updated   = COALESCE($9, last_updated),
-    read_time   = COALESCE($10, read_time),
+    read_time      = COALESCE($10, read_time),
+    automation_status = CASE
+        WHEN created_by_automation = true
+             AND COALESCE($4, is_publish) = true
+        THEN 'published'
+        ELSE automation_status
+    END,
     updated_at     = COALESCE($11, updated_at)
 WHERE id = $12
 RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time, created_by_automation, automation_status, automation_request_id

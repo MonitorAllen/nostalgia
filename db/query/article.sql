@@ -154,7 +154,13 @@ SET title          = COALESCE(sqlc.narg(title), title),
     slug           = COALESCE(sqlc.narg(slug), slug),
     check_outdated = COALESCE(sqlc.narg(check_outdated), check_outdated),
     last_updated   = COALESCE(sqlc.narg(last_updated), last_updated),
-    read_time   = COALESCE(sqlc.narg(read_time), read_time),
+    read_time      = COALESCE(sqlc.narg(read_time), read_time),
+    automation_status = CASE
+        WHEN created_by_automation = true
+             AND COALESCE(sqlc.narg(is_publish), is_publish) = true
+        THEN 'published'
+        ELSE automation_status
+    END,
     updated_at     = COALESCE(sqlc.narg(updated_at), updated_at)
 WHERE id = sqlc.arg(id)
 RETURNING *;
