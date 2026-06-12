@@ -109,6 +109,10 @@ func validateRequest(req PolishRequest, maxInputChars int) error {
 	return nil
 }
 
+func ValidateRequest(req PolishRequest, maxInputChars int) error {
+	return validateRequest(req, maxInputChars)
+}
+
 func limitRunes(value string, max int) string {
 	if max <= 0 {
 		return value

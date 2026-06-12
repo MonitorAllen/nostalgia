@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/MonitorAllen/nostalgia/pb";
+
+message PolishTextRequest {
+  string mode = 1;
+  string target = 2;
+  string text = 3;
+  string article_id = 4;
+  string article_title = 5;
+  string article_summary = 6;
+  string article_excerpt = 7;
+  string locale = 8;
+}
+
+message PolishSuggestion {
+  string content = 1;
+  string reason = 2;
+}
+
+message PolishTextResponse {
+  repeated PolishSuggestion suggestions = 1;
+  string mode = 2;
+  string target = 3;
+  string model = 4;
+}

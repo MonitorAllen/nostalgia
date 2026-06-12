@@ -3,6 +3,7 @@ package gapi
 import (
 	"fmt"
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/ai"
 	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/MonitorAllen/nostalgia/token"
@@ -20,6 +21,7 @@ type Server struct {
 	taskDistributor worker.TaskDistributor
 	cache           cache.Cache
 	cacheLoadGroup  singleflight.Group
+	textPolisher    ai.TextPolisher
 }
 
 // NewServer creates a new gRPC server
@@ -34,6 +36,7 @@ func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDi
 		tokenMaker:      tokenMaker,
 		taskDistributor: taskDistributor,
 		cache:           cache,
+		textPolisher:    ai.NewOpenAICompatiblePolisher(config),
 	}
 
 	return server, nil

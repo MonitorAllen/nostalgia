@@ -25,6 +25,7 @@ const (
 	Nostalgia_GetArticle_FullMethodName        = "/pb.Nostalgia/GetArticle"
 	Nostalgia_UpdateArticle_FullMethodName     = "/pb.Nostalgia/UpdateArticle"
 	Nostalgia_UploadFile_FullMethodName        = "/pb.Nostalgia/UploadFile"
+	Nostalgia_PolishText_FullMethodName        = "/pb.Nostalgia/PolishText"
 	Nostalgia_CreateCategory_FullMethodName    = "/pb.Nostalgia/CreateCategory"
 	Nostalgia_DeleteCategory_FullMethodName    = "/pb.Nostalgia/DeleteCategory"
 	Nostalgia_UpdateCategory_FullMethodName    = "/pb.Nostalgia/UpdateCategory"
@@ -42,6 +43,7 @@ type NostalgiaClient interface {
 	GetArticle(ctx context.Context, in *GetArticleRequest, opts ...grpc.CallOption) (*GetArticleResponse, error)
 	UpdateArticle(ctx context.Context, in *UpdateArticleRequest, opts ...grpc.CallOption) (*UpdateArticleResponse, error)
 	UploadFile(ctx context.Context, in *UploadFileRequest, opts ...grpc.CallOption) (*UploadFileResponse, error)
+	PolishText(ctx context.Context, in *PolishTextRequest, opts ...grpc.CallOption) (*PolishTextResponse, error)
 	CreateCategory(ctx context.Context, in *CreateCategoryRequest, opts ...grpc.CallOption) (*CreateCategoryResponse, error)
 	DeleteCategory(ctx context.Context, in *DeleteCategoryRequest, opts ...grpc.CallOption) (*DeleteCategoryResponse, error)
 	UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error)
@@ -117,6 +119,16 @@ func (c *nostalgiaClient) UploadFile(ctx context.Context, in *UploadFileRequest,
 	return out, nil
 }
 
+func (c *nostalgiaClient) PolishText(ctx context.Context, in *PolishTextRequest, opts ...grpc.CallOption) (*PolishTextResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PolishTextResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_PolishText_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *nostalgiaClient) CreateCategory(ctx context.Context, in *CreateCategoryRequest, opts ...grpc.CallOption) (*CreateCategoryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateCategoryResponse)
@@ -177,6 +189,7 @@ type NostalgiaServer interface {
 	GetArticle(context.Context, *GetArticleRequest) (*GetArticleResponse, error)
 	UpdateArticle(context.Context, *UpdateArticleRequest) (*UpdateArticleResponse, error)
 	UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error)
+	PolishText(context.Context, *PolishTextRequest) (*PolishTextResponse, error)
 	CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error)
 	DeleteCategory(context.Context, *DeleteCategoryRequest) (*DeleteCategoryResponse, error)
 	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
@@ -209,6 +222,9 @@ func (UnimplementedNostalgiaServer) UpdateArticle(context.Context, *UpdateArticl
 }
 func (UnimplementedNostalgiaServer) UploadFile(context.Context, *UploadFileRequest) (*UploadFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadFile not implemented")
+}
+func (UnimplementedNostalgiaServer) PolishText(context.Context, *PolishTextRequest) (*PolishTextResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PolishText not implemented")
 }
 func (UnimplementedNostalgiaServer) CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCategory not implemented")
@@ -354,6 +370,24 @@ func _Nostalgia_UploadFile_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Nostalgia_PolishText_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PolishTextRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).PolishText(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_PolishText_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).PolishText(ctx, req.(*PolishTextRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Nostalgia_CreateCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateCategoryRequest)
 	if err := dec(in); err != nil {
@@ -474,6 +508,10 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadFile",
 			Handler:    _Nostalgia_UploadFile_Handler,
+		},
+		{
+			MethodName: "PolishText",
+			Handler:    _Nostalgia_PolishText_Handler,
 		},
 		{
 			MethodName: "CreateCategory",
