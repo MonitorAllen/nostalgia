@@ -32,7 +32,11 @@ const query = reactive({
 })
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / query.limit)))
-const hasArticles = computed(() => articles.value.length > 0)
+const sortAutomationDraftsFirst = (values: AdminArticle[]) =>
+  [...values].sort((left, right) => Number(isAutomationDraft(right)) - Number(isAutomationDraft(left)))
+
+const visibleArticles = computed(() => sortAutomationDraftsFirst(articles.value))
+const hasArticles = computed(() => visibleArticles.value.length > 0)
 const showingFrom = computed(() => (total.value === 0 ? 0 : (query.page - 1) * query.limit + 1))
 const showingTo = computed(() => Math.min(query.page * query.limit, total.value))
 
@@ -163,6 +167,10 @@ const categoryLabel = (article: AdminArticle) => {
   return article.category_name?.trim() || '未分类'
 }
 
+const coverLabel = (article: AdminArticle) => {
+  return article.cover?.trim() || '/images/go.png'
+}
+
 const isActionBusy = (key: string) => activeAction.value === key
 
 onMounted(() => {
@@ -180,9 +188,6 @@ onMounted(() => {
           </h1>
           <AppBadge tone="neutral" class="tabular-nums">共 {{ numberLabel(total) }} 篇</AppBadge>
         </div>
-        <p class="m-0 max-w-2xl text-sm leading-6 text-muted-foreground text-pretty">
-          快速检查文章状态、调整发布节奏，或者进入编辑器继续打磨内容。
-        </p>
       </div>
 
       <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
@@ -194,9 +199,15 @@ onMounted(() => {
             placeholder="搜索文章标题"
             class="min-w-0"
           />
-          <AppButton type="submit" variant="secondary" :disabled="loading">
+          <AppButton
+            type="submit"
+            variant="secondary"
+            size="icon"
+            :disabled="loading"
+            aria-label="搜索文章"
+            title="搜索文章"
+          >
             <Search class="size-4" aria-hidden="true" />
-            搜索
           </AppButton>
         </form>
 
@@ -217,70 +228,85 @@ onMounted(() => {
 
     <section v-else-if="hasArticles" class="space-y-3" aria-label="文章列表">
       <article
-        v-for="article in articles"
+        v-for="article in visibleArticles"
         :key="article.id"
         class="archive-surface rounded-archive p-4 transition duration-200 hover:border-accent/35 hover:bg-surface-raised/70"
       >
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div class="min-w-0 flex-1 space-y-3">
-            <div class="flex flex-wrap items-center gap-2">
-              <AppBadge :tone="article.is_publish ? 'accent' : 'neutral'">
-                {{ article.is_publish ? '已发布' : '草稿' }}
-              </AppBadge>
-              <AppBadge v-if="isAutomationDraft(article)" tone="warning">
-                自动化草稿
-              </AppBadge>
-              <AppBadge tone="neutral">
-                <Folder class="size-3.5" aria-hidden="true" />
-                {{ categoryLabel(article) }}
-              </AppBadge>
-            </div>
-
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="flex min-w-0 flex-1 gap-4">
             <button
               type="button"
-              class="block max-w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              class="group hidden h-28 w-40 shrink-0 overflow-hidden rounded-archive border border-border bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:block"
               @click="editArticle(article.id)"
             >
-              <h2
-                class="m-0 truncate text-lg font-black leading-snug text-foreground transition-colors hover:text-accent"
-                :title="article.title || '无标题文章'"
-              >
-                {{ article.title || '无标题文章' }}
-              </h2>
+              <img
+                :src="coverLabel(article)"
+                :alt="article.title ? `${article.title} 封面` : '文章封面'"
+                class="h-full w-full object-cover transition duration-200 group-hover:scale-[1.03]"
+                loading="lazy"
+              />
             </button>
 
-            <p
-              class="m-0 max-w-3xl text-sm leading-6 text-muted-foreground text-pretty"
-              style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
-            >
-              {{ summaryLabel(article) }}
-            </p>
+            <div class="min-w-0 flex-1 space-y-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <AppBadge :tone="article.is_publish ? 'accent' : 'neutral'">
+                  {{ article.is_publish ? '已发布' : '草稿' }}
+                </AppBadge>
+                <AppBadge v-if="isAutomationDraft(article)" tone="warning">
+                  自动化草稿
+                </AppBadge>
+                <AppBadge tone="neutral">
+                  <Folder class="size-3.5" aria-hidden="true" />
+                  {{ categoryLabel(article) }}
+                </AppBadge>
+              </div>
 
-            <dl class="m-0 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground">
-              <div class="flex items-center gap-1.5">
-                <dt class="sr-only">更新时间</dt>
-                <CalendarDays class="size-3.5" aria-hidden="true" />
-                <dd class="m-0 tabular-nums">{{ formatDate(article.updated_at || article.created_at) }}</dd>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <dt class="sr-only">浏览</dt>
-                <Eye class="size-3.5" aria-hidden="true" />
-                <dd class="m-0 tabular-nums">{{ numberLabel(article.views) }}</dd>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <dt class="sr-only">喜欢</dt>
-                <Heart class="size-3.5" aria-hidden="true" />
-                <dd class="m-0 tabular-nums">{{ numberLabel(article.likes) }}</dd>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <dt class="sr-only">文章编号</dt>
-                <FileText class="size-3.5" aria-hidden="true" />
-                <dd class="m-0 max-w-[14rem] truncate font-mono text-[0.72rem]">{{ article.id }}</dd>
-              </div>
-            </dl>
+              <button
+                type="button"
+                class="block max-w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                @click="editArticle(article.id)"
+              >
+                <h2
+                  class="m-0 truncate text-lg font-black leading-snug text-foreground transition-colors hover:text-accent"
+                  :title="article.title || '无标题文章'"
+                >
+                  {{ article.title || '无标题文章' }}
+                </h2>
+              </button>
+
+              <p
+                class="m-0 max-w-3xl text-sm leading-6 text-muted-foreground text-pretty"
+                style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"
+              >
+                {{ summaryLabel(article) }}
+              </p>
+
+              <dl class="m-0 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground">
+                <div class="flex items-center gap-1.5">
+                  <dt class="sr-only">更新时间</dt>
+                  <CalendarDays class="size-3.5" aria-hidden="true" />
+                  <dd class="m-0 tabular-nums">{{ formatDate(article.updated_at || article.created_at) }}</dd>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <dt class="sr-only">浏览</dt>
+                  <Eye class="size-3.5" aria-hidden="true" />
+                  <dd class="m-0 tabular-nums">{{ numberLabel(article.views) }}</dd>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <dt class="sr-only">喜欢</dt>
+                  <Heart class="size-3.5" aria-hidden="true" />
+                  <dd class="m-0 tabular-nums">{{ numberLabel(article.likes) }}</dd>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <dt class="sr-only">文章编号</dt>
+                  <FileText class="size-3.5" aria-hidden="true" />
+                  <dd class="m-0 max-w-[14rem] truncate font-mono text-[0.72rem]">{{ article.id }}</dd>
+                </div>
+              </dl>
+            </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+          <div class="flex flex-wrap items-center gap-2 lg:justify-end">
             <AppButton variant="secondary" size="sm" @click="editArticle(article.id)">
               <Pencil class="size-4" aria-hidden="true" />
               编辑

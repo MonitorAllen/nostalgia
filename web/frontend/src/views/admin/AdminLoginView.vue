@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Tags } from '@lucide/vue'
 import ArchivePanel from '@/components/ui/ArchivePanel.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -105,8 +106,8 @@ onMounted(async () => {
   <section class="grid min-h-dvh place-items-center px-4 py-10" aria-label="管理员登录">
     <ArchivePanel class="w-full max-w-md" :glass="false">
       <div class="mb-6 flex items-center gap-3">
-        <span class="archive-glass grid size-12 place-items-center rounded-full">
-          <img src="/logo.svg" alt="Nostalgia" class="size-8" />
+        <span class="archive-glass grid size-14 place-items-center rounded-full">
+          <Tags class="size-7 text-accent" aria-hidden="true" />
         </span>
         <div>
           <h1 class="m-0 text-2xl font-black text-balance">管理入口</h1>
