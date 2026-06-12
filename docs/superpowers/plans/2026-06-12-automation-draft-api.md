@@ -43,7 +43,7 @@
 - Create: `internal/automation/signature.go`
 - Create: `internal/automation/signature_test.go`
 
-- [ ] **Step 1: Write failing config tests**
+- [x] **Step 1: Write failing config tests**
 
 Add tests that expect:
 
@@ -63,7 +63,7 @@ go test ./util -run 'TestLoadConfigAutomation|TestConfigExposesAutomation'
 
 Expected: fail because automation config fields do not exist.
 
-- [ ] **Step 2: Implement config fields**
+- [x] **Step 2: Implement config fields**
 
 Add fields to `util.Config`:
 
@@ -82,7 +82,7 @@ configReader.SetDefault("AUTOMATION_SIGNATURE_TTL", 5*time.Minute)
 configReader.SetDefault("AUTOMATION_DAILY_DRAFT_LIMIT", 1)
 ```
 
-- [ ] **Step 3: Write failing HMAC verifier tests**
+- [x] **Step 3: Write failing HMAC verifier tests**
 
 Cover:
 
@@ -100,7 +100,7 @@ go test ./internal/automation
 
 Expected: fail because package does not exist.
 
-- [ ] **Step 4: Implement `internal/automation` verifier**
+- [x] **Step 4: Implement `internal/automation` verifier**
 
 Expose:
 
@@ -127,7 +127,7 @@ func VerifySignature(input SignatureInput) error
 
 Use `hmac.Equal` for comparison and require `v1=` signature prefix.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 
@@ -150,7 +150,7 @@ git commit -m "feat: add automation signature config"
 - Modify generated: `db/sqlc/*`
 - Modify generated: `db/mock/store.go`
 
-- [ ] **Step 1: Write failing database tests**
+- [x] **Step 1: Write failing database tests**
 
 Add tests in `db/sqlc/automation_test.go` that:
 
@@ -168,7 +168,7 @@ go test ./db/sqlc -run 'TestAutomation|TestCreateAutomationArticleTx'
 
 Expected: fail because tables and queries do not exist.
 
-- [ ] **Step 2: Add migration**
+- [x] **Step 2: Add migration**
 
 `000010_add_automation_drafts.up.sql` adds:
 
@@ -203,7 +203,7 @@ ALTER TABLE articles
 
 The down migration drops the foreign key, drops the three article columns, and drops `automation_article_requests`.
 
-- [ ] **Step 3: Add sqlc queries**
+- [x] **Step 3: Add sqlc queries**
 
 Add:
 
@@ -277,7 +277,7 @@ RETURNING *;
 
 Extend `ListAllArticles` SELECT with `created_by_automation`, `automation_status`, and `automation_request_id`.
 
-- [ ] **Step 4: Generate sqlc and mocks**
+- [x] **Step 4: Generate sqlc and mocks**
 
 Run:
 
@@ -286,11 +286,11 @@ make sqlc
 make mock
 ```
 
-- [ ] **Step 5: Implement transaction**
+- [x] **Step 5: Implement transaction**
 
 Add `CreateAutomationArticleTx(ctx, arg)` to `db.Store` and `SQLStore`. It should create the audit row, create the article, mark the request created, and return both rows.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run:
 
@@ -309,7 +309,7 @@ git commit -m "feat: add automation draft persistence"
 - Modify: `worker/processor.go`
 - Modify generated: `worker/mock/distributor.go`
 
-- [ ] **Step 1: Write failing worker tests**
+- [x] **Step 1: Write failing worker tests**
 
 Add `worker/task_notify_automation_draft_test.go` to verify:
 
@@ -325,7 +325,7 @@ go test ./worker -run TestProcessTaskNotifyAutomationDraft
 
 Expected: fail because task does not exist.
 
-- [ ] **Step 2: Implement task payload and distributor**
+- [x] **Step 2: Implement task payload and distributor**
 
 Add:
 
@@ -347,11 +347,11 @@ type PayloadNotifyAutomationDraft struct {
 
 Add `DistributeTaskNotifyAutomationDraft` to `TaskDistributor`.
 
-- [ ] **Step 3: Implement processor**
+- [x] **Step 3: Implement processor**
 
 Register the task in `processor.Start()`. Build email subject/content based on `Kind == "success"` or `Kind == "failure"`.
 
-- [ ] **Step 4: Regenerate mocks, verify, commit**
+- [x] **Step 4: Regenerate mocks, verify, commit**
 
 Run:
 
@@ -372,7 +372,7 @@ git commit -m "feat: notify automation draft review"
 - Modify: `gapi/rpc_update_article.go`
 - Modify: `gapi/rpc_update_article_test.go`
 
-- [ ] **Step 1: Write failing handler tests**
+- [x] **Step 1: Write failing handler tests**
 
 Add tests that cover:
 
@@ -396,7 +396,7 @@ go test ./api -run TestCreateAutomationArticleDraft
 
 Expected: fail because the route and handler do not exist.
 
-- [ ] **Step 2: Register route**
+- [x] **Step 2: Register route**
 
 In `api/server.go`:
 
@@ -404,7 +404,7 @@ In `api/server.go`:
 public.POST("/automation/articles/drafts", server.createAutomationArticleDraft)
 ```
 
-- [ ] **Step 3: Implement handler**
+- [x] **Step 3: Implement handler**
 
 Handler responsibilities:
 
@@ -420,11 +420,11 @@ Handler responsibilities:
 - record authenticated validation failures and enqueue failure notification;
 - return `201` for new draft and `200` for replay.
 
-- [ ] **Step 4: Publish status update**
+- [x] **Step 4: Publish status update**
 
 When an automation-created article is published through existing admin update flow, set `automation_status='published'`.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 
@@ -445,7 +445,7 @@ git commit -m "feat: add signed automation draft endpoint"
 - Modify: `web/frontend/src/views/admin/AdminArticleListView.vue`
 - Add or modify frontend tests under `web/frontend/src/admin` or `web/frontend/src/views/admin`
 
-- [ ] **Step 1: Write failing frontend test**
+- [x] **Step 1: Write failing frontend test**
 
 Add a test that renders or inspects the list view behavior for:
 
@@ -466,7 +466,7 @@ cd web/frontend
 bun test
 ```
 
-- [ ] **Step 2: Extend proto and regenerate**
+- [x] **Step 2: Extend proto and regenerate**
 
 Add to `Article`:
 
@@ -481,11 +481,11 @@ Run:
 make proto
 ```
 
-- [ ] **Step 3: Populate admin list fields**
+- [x] **Step 3: Populate admin list fields**
 
 Update `convertArticle` and related converters to include automation fields from sqlc rows.
 
-- [ ] **Step 4: Update frontend types and badge**
+- [x] **Step 4: Update frontend types and badge**
 
 Add:
 
@@ -505,7 +505,7 @@ const isAutomationDraft = (article: AdminArticle) =>
 
 Render `<AppBadge tone="warning">自动化草稿</AppBadge>` near the existing draft/published badge.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run:
 
@@ -526,7 +526,7 @@ git commit -m "feat: mark automation drafts in admin"
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-06-12-automation-draft-api.md`
 
-- [ ] **Step 1: Update config docs**
+- [x] **Step 1: Update config docs**
 
 Add placeholder variables:
 
@@ -538,7 +538,7 @@ AUTOMATION_DAILY_DRAFT_LIMIT=1
 AUTOMATION_NOTIFY_EMAIL=owner@example.com
 ```
 
-- [ ] **Step 2: Run full verification**
+- [x] **Step 2: Run full verification**
 
 Run:
 
@@ -550,7 +550,7 @@ docker compose -f docker-compose.dev.yaml config --quiet
 git diff --check
 ```
 
-- [ ] **Step 3: Mark plan complete and commit**
+- [x] **Step 3: Mark plan complete and commit**
 
 Mark completed plan checkboxes, then:
 
