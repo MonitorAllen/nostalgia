@@ -102,6 +102,44 @@ func TestConfigExposesRedisDatabaseEnvKeys(t *testing.T) {
 	require.Contains(t, keys, "REDIS_QUEUE_DB")
 }
 
+func TestLoadConfigAutomationOverrides(t *testing.T) {
+	configPath := t.TempDir() + string(os.PathSeparator)
+
+	setConfigEnv(t, map[string]string{
+		"AUTOMATION_HMAC_KEY_ID":       "codex-daily-writer",
+		"AUTOMATION_HMAC_SECRET":       "secret",
+		"AUTOMATION_SIGNATURE_TTL":     "10m",
+		"AUTOMATION_DAILY_DRAFT_LIMIT": "3",
+		"AUTOMATION_NOTIFY_EMAIL":      "owner@example.com",
+	})
+
+	config, err := LoadConfig(configPath)
+	require.NoError(t, err)
+	require.Equal(t, "codex-daily-writer", config.AutomationHMACKeyID)
+	require.Equal(t, "secret", config.AutomationHMACSecret)
+	require.Equal(t, 10*time.Minute, config.AutomationSignatureTTL)
+	require.Equal(t, int64(3), config.AutomationDailyDraftLimit)
+	require.Equal(t, "owner@example.com", config.AutomationNotifyEmail)
+}
+
+func TestLoadConfigAutomationDefaults(t *testing.T) {
+	configPath := t.TempDir() + string(os.PathSeparator)
+
+	config, err := LoadConfig(configPath)
+	require.NoError(t, err)
+	require.Equal(t, 5*time.Minute, config.AutomationSignatureTTL)
+	require.Equal(t, int64(1), config.AutomationDailyDraftLimit)
+}
+
+func TestConfigExposesAutomationEnvKeys(t *testing.T) {
+	keys := configEnvKeys()
+	require.Contains(t, keys, "AUTOMATION_HMAC_KEY_ID")
+	require.Contains(t, keys, "AUTOMATION_HMAC_SECRET")
+	require.Contains(t, keys, "AUTOMATION_SIGNATURE_TTL")
+	require.Contains(t, keys, "AUTOMATION_DAILY_DRAFT_LIMIT")
+	require.Contains(t, keys, "AUTOMATION_NOTIFY_EMAIL")
+}
+
 func setConfigEnv(t *testing.T, values map[string]string) {
 	t.Helper()
 

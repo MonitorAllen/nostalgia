@@ -10,31 +10,36 @@ import (
 )
 
 type Config struct {
-	Environment           string        `mapstructure:"ENVIRONMENT"`
-	AllowedOrigins        []string      `mapstructure:"ALLOWED_ORIGINS"`
-	DBDriver              string        `mapstructure:"DB_DRIVER"`
-	DBUser                string        `mapstructure:"DB_USER"`
-	DBPassword            string        `mapstructure:"DB_PASSWORD"`
-	DBSource              string        `mapstructure:"DB_SOURCE"`
-	MigrationURL          string        `mapstructure:"MIGRATION_URL"`
-	ResourcePath          string        `mapstructure:"RESOURCE_PATH"`
-	Domain                string        `mapstructure:"DOMAIN"`
-	RedisAddress          string        `mapstructure:"REDIS_ADDRESS"`
-	RedisCacheDB          int           `mapstructure:"REDIS_CACHE_DB"`
-	RedisQueueDB          int           `mapstructure:"REDIS_QUEUE_DB"`
-	HTTPServerAddress     string        `mapstructure:"HTTP_SERVER_ADDRESS"`
-	GrpcGatewayAddress    string        `mapstructure:"GRPC_GATEWAY_ADDRESS"`
-	GRPCServerAddress     string        `mapstructure:"GRPC_SERVER_ADDRESS"`
-	TokenSymmetricKey     string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
-	SetupToken            string        `mapstructure:"SETUP_TOKEN"`
-	AccessTokenDuration   time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
-	RefreshTokenDuration  time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
-	EmailSenderName       string        `mapstructure:"EMAIL_SENDER_NAME"`
-	EmailSenderAddress    string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
-	EmailSenderPassword   string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
-	UploadFileSizeLimit   int64         `mapstructure:"UPLOAD_FILE_SIZE_LIMIT"`
-	UploadFileAllowedMime []string      `mapstructure:"UPLOAD_FILE_ALLOWED_MIME"`
-	HTTPProxyAddr         string        `mapstructure:"HTTP_PROXY_ADDR"`
+	Environment               string        `mapstructure:"ENVIRONMENT"`
+	AllowedOrigins            []string      `mapstructure:"ALLOWED_ORIGINS"`
+	DBDriver                  string        `mapstructure:"DB_DRIVER"`
+	DBUser                    string        `mapstructure:"DB_USER"`
+	DBPassword                string        `mapstructure:"DB_PASSWORD"`
+	DBSource                  string        `mapstructure:"DB_SOURCE"`
+	MigrationURL              string        `mapstructure:"MIGRATION_URL"`
+	ResourcePath              string        `mapstructure:"RESOURCE_PATH"`
+	Domain                    string        `mapstructure:"DOMAIN"`
+	RedisAddress              string        `mapstructure:"REDIS_ADDRESS"`
+	RedisCacheDB              int           `mapstructure:"REDIS_CACHE_DB"`
+	RedisQueueDB              int           `mapstructure:"REDIS_QUEUE_DB"`
+	AutomationHMACKeyID       string        `mapstructure:"AUTOMATION_HMAC_KEY_ID"`
+	AutomationHMACSecret      string        `mapstructure:"AUTOMATION_HMAC_SECRET"`
+	AutomationSignatureTTL    time.Duration `mapstructure:"AUTOMATION_SIGNATURE_TTL"`
+	AutomationDailyDraftLimit int64         `mapstructure:"AUTOMATION_DAILY_DRAFT_LIMIT"`
+	AutomationNotifyEmail     string        `mapstructure:"AUTOMATION_NOTIFY_EMAIL"`
+	HTTPServerAddress         string        `mapstructure:"HTTP_SERVER_ADDRESS"`
+	GrpcGatewayAddress        string        `mapstructure:"GRPC_GATEWAY_ADDRESS"`
+	GRPCServerAddress         string        `mapstructure:"GRPC_SERVER_ADDRESS"`
+	TokenSymmetricKey         string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	SetupToken                string        `mapstructure:"SETUP_TOKEN"`
+	AccessTokenDuration       time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RefreshTokenDuration      time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	EmailSenderName           string        `mapstructure:"EMAIL_SENDER_NAME"`
+	EmailSenderAddress        string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
+	EmailSenderPassword       string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
+	UploadFileSizeLimit       int64         `mapstructure:"UPLOAD_FILE_SIZE_LIMIT"`
+	UploadFileAllowedMime     []string      `mapstructure:"UPLOAD_FILE_ALLOWED_MIME"`
+	HTTPProxyAddr             string        `mapstructure:"HTTP_PROXY_ADDR"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
@@ -43,6 +48,8 @@ func LoadConfig(path string) (config Config, err error) {
 	configReader.AutomaticEnv()
 	configReader.SetDefault("REDIS_CACHE_DB", 0)
 	configReader.SetDefault("REDIS_QUEUE_DB", 1)
+	configReader.SetDefault("AUTOMATION_SIGNATURE_TTL", 5*time.Minute)
+	configReader.SetDefault("AUTOMATION_DAILY_DRAFT_LIMIT", 1)
 
 	for _, key := range configEnvKeys() {
 		if bindErr := configReader.BindEnv(key); bindErr != nil {
