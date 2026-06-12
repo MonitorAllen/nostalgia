@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { CalendarDays, Eye, FileText, Folder, Heart, Pencil, Plus, Search, Trash2 } from '@lucide/vue'
+import { CalendarDays, Eye, Folder, Heart, Pencil, Plus, Search, Trash2 } from '@lucide/vue'
 import { isAutomationDraft } from '@/admin/articleAutomation'
 import type { AdminArticle } from '@/admin/types'
 import {
@@ -148,6 +148,7 @@ const formatDate = (value?: string) => {
 
   const date = new Date(value)
   if (!Number.isFinite(date.getTime())) return '未记录'
+  if (date.getFullYear() <= 1) return '未记录'
 
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -283,9 +284,9 @@ onMounted(() => {
 
               <dl class="m-0 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-muted-foreground">
                 <div class="flex items-center gap-1.5">
-                  <dt class="sr-only">更新时间</dt>
+                  <dt class="sr-only">创建时间</dt>
                   <CalendarDays class="size-3.5" aria-hidden="true" />
-                  <dd class="m-0 tabular-nums">{{ formatDate(article.updated_at || article.created_at) }}</dd>
+                  <dd class="m-0 tabular-nums">{{ formatDate(article.created_at) }}</dd>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <dt class="sr-only">浏览</dt>
@@ -296,11 +297,6 @@ onMounted(() => {
                   <dt class="sr-only">喜欢</dt>
                   <Heart class="size-3.5" aria-hidden="true" />
                   <dd class="m-0 tabular-nums">{{ numberLabel(article.likes) }}</dd>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <dt class="sr-only">文章编号</dt>
-                  <FileText class="size-3.5" aria-hidden="true" />
-                  <dd class="m-0 max-w-[14rem] truncate font-mono text-[0.72rem]">{{ article.id }}</dd>
                 </div>
               </dl>
             </div>

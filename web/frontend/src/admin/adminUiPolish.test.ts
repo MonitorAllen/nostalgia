@@ -37,11 +37,19 @@ describe('admin UI polish contracts', () => {
     expect(source).toContain('coverLabel')
     expect(source).toContain(':src="coverLabel(article)"')
     expect(source).toContain('aria-label="搜索文章"')
+    expect(source).toContain('创建时间')
+    expect(source).toContain('formatDate(article.created_at)')
+    expect(source).toContain('date.getFullYear() <= 1')
+    expect(source).not.toContain('updated_at || article.created_at')
+    expect(source).not.toContain('文章编号')
+    expect(source).not.toContain('<FileText')
+    expect(source).not.toContain('{{ article.id }}')
     expect(source).not.toContain('快速检查文章状态、调整发布节奏')
   })
 
   test('editor moves title into settings and exposes article preview modal', () => {
     const source = readSource('views/admin/AdminArticleEditorView.vue')
+    const configSource = readSource('admin/editor/adminEditorConfig.ts')
 
     expect(source).toContain('previewOpen')
     expect(source).toContain('openPreview')
@@ -49,6 +57,12 @@ describe('admin UI polish contracts', () => {
     expect(source).toContain('文章预览')
     expect(source).toContain('实际阅读效果')
     expect(source).toContain('aria-label="文章标题"')
+    expect(source).toContain("classList.add('reading-prose', 'ck-content')")
+    expect(configSource).toContain('GeneralHtmlSupport')
+    expect(configSource).toContain('htmlSupport')
+    expect(configSource).toContain('styles: true')
+    expect(configSource).toContain('attributes: true')
+    expect(configSource).toContain('classes: true')
     expect(source).not.toContain('class="h-12 rounded-archive text-base font-black sm:text-lg"')
   })
 

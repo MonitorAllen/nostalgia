@@ -314,7 +314,7 @@ const editorConfig = computed<EditorConfig>(() => ({
 }))
 
 const onEditorReady = (readyEditor: ClassicEditor) => {
-  readyEditor.ui.view.editable.element?.classList.add('reading-prose')
+  readyEditor.ui.view.editable.element?.classList.add('reading-prose', 'ck-content')
   editorInstance.value = readyEditor
 }
 
