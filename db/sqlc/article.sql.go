@@ -74,7 +74,7 @@ INSERT INTO articles (id,
                       category_id,
                       cover)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time
+RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time, created_by_automation, automation_status, automation_request_id
 `
 
 type CreateArticleParams struct {
@@ -118,6 +118,100 @@ func (q *Queries) CreateArticle(ctx context.Context, arg CreateArticleParams) (A
 		&i.LastUpdated,
 		&i.CheckOutdated,
 		&i.ReadTime,
+		&i.CreatedByAutomation,
+		&i.AutomationStatus,
+		&i.AutomationRequestID,
+	)
+	return i, err
+}
+
+const createAutomationArticle = `-- name: CreateAutomationArticle :one
+INSERT INTO articles (
+  id,
+  title,
+  summary,
+  content,
+  is_publish,
+  owner,
+  category_id,
+  cover,
+  slug,
+  check_outdated,
+  last_updated,
+  read_time,
+  created_by_automation,
+  automation_status,
+  automation_request_id
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  false,
+  $5,
+  $6,
+  $7,
+  $8,
+  $9,
+  now(),
+  $10,
+  true,
+  'pending_review',
+  $11
+)
+RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time, created_by_automation, automation_status, automation_request_id
+`
+
+type CreateAutomationArticleParams struct {
+	ID                  uuid.UUID   `json:"id"`
+	Title               string      `json:"title"`
+	Summary             string      `json:"summary"`
+	Content             string      `json:"content"`
+	Owner               uuid.UUID   `json:"owner"`
+	CategoryID          int64       `json:"category_id"`
+	Cover               string      `json:"cover"`
+	Slug                pgtype.Text `json:"slug"`
+	CheckOutdated       bool        `json:"check_outdated"`
+	ReadTime            string      `json:"read_time"`
+	AutomationRequestID pgtype.Int8 `json:"automation_request_id"`
+}
+
+func (q *Queries) CreateAutomationArticle(ctx context.Context, arg CreateAutomationArticleParams) (Article, error) {
+	row := q.db.QueryRow(ctx, createAutomationArticle,
+		arg.ID,
+		arg.Title,
+		arg.Summary,
+		arg.Content,
+		arg.Owner,
+		arg.CategoryID,
+		arg.Cover,
+		arg.Slug,
+		arg.CheckOutdated,
+		arg.ReadTime,
+		arg.AutomationRequestID,
+	)
+	var i Article
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Summary,
+		&i.Content,
+		&i.Views,
+		&i.Likes,
+		&i.IsPublish,
+		&i.Owner,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.CategoryID,
+		&i.Slug,
+		&i.Cover,
+		&i.LastUpdated,
+		&i.CheckOutdated,
+		&i.ReadTime,
+		&i.CreatedByAutomation,
+		&i.AutomationStatus,
+		&i.AutomationRequestID,
 	)
 	return i, err
 }
@@ -365,6 +459,9 @@ SELECT a.id,
        a.last_updated,
        a.read_time,
        owner,
+       a.created_by_automation,
+       a.automation_status,
+       a.automation_request_id,
        a.created_at,
        a.updated_at,
        deleted_at,
@@ -381,22 +478,25 @@ type ListAllArticlesParams struct {
 }
 
 type ListAllArticlesRow struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	Summary       string      `json:"summary"`
-	Views         int32       `json:"views"`
-	Likes         int32       `json:"likes"`
-	IsPublish     bool        `json:"is_publish"`
-	Cover         string      `json:"cover"`
-	Slug          pgtype.Text `json:"slug"`
-	CheckOutdated bool        `json:"check_outdated"`
-	LastUpdated   time.Time   `json:"last_updated"`
-	ReadTime      string      `json:"read_time"`
-	Owner         uuid.UUID   `json:"owner"`
-	CreatedAt     time.Time   `json:"created_at"`
-	UpdatedAt     time.Time   `json:"updated_at"`
-	DeletedAt     time.Time   `json:"deleted_at"`
-	CategoryName  pgtype.Text `json:"category_name"`
+	ID                  uuid.UUID   `json:"id"`
+	Title               string      `json:"title"`
+	Summary             string      `json:"summary"`
+	Views               int32       `json:"views"`
+	Likes               int32       `json:"likes"`
+	IsPublish           bool        `json:"is_publish"`
+	Cover               string      `json:"cover"`
+	Slug                pgtype.Text `json:"slug"`
+	CheckOutdated       bool        `json:"check_outdated"`
+	LastUpdated         time.Time   `json:"last_updated"`
+	ReadTime            string      `json:"read_time"`
+	Owner               uuid.UUID   `json:"owner"`
+	CreatedByAutomation bool        `json:"created_by_automation"`
+	AutomationStatus    string      `json:"automation_status"`
+	AutomationRequestID pgtype.Int8 `json:"automation_request_id"`
+	CreatedAt           time.Time   `json:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at"`
+	DeletedAt           time.Time   `json:"deleted_at"`
+	CategoryName        pgtype.Text `json:"category_name"`
 }
 
 func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error) {
@@ -421,6 +521,9 @@ func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams
 			&i.LastUpdated,
 			&i.ReadTime,
 			&i.Owner,
+			&i.CreatedByAutomation,
+			&i.AutomationStatus,
+			&i.AutomationRequestID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -659,7 +762,7 @@ SET title          = COALESCE($1, title),
     read_time   = COALESCE($10, read_time),
     updated_at     = COALESCE($11, updated_at)
 WHERE id = $12
-RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time
+RETURNING id, title, summary, content, views, likes, is_publish, owner, created_at, updated_at, deleted_at, category_id, slug, cover, last_updated, check_outdated, read_time, created_by_automation, automation_status, automation_request_id
 `
 
 type UpdateArticleParams struct {
@@ -711,6 +814,9 @@ func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) (A
 		&i.LastUpdated,
 		&i.CheckOutdated,
 		&i.ReadTime,
+		&i.CreatedByAutomation,
+		&i.AutomationStatus,
+		&i.AutomationRequestID,
 	)
 	return i, err
 }

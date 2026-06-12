@@ -112,6 +112,21 @@ func (mr *MockStoreMockRecorder) CountArticlesByCategoryID(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountArticlesByCategoryID", reflect.TypeOf((*MockStore)(nil).CountArticlesByCategoryID), arg0, arg1)
 }
 
+// CountAutomationDraftsToday mocks base method.
+func (m *MockStore) CountAutomationDraftsToday(arg0 context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountAutomationDraftsToday", arg0)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountAutomationDraftsToday indicates an expected call of CountAutomationDraftsToday.
+func (mr *MockStoreMockRecorder) CountAutomationDraftsToday(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAutomationDraftsToday", reflect.TypeOf((*MockStore)(nil).CountAutomationDraftsToday), arg0)
+}
+
 // CountCategories mocks base method.
 func (m *MockStore) CountCategories(arg0 context.Context) (int64, error) {
 	m.ctrl.T.Helper()
@@ -155,6 +170,51 @@ func (m *MockStore) CreateArticle(arg0 context.Context, arg1 db.CreateArticlePar
 func (mr *MockStoreMockRecorder) CreateArticle(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateArticle", reflect.TypeOf((*MockStore)(nil).CreateArticle), arg0, arg1)
+}
+
+// CreateAutomationArticle mocks base method.
+func (m *MockStore) CreateAutomationArticle(arg0 context.Context, arg1 db.CreateAutomationArticleParams) (db.Article, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAutomationArticle", arg0, arg1)
+	ret0, _ := ret[0].(db.Article)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAutomationArticle indicates an expected call of CreateAutomationArticle.
+func (mr *MockStoreMockRecorder) CreateAutomationArticle(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAutomationArticle", reflect.TypeOf((*MockStore)(nil).CreateAutomationArticle), arg0, arg1)
+}
+
+// CreateAutomationArticleRequest mocks base method.
+func (m *MockStore) CreateAutomationArticleRequest(arg0 context.Context, arg1 db.CreateAutomationArticleRequestParams) (db.AutomationArticleRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAutomationArticleRequest", arg0, arg1)
+	ret0, _ := ret[0].(db.AutomationArticleRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAutomationArticleRequest indicates an expected call of CreateAutomationArticleRequest.
+func (mr *MockStoreMockRecorder) CreateAutomationArticleRequest(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAutomationArticleRequest", reflect.TypeOf((*MockStore)(nil).CreateAutomationArticleRequest), arg0, arg1)
+}
+
+// CreateAutomationArticleTx mocks base method.
+func (m *MockStore) CreateAutomationArticleTx(arg0 context.Context, arg1 db.CreateAutomationArticleTxParams) (db.CreateAutomationArticleTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateAutomationArticleTx", arg0, arg1)
+	ret0, _ := ret[0].(db.CreateAutomationArticleTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateAutomationArticleTx indicates an expected call of CreateAutomationArticleTx.
+func (mr *MockStoreMockRecorder) CreateAutomationArticleTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAutomationArticleTx", reflect.TypeOf((*MockStore)(nil).CreateAutomationArticleTx), arg0, arg1)
 }
 
 // CreateCategory mocks base method.
@@ -420,6 +480,21 @@ func (mr *MockStoreMockRecorder) GetArticleForUpdate(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArticleForUpdate", reflect.TypeOf((*MockStore)(nil).GetArticleForUpdate), arg0, arg1)
 }
 
+// GetAutomationArticleRequestByIdempotencyKey mocks base method.
+func (m *MockStore) GetAutomationArticleRequestByIdempotencyKey(arg0 context.Context, arg1 string) (db.AutomationArticleRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAutomationArticleRequestByIdempotencyKey", arg0, arg1)
+	ret0, _ := ret[0].(db.AutomationArticleRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAutomationArticleRequestByIdempotencyKey indicates an expected call of GetAutomationArticleRequestByIdempotencyKey.
+func (mr *MockStoreMockRecorder) GetAutomationArticleRequestByIdempotencyKey(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAutomationArticleRequestByIdempotencyKey", reflect.TypeOf((*MockStore)(nil).GetAutomationArticleRequestByIdempotencyKey), arg0, arg1)
+}
+
 // GetCategory mocks base method.
 func (m *MockStore) GetCategory(arg0 context.Context, arg1 int64) (db.Category, error) {
 	m.ctrl.T.Helper()
@@ -463,6 +538,21 @@ func (m *MockStore) GetComment(arg0 context.Context, arg1 int64) (db.Comment, er
 func (mr *MockStoreMockRecorder) GetComment(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComment", reflect.TypeOf((*MockStore)(nil).GetComment), arg0, arg1)
+}
+
+// GetFirstAdminUser mocks base method.
+func (m *MockStore) GetFirstAdminUser(arg0 context.Context) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFirstAdminUser", arg0)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFirstAdminUser indicates an expected call of GetFirstAdminUser.
+func (mr *MockStoreMockRecorder) GetFirstAdminUser(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFirstAdminUser", reflect.TypeOf((*MockStore)(nil).GetFirstAdminUser), arg0)
 }
 
 // GetSession mocks base method.
@@ -626,6 +716,21 @@ func (m *MockStore) ListCommentsByArticleID(arg0 context.Context, arg1 uuid.UUID
 func (mr *MockStoreMockRecorder) ListCommentsByArticleID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).ListCommentsByArticleID), arg0, arg1)
+}
+
+// MarkAutomationArticleRequestCreated mocks base method.
+func (m *MockStore) MarkAutomationArticleRequestCreated(arg0 context.Context, arg1 db.MarkAutomationArticleRequestCreatedParams) (db.AutomationArticleRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkAutomationArticleRequestCreated", arg0, arg1)
+	ret0, _ := ret[0].(db.AutomationArticleRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarkAutomationArticleRequestCreated indicates an expected call of MarkAutomationArticleRequestCreated.
+func (mr *MockStoreMockRecorder) MarkAutomationArticleRequestCreated(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkAutomationArticleRequestCreated", reflect.TypeOf((*MockStore)(nil).MarkAutomationArticleRequestCreated), arg0, arg1)
 }
 
 // Ping mocks base method.
