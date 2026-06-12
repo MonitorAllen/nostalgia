@@ -7,6 +7,7 @@ import (
 
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
@@ -48,13 +49,20 @@ func createRandomAutomationArticleRequest(t *testing.T, status string) Automatio
 	return request
 }
 
-func createRandomAdminUser(t *testing.T) User {
+func getOrCreateAdminUser(t *testing.T) User {
 	t.Helper()
+
+	user, err := testStore.GetFirstAdminUser(context.Background())
+	if err == nil {
+		require.Equal(t, "admin", user.Role)
+		return user
+	}
+	require.ErrorIs(t, err, pgx.ErrNoRows)
 
 	hashPassword, err := util.HashPassword(util.RandomString(8))
 	require.NoError(t, err)
 
-	user, err := testStore.CreateUserWithRole(context.Background(), CreateUserWithRoleParams{
+	user, err = testStore.CreateUserWithRole(context.Background(), CreateUserWithRoleParams{
 		ID:              util.RandUserID(),
 		Username:        util.RandomOwner(),
 		HashedPassword:  hashPassword,
@@ -84,7 +92,7 @@ func TestGetAutomationArticleRequestByIdempotencyKey(t *testing.T) {
 }
 
 func TestCreateAutomationArticleTx(t *testing.T) {
-	owner := createRandomAdminUser(t)
+	owner := getOrCreateAdminUser(t)
 	category := createRandomCategory(t)
 	articleID := uuid.New()
 	slug := "automation-" + util.RandomString(8)
@@ -132,7 +140,7 @@ func TestCountAutomationDraftsToday(t *testing.T) {
 	before, err := testStore.CountAutomationDraftsToday(context.Background())
 	require.NoError(t, err)
 
-	owner := createRandomAdminUser(t)
+	owner := getOrCreateAdminUser(t)
 	category := createRandomCategory(t)
 	_, err = testStore.CreateAutomationArticleTx(context.Background(), CreateAutomationArticleTxParams{
 		Request: CreateAutomationArticleRequestParams{
@@ -168,7 +176,7 @@ func TestCountAutomationDraftsToday(t *testing.T) {
 }
 
 func TestUpdateAutomationArticleMarksPublished(t *testing.T) {
-	owner := createRandomAdminUser(t)
+	owner := getOrCreateAdminUser(t)
 	category := createRandomCategory(t)
 	result, err := testStore.CreateAutomationArticleTx(context.Background(), CreateAutomationArticleTxParams{
 		Request: CreateAutomationArticleRequestParams{
@@ -216,13 +224,10 @@ func TestUpdateAutomationArticleMarksPublished(t *testing.T) {
 }
 
 func TestGetFirstAdminUser(t *testing.T) {
-	first := createRandomAdminUser(t)
-	time.Sleep(10 * time.Millisecond)
-	second := createRandomAdminUser(t)
+	admin := getOrCreateAdminUser(t)
 
 	got, err := testStore.GetFirstAdminUser(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, "admin", got.Role)
-	require.False(t, got.CreatedAt.After(first.CreatedAt))
-	require.False(t, got.CreatedAt.After(second.CreatedAt))
+	require.Equal(t, admin.ID, got.ID)
 }
