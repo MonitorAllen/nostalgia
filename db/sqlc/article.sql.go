@@ -468,7 +468,9 @@ SELECT a.id,
        c.name as category_name
 FROM articles a
          LEFT JOIN categories c on c.id = a.category_id
-ORDER BY a.created_at DESC
+ORDER BY
+    (a.created_by_automation = true AND a.automation_status = 'pending_review' AND a.is_publish = false) DESC,
+    a.created_at DESC
 LIMIT $1 OFFSET $2
 `
 

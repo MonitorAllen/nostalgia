@@ -105,6 +105,61 @@ func TestListArticles(t *testing.T) {
 	require.Equal(t, articles[0].Owner, lastArticle.Owner)
 }
 
+func TestListAllArticlesPrioritizesPendingAutomationDrafts(t *testing.T) {
+	owner := getOrCreateAdminUser(t)
+	category := createRandomCategory(t)
+
+	pendingResult, err := testStore.CreateAutomationArticleTx(context.Background(), CreateAutomationArticleTxParams{
+		Request: CreateAutomationArticleRequestParams{
+			IdempotencyKey:  "draft-" + uuid.NewString(),
+			RequestHash:     util.RandomString(64),
+			KeyID:           "codex-daily-writer",
+			Status:          "received",
+			Title:           "Pending automation " + util.RandomString(6),
+			SourceTopic:     "Go cache",
+			SourcePrompt:    "Write about cache invalidation.",
+			GenerationModel: "codex-automation",
+			ClientIp:        "127.0.0.1",
+			UserAgent:       "codex-automation-test",
+		},
+		Article: CreateAutomationArticleDraftParams{
+			ID:            uuid.New(),
+			Title:         "Pending automation " + util.RandomString(6),
+			Summary:       "Pending automation summary",
+			Content:       "<p>Pending automation content</p>",
+			Owner:         owner.ID,
+			CategoryID:    category.ID,
+			Cover:         "",
+			Slug:          pgtype.Text{String: "pending-automation-" + util.RandomString(8), Valid: true},
+			CheckOutdated: false,
+			ReadTime:      "3 min",
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = testStore.CreateArticle(context.Background(), CreateArticleParams{
+		ID:         uuid.New(),
+		Title:      "Normal article " + util.RandomString(6),
+		Summary:    "Normal article summary",
+		Content:    "<p>Normal article content</p>",
+		IsPublish:  false,
+		Owner:      owner.ID,
+		CategoryID: category.ID,
+	})
+	require.NoError(t, err)
+
+	articles, err := testStore.ListAllArticles(context.Background(), ListAllArticlesParams{
+		Limit:  1,
+		Offset: 0,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, articles, 1)
+	require.Equal(t, pendingResult.Article.ID, articles[0].ID)
+	require.True(t, articles[0].CreatedByAutomation)
+	require.Equal(t, "pending_review", articles[0].AutomationStatus)
+}
+
 func TestUpdateArticleOnlyTitle(t *testing.T) {
 	oldArticle := createRandomArticle(t, false, 1)
 
