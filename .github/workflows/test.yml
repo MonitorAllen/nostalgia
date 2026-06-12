@@ -32,6 +32,11 @@ jobs:
       REDIS_ADDRESS: localhost:6379
       REDIS_CACHE_DB: "0"
       REDIS_QUEUE_DB: "1"
+      AUTOMATION_HMAC_KEY_ID: codex-daily-writer
+      AUTOMATION_HMAC_SECRET: ci-automation-secret
+      AUTOMATION_SIGNATURE_TTL: 5m
+      AUTOMATION_DAILY_DRAFT_LIMIT: "1"
+      AUTOMATION_NOTIFY_EMAIL: noreply@example.com
       EMAIL_SENDER_NAME: Nostalgia CI
       EMAIL_SENDER_ADDRESS: noreply@example.com
       EMAIL_SENDER_PASSWORD: ci-mail-password

@@ -74,6 +74,25 @@ func (mr *MockTaskDistributorMockRecorder) DistributeTaskDelayDeleteCacheDefault
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DistributeTaskDelayDeleteCacheDefault", reflect.TypeOf((*MockTaskDistributor)(nil).DistributeTaskDelayDeleteCacheDefault), varargs...)
 }
 
+// DistributeTaskNotifyAutomationDraft mocks base method.
+func (m *MockTaskDistributor) DistributeTaskNotifyAutomationDraft(arg0 context.Context, arg1 *worker.PayloadNotifyAutomationDraft, arg2 ...asynq.Option) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DistributeTaskNotifyAutomationDraft", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DistributeTaskNotifyAutomationDraft indicates an expected call of DistributeTaskNotifyAutomationDraft.
+func (mr *MockTaskDistributorMockRecorder) DistributeTaskNotifyAutomationDraft(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DistributeTaskNotifyAutomationDraft", reflect.TypeOf((*MockTaskDistributor)(nil).DistributeTaskNotifyAutomationDraft), varargs...)
+}
+
 // DistributeTaskSendVerifyEmail mocks base method.
 func (m *MockTaskDistributor) DistributeTaskSendVerifyEmail(arg0 context.Context, arg1 *worker.PayloadSendVerifyEmail, arg2 ...asynq.Option) error {
 	m.ctrl.T.Helper()

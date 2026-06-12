@@ -40,7 +40,28 @@ type Article struct {
 	// 检查过时
 	CheckOutdated bool `json:"check_outdated"`
 	// 阅读时间
-	ReadTime string `json:"read_time"`
+	ReadTime            string      `json:"read_time"`
+	CreatedByAutomation bool        `json:"created_by_automation"`
+	AutomationStatus    string      `json:"automation_status"`
+	AutomationRequestID pgtype.Int8 `json:"automation_request_id"`
+}
+
+type AutomationArticleRequest struct {
+	ID              int64       `json:"id"`
+	IdempotencyKey  string      `json:"idempotency_key"`
+	RequestHash     string      `json:"request_hash"`
+	KeyID           string      `json:"key_id"`
+	Status          string      `json:"status"`
+	ArticleID       pgtype.UUID `json:"article_id"`
+	Title           string      `json:"title"`
+	SourceTopic     string      `json:"source_topic"`
+	SourcePrompt    string      `json:"source_prompt"`
+	GenerationModel string      `json:"generation_model"`
+	ErrorMessage    string      `json:"error_message"`
+	ClientIp        string      `json:"client_ip"`
+	UserAgent       string      `json:"user_agent"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
 }
 
 // 文章分类表

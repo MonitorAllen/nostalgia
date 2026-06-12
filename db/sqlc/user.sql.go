@@ -119,6 +119,33 @@ func (q *Queries) CreateUserWithRole(ctx context.Context, arg CreateUserWithRole
 	return i, err
 }
 
+const getFirstAdminUser = `-- name: GetFirstAdminUser :one
+SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at
+FROM users
+WHERE role = 'admin'
+ORDER BY created_at ASC
+LIMIT 1
+`
+
+func (q *Queries) GetFirstAdminUser(ctx context.Context) (User, error) {
+	row := q.db.QueryRow(ctx, getFirstAdminUser)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.About,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at FROM users
 WHERE id = $1 LIMIT 1

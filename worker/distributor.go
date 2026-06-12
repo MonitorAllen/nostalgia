@@ -12,6 +12,11 @@ type TaskDistributor interface {
 		payload *PayloadSendVerifyEmail,
 		opts ...asynq.Option,
 	) error
+	DistributeTaskNotifyAutomationDraft(
+		ctx context.Context,
+		payload *PayloadNotifyAutomationDraft,
+		opts ...asynq.Option,
+	) error
 	DistributeTaskDelayDeleteCache(ctx context.Context, payload *PayloadDelayDeleteCache, opts ...asynq.Option) error
 	// DistributeTaskDelayDeleteCacheDefault 使用默认配置分发缓存删除任务
 	DistributeTaskDelayDeleteCacheDefault(ctx context.Context, keys ...string) error

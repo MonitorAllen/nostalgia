@@ -78,6 +78,7 @@ func (server *Server) setupRouter() {
 	{
 		public.GET("/setup/status", server.setupStatus)
 		public.POST("/setup/admin", server.createSetupAdmin)
+		public.POST("/automation/articles/drafts", server.createAutomationArticleDraft)
 
 		public.POST("/users", server.createUser)
 		public.POST("/users/login", server.loginUser)
@@ -134,6 +135,10 @@ func (server *Server) Start(address string, config util.Config) error {
 		AllowedHeaders: []string{
 			"Authorization",
 			"Content-Type",
+			"Idempotency-Key",
+			"X-Automation-Key-Id",
+			"X-Automation-Timestamp",
+			"X-Automation-Signature",
 		},
 		AllowCredentials: true,
 	})

@@ -10,6 +10,42 @@ INSERT INTO articles (id,
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
+-- name: CreateAutomationArticle :one
+INSERT INTO articles (
+  id,
+  title,
+  summary,
+  content,
+  is_publish,
+  owner,
+  category_id,
+  cover,
+  slug,
+  check_outdated,
+  last_updated,
+  read_time,
+  created_by_automation,
+  automation_status,
+  automation_request_id
+) VALUES (
+  sqlc.arg(id),
+  sqlc.arg(title),
+  sqlc.arg(summary),
+  sqlc.arg(content),
+  false,
+  sqlc.arg(owner),
+  sqlc.arg(category_id),
+  sqlc.arg(cover),
+  sqlc.arg(slug),
+  sqlc.arg(check_outdated),
+  now(),
+  sqlc.arg(read_time),
+  true,
+  'pending_review',
+  sqlc.arg(automation_request_id)
+)
+RETURNING *;
+
 -- name: GetArticle :one
 SELECT a.id,
        a.title,
@@ -118,7 +154,13 @@ SET title          = COALESCE(sqlc.narg(title), title),
     slug           = COALESCE(sqlc.narg(slug), slug),
     check_outdated = COALESCE(sqlc.narg(check_outdated), check_outdated),
     last_updated   = COALESCE(sqlc.narg(last_updated), last_updated),
-    read_time   = COALESCE(sqlc.narg(read_time), read_time),
+    read_time      = COALESCE(sqlc.narg(read_time), read_time),
+    automation_status = CASE
+        WHEN created_by_automation = true
+             AND COALESCE(sqlc.narg(is_publish), is_publish) = true
+        THEN 'published'
+        ELSE automation_status
+    END,
     updated_at     = COALESCE(sqlc.narg(updated_at), updated_at)
 WHERE id = sqlc.arg(id)
 RETURNING *;
@@ -146,6 +188,9 @@ SELECT a.id,
        a.last_updated,
        a.read_time,
        owner,
+       a.created_by_automation,
+       a.automation_status,
+       a.automation_request_id,
        a.created_at,
        a.updated_at,
        deleted_at,

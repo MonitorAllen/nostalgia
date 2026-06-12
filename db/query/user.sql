@@ -12,6 +12,13 @@ INSERT INTO users (
 -- name: CountAdminUsers :one
 SELECT count(*) FROM users WHERE role = 'admin';
 
+-- name: GetFirstAdminUser :one
+SELECT *
+FROM users
+WHERE role = 'admin'
+ORDER BY created_at ASC
+LIMIT 1;
+
 -- name: CreateUserWithRole :one
 INSERT INTO users (
     id,

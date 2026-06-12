@@ -11,6 +11,7 @@ type Store interface {
 	Querier
 	Ping(ctx context.Context) error
 	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
+	CreateAutomationArticleTx(ctx context.Context, arg CreateAutomationArticleTxParams) (CreateAutomationArticleTxResult, error)
 	VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error)
 	UpdateArticleTx(ctx context.Context, arg UpdateArticleTxParams) (UpdateArticleTxResult, error)
 	DeleteArticleTx(ctx context.Context, arg DeleteArticleTxParams) error
