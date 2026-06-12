@@ -24,5 +24,6 @@ message Article {
   optional bool check_outdated = 15;
   string read_time = 16;
   google.protobuf.Timestamp last_updated = 17;
-
+  optional bool created_by_automation = 18;
+  string automation_status = 19;
 }

@@ -39,6 +39,8 @@ export interface AdminArticle {
   cover?: string
   slug?: string
   check_outdated?: boolean
+  created_by_automation?: boolean
+  automation_status?: string
 }
 
 export interface CreateAdminArticleRequest {

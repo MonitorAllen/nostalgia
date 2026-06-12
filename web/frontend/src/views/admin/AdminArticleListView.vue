@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { CalendarDays, Eye, FileText, Folder, Heart, Pencil, Plus, Search, Trash2 } from '@lucide/vue'
+import { isAutomationDraft } from '@/admin/articleAutomation'
 import type { AdminArticle } from '@/admin/types'
 import {
   deleteAdminArticle,
@@ -225,6 +226,9 @@ onMounted(() => {
             <div class="flex flex-wrap items-center gap-2">
               <AppBadge :tone="article.is_publish ? 'accent' : 'neutral'">
                 {{ article.is_publish ? '已发布' : '草稿' }}
+              </AppBadge>
+              <AppBadge v-if="isAutomationDraft(article)" tone="warning">
+                自动化草稿
               </AppBadge>
               <AppBadge tone="neutral">
                 <Folder class="size-3.5" aria-hidden="true" />

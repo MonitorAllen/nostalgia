@@ -8,21 +8,23 @@ import (
 
 func convertArticle(article db.ListAllArticlesRow) *pb.Article {
 	return &pb.Article{
-		Id:            article.ID.String(),
-		Title:         article.Title,
-		Summary:       &article.Summary,
-		IsPublish:     &article.IsPublish,
-		Views:         &article.Views,
-		Likes:         &article.Likes,
-		Slug:          article.Slug.String,
-		CheckOutdated: &article.CheckOutdated,
-		ReadTime:      article.ReadTime,
-		LastUpdated:   timestamppb.New(article.LastUpdated),
-		CreatedAt:     timestamppb.New(article.CreatedAt),
-		UpdatedAt:     timestamppb.New(article.UpdatedAt),
-		DeletedAt:     timestamppb.New(article.DeletedAt),
-		Owner:         article.Owner.String(),
-		CategoryName:  article.CategoryName.String,
+		Id:                  article.ID.String(),
+		Title:               article.Title,
+		Summary:             &article.Summary,
+		IsPublish:           &article.IsPublish,
+		Views:               &article.Views,
+		Likes:               &article.Likes,
+		Slug:                article.Slug.String,
+		CheckOutdated:       &article.CheckOutdated,
+		ReadTime:            article.ReadTime,
+		LastUpdated:         timestamppb.New(article.LastUpdated),
+		CreatedByAutomation: &article.CreatedByAutomation,
+		AutomationStatus:    article.AutomationStatus,
+		CreatedAt:           timestamppb.New(article.CreatedAt),
+		UpdatedAt:           timestamppb.New(article.UpdatedAt),
+		DeletedAt:           timestamppb.New(article.DeletedAt),
+		Owner:               article.Owner.String(),
+		CategoryName:        article.CategoryName.String,
 	}
 }
 
