@@ -82,12 +82,12 @@
   html.theme-transitioning *::before,
   html.theme-transitioning *::after {
     transition:
-      background-color 220ms ease,
-      border-color 220ms ease,
-      color 220ms ease,
-      box-shadow 220ms ease,
-      fill 220ms ease,
-      stroke 220ms ease;
+      background-color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      fill 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      stroke 320ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   a {

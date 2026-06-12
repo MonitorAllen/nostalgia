@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Tags } from '@lucide/vue'
 import ArchivePanel from '@/components/ui/ArchivePanel.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -107,7 +106,7 @@ onMounted(async () => {
     <ArchivePanel class="w-full max-w-md" :glass="false">
       <div class="mb-6 flex items-center gap-3">
         <span class="archive-glass grid size-14 place-items-center rounded-full">
-          <Tags class="size-7 text-accent" aria-hidden="true" />
+          <img src="/favicon.svg" alt="" class="size-9" aria-hidden="true" />
         </span>
         <div>
           <h1 class="m-0 text-2xl font-black text-balance">管理入口</h1>

@@ -7,22 +7,25 @@ const src = resolve(import.meta.dir, '..')
 const readSource = (path: string) => readFileSync(resolve(src, path), 'utf8')
 
 describe('admin UI polish contracts', () => {
-  test('admin shell uses a collapsible flush sidebar with tag identity and AI settings nav', () => {
+  test('admin shell uses a collapsible flush sidebar with favicon identity and AI settings nav', () => {
     const source = readSource('views/admin/AdminLayout.vue')
 
     expect(source).toContain('isSidebarCollapsed')
     expect(source).toContain('isEditorRoute')
     expect(source).toContain('PanelLeftClose')
-    expect(source).toContain('Tags')
+    expect(source).toContain('src="/favicon.svg"')
+    expect(source).toContain('collapsed-sidebar-header')
+    expect(source).not.toContain('Tags')
     expect(source).toContain("name: 'adminAiSettings'")
     expect(source).toContain('lg:grid-cols-[var(--admin-sidebar-width)_minmax(0,1fr)]')
   })
 
-  test('admin login uses a tag icon instead of the public logo image', () => {
+  test('admin login uses the favicon logo mark', () => {
     const source = readSource('views/admin/AdminLoginView.vue')
 
-    expect(source).toContain("import { Tags }")
-    expect(source).toContain('<Tags')
+    expect(source).toContain('src="/favicon.svg"')
+    expect(source).not.toContain("import { Tags }")
+    expect(source).not.toContain('<Tags')
     expect(source).not.toContain('src="/logo.svg"')
   })
 
@@ -80,8 +83,11 @@ describe('public navigation polish contracts', () => {
 
     expect(useThemeSource).toContain('THEME_TRANSITION_CLASS')
     expect(useThemeSource).toContain('theme-transitioning')
+    expect(useThemeSource).toContain('THEME_TRANSITION_MS = 320')
     expect(cssSource).toContain('html.theme-transitioning')
-    expect(switcherSource).toContain('duration-200')
-    expect(switcherSource).toContain('scale-105')
+    expect(cssSource).toContain('320ms')
+    expect(switcherSource).toContain('themeSwitcherTranslate')
+    expect(switcherSource).toContain('theme-switcher-thumb')
+    expect(switcherSource).not.toContain('scale-105')
   })
 })

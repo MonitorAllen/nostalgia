@@ -10,7 +10,6 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  Tags,
   X
 } from '@lucide/vue'
 import { useAdminAuthStore } from '@/admin/stores/adminAuth'
@@ -108,7 +107,7 @@ watch(
           @click="closeMobileMenu"
         >
           <span class="archive-glass grid size-9 shrink-0 place-items-center rounded-full">
-            <Tags class="size-5 text-accent" aria-hidden="true" />
+            <img src="/favicon.svg" alt="" class="size-6" aria-hidden="true" />
           </span>
           <div class="min-w-0">
             <p class="m-0 truncate text-sm font-black leading-5">Nostalgia Admin</p>
@@ -172,18 +171,39 @@ watch(
       <aside class="hidden border-r border-border/70 bg-surface/45 px-3 py-4 lg:block">
         <div class="sticky top-4 flex h-[calc(100dvh-2rem)] flex-col">
           <div
+            v-if="isSidebarCollapsed"
+            class="collapsed-sidebar-header flex flex-col items-center gap-2"
+          >
+            <RouterLink
+              :to="{ name: 'adminArticles' }"
+              class="archive-glass grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              aria-label="Nostalgia Admin"
+            >
+              <img src="/favicon.svg" alt="" class="size-7" aria-hidden="true" />
+            </RouterLink>
+            <AppButton
+              variant="ghost"
+              size="icon"
+              aria-label="展开后台导航"
+              title="展开后台导航"
+              @click="toggleSidebar"
+            >
+              <PanelLeftOpen class="size-4" aria-hidden="true" />
+            </AppButton>
+          </div>
+
+          <div
+            v-else
             class="flex items-center gap-2"
-            :class="isSidebarCollapsed ? 'justify-center' : 'justify-between'"
           >
             <RouterLink
               :to="{ name: 'adminArticles' }"
               class="flex min-w-0 items-center gap-3 rounded-archive px-2 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              :aria-label="isSidebarCollapsed ? 'Nostalgia Admin' : undefined"
             >
               <span class="archive-glass grid size-10 shrink-0 place-items-center rounded-full">
-                <Tags class="size-5 text-accent" aria-hidden="true" />
+                <img src="/favicon.svg" alt="" class="size-7" aria-hidden="true" />
               </span>
-              <div v-if="!isSidebarCollapsed" class="min-w-0">
+              <div class="min-w-0">
                 <p class="m-0 truncate text-sm font-black leading-5">Nostalgia Admin</p>
                 <p class="m-0 truncate text-xs font-semibold text-muted-foreground">{{ adminName }}</p>
               </div>
@@ -191,12 +211,11 @@ watch(
             <AppButton
               variant="ghost"
               size="icon"
-              :aria-label="isSidebarCollapsed ? '展开后台导航' : '收起后台导航'"
-              :title="isSidebarCollapsed ? '展开后台导航' : '收起后台导航'"
+              aria-label="收起后台导航"
+              title="收起后台导航"
               @click="toggleSidebar"
             >
-              <PanelLeftOpen v-if="isSidebarCollapsed" class="size-4" aria-hidden="true" />
-              <PanelLeftClose v-else class="size-4" aria-hidden="true" />
+              <PanelLeftClose class="size-4" aria-hidden="true" />
             </AppButton>
           </div>
 

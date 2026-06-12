@@ -5,7 +5,7 @@ export type ResolvedTheme = 'light' | 'dark'
 
 const STORAGE_KEY = 'nostalgia-theme-mode'
 const THEME_TRANSITION_CLASS = 'theme-transitioning'
-const THEME_TRANSITION_MS = 220
+const THEME_TRANSITION_MS = 320
 const modes: ThemeMode[] = ['system', 'light', 'dark']
 
 const mode = ref<ThemeMode>('system')
