@@ -1,19 +1,32 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, ImagePlus, Save, Trash2 } from '@lucide/vue'
+import { ArrowLeft, Copy, ImagePlus, Save, Sparkles, Trash2, Wand2, X } from '@lucide/vue'
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
 import { ClassicEditor, type EditorConfig } from 'ckeditor5'
 import 'ckeditor5/ckeditor5.css'
 import 'ckeditor5/ckeditor5-content.css'
-import type { AdminArticle, AdminCategory } from '@/admin/types'
+import type {
+  AdminAIPolishMode,
+  AdminAIPolishSuggestion,
+  AdminAIPolishTarget,
+  AdminArticle,
+  AdminCategory
+} from '@/admin/types'
 import {
   createAdminArticle,
   getAdminArticle,
   updateAdminArticle
 } from '@/admin/api/adminArticleApi'
+import { polishAdminText } from '@/admin/api/adminAiApi'
 import { listAllAdminCategories } from '@/admin/api/adminCategoryApi'
 import { uploadAdminFile } from '@/admin/api/adminUploadApi'
+import {
+  buildAIPolishRequest,
+  getAIPolishModeLabel,
+  normalizeSelectedText,
+  truncateForAIPolish
+} from '@/admin/ai/polish'
 import { adminEditorConfig } from '@/admin/editor/adminEditorConfig'
 import AdminUploadAdapter from '@/admin/editor/adminUploadAdapter'
 import {
@@ -62,6 +75,13 @@ const hasDraft = ref(false)
 const lastSavedAt = ref('')
 const loadError = ref('')
 const coverInput = ref<HTMLInputElement | null>(null)
+const editorInstance = ref<ClassicEditor | null>(null)
+const isPolishing = ref(false)
+const polishPanelOpen = ref(false)
+const polishTarget = ref<AdminAIPolishTarget>('content_selection')
+const polishMode = ref<AdminAIPolishMode>('improve')
+const polishSuggestions = ref<AdminAIPolishSuggestion[]>([])
+const selectedPolishText = ref('')
 
 let initialContent = ''
 let initialArticle = ''
@@ -122,6 +142,14 @@ const canSave = computed(() => {
 })
 
 const coverPreview = computed(() => article.value.cover || '')
+
+const polishPanelTitle = computed(() => {
+  if (polishTarget.value === 'title') return '标题候选'
+  if (polishTarget.value === 'summary') return '摘要候选'
+  return getAIPolishModeLabel(polishMode.value)
+})
+
+const canUseAIPolish = computed(() => isLayoutReady.value && !isPolishing.value)
 
 const snapshotArticle = () =>
   JSON.stringify({
@@ -282,8 +310,175 @@ const editorConfig = computed<EditorConfig>(() => ({
   extraPlugins: [AdminUploadAdapterPlugin, WordCountPlugin]
 }))
 
-const onEditorReady = (editorInstance: ClassicEditor) => {
-  editorInstance.ui.view.editable.element?.classList.add('reading-prose')
+const onEditorReady = (readyEditor: ClassicEditor) => {
+  readyEditor.ui.view.editable.element?.classList.add('reading-prose')
+  editorInstance.value = readyEditor
+}
+
+const getArticleTextExcerpt = () => {
+  const container = document.createElement('div')
+  container.innerHTML = editorData.value
+  return truncateForAIPolish(container.textContent || '', 4000)
+}
+
+const getSelectedEditorText = () => {
+  const editor = editorInstance.value as any
+  if (!editor) return ''
+
+  const selection = editor.model.document.selection
+  const parts: string[] = []
+  for (const range of selection.getRanges()) {
+    for (const item of range.getItems()) {
+      if (item.is?.('$textProxy') && item.data) {
+        parts.push(item.data)
+      }
+    }
+  }
+
+  return normalizeSelectedText(parts.join('') || window.getSelection()?.toString() || '')
+}
+
+const closePolishPanel = () => {
+  polishPanelOpen.value = false
+  polishSuggestions.value = []
+  selectedPolishText.value = ''
+}
+
+const requestAIPolish = async (
+  mode: AdminAIPolishMode,
+  target: AdminAIPolishTarget,
+  text: string
+) => {
+  const normalizedText = normalizeSelectedText(text)
+  const hasContext = Boolean(
+    normalizedText ||
+      articleTitle.value.trim() ||
+      articleSummary.value.trim() ||
+      getArticleTextExcerpt().trim()
+  )
+
+  if (!hasContext) {
+    toast.add({
+      severity: 'warning',
+      summary: '没有可润色的内容',
+      detail: '请先选择正文，或填写标题、摘要、正文内容',
+      life: 2600
+    })
+    return
+  }
+
+  isPolishing.value = true
+  polishPanelOpen.value = true
+  polishTarget.value = target
+  polishMode.value = mode
+  polishSuggestions.value = []
+  selectedPolishText.value = normalizedText
+
+  try {
+    const response = await polishAdminText(
+      buildAIPolishRequest({
+        mode,
+        target,
+        text: normalizedText,
+        articleId: article.value.id,
+        articleTitle: articleTitle.value,
+        articleSummary: articleSummary.value,
+        articleExcerpt: getArticleTextExcerpt()
+      })
+    )
+
+    polishSuggestions.value = response.data.suggestions ?? []
+    if (!polishSuggestions.value.length) {
+      toast.add({
+        severity: 'warning',
+        summary: '没有返回候选',
+        detail: '可以稍后重试或换一种润色方式',
+        life: 2600
+      })
+    }
+  } catch (error) {
+    closePolishPanel()
+    toast.add({
+      severity: 'error',
+      summary: 'AI 润色失败',
+      detail: getAdminUploadErrorMessage(error, '请稍后重试'),
+      life: 3200
+    })
+  } finally {
+    isPolishing.value = false
+  }
+}
+
+const requestSelectedContentPolish = (mode: AdminAIPolishMode) => {
+  const selectedText = getSelectedEditorText()
+  if (!selectedText) {
+    toast.add({
+      severity: 'warning',
+      summary: '请先选择正文',
+      detail: '选中一段文字后再使用 AI 润色',
+      life: 2600
+    })
+    return
+  }
+  void requestAIPolish(mode, 'content_selection', selectedText)
+}
+
+const requestTitleCandidates = () => {
+  void requestAIPolish('title_candidates', 'title', articleTitle.value)
+}
+
+const requestSummaryCandidates = () => {
+  void requestAIPolish('summary_candidates', 'summary', articleSummary.value)
+}
+
+const applyContentSuggestion = (suggestion: AdminAIPolishSuggestion) => {
+  const editor = editorInstance.value as any
+  if (!editor) return
+
+  editor.model.change((writer: any) => {
+    editor.model.insertContent(writer.createText(suggestion.content), editor.model.document.selection)
+  })
+  editorData.value = editor.getData()
+  toast.add({ severity: 'success', summary: '已应用候选', detail: '记得保存文章', life: 2200 })
+}
+
+const insertContentSuggestion = (suggestion: AdminAIPolishSuggestion) => {
+  const editor = editorInstance.value as any
+  if (!editor) return
+
+  editor.model.change((writer: any) => {
+    const position = editor.model.document.selection.getLastPosition()
+    writer.setSelection(position)
+    editor.model.insertContent(writer.createText(suggestion.content), editor.model.document.selection)
+  })
+  editorData.value = editor.getData()
+  toast.add({ severity: 'success', summary: '已插入候选', detail: '记得保存文章', life: 2200 })
+}
+
+const applyFieldSuggestion = (suggestion: AdminAIPolishSuggestion) => {
+  if (polishTarget.value === 'title') {
+    articleTitle.value = suggestion.content
+  } else if (polishTarget.value === 'summary') {
+    articleSummary.value = suggestion.content
+  }
+  toast.add({ severity: 'success', summary: '已应用候选', detail: '记得保存文章', life: 2200 })
+}
+
+const applyPolishSuggestion = (suggestion: AdminAIPolishSuggestion) => {
+  if (polishTarget.value === 'content_selection') {
+    applyContentSuggestion(suggestion)
+  } else {
+    applyFieldSuggestion(suggestion)
+  }
+}
+
+const copyPolishSuggestion = async (suggestion: AdminAIPolishSuggestion) => {
+  try {
+    await navigator.clipboard.writeText(suggestion.content)
+    toast.add({ severity: 'success', summary: '已复制', detail: '候选内容已复制到剪贴板', life: 2200 })
+  } catch {
+    toast.add({ severity: 'error', summary: '复制失败', detail: '请手动复制候选内容', life: 2600 })
+  }
 }
 
 const formatTime = () => {
@@ -482,6 +677,16 @@ onBeforeUnmount(() => {
               :disabled="!isLayoutReady"
             />
           </label>
+          <AppButton
+            variant="secondary"
+            size="sm"
+            class="w-max"
+            :disabled="!canUseAIPolish"
+            @click="requestTitleCandidates"
+          >
+            <Wand2 class="size-4" aria-hidden="true" />
+            标题候选
+          </AppButton>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -492,6 +697,31 @@ onBeforeUnmount(() => {
           <AppBadge tone="neutral" class="tabular-nums">
             {{ charCount }} 字符 / {{ wordCount }} 词
           </AppBadge>
+          <AppButton
+            variant="secondary"
+            size="sm"
+            :disabled="!canUseAIPolish"
+            @click="requestSelectedContentPolish('improve')"
+          >
+            <Sparkles class="size-4" aria-hidden="true" />
+            润色
+          </AppButton>
+          <AppButton
+            variant="ghost"
+            size="sm"
+            :disabled="!canUseAIPolish"
+            @click="requestSelectedContentPolish('shorten')"
+          >
+            精简
+          </AppButton>
+          <AppButton
+            variant="ghost"
+            size="sm"
+            :disabled="!canUseAIPolish"
+            @click="requestSelectedContentPolish('expand')"
+          >
+            扩写
+          </AppButton>
           <AppButton :disabled="!canSave" @click="saveArticle">
             <Save class="size-4" aria-hidden="true" />
             {{ isSaving ? '保存中...' : '保存文章' }}
@@ -520,13 +750,77 @@ onBeforeUnmount(() => {
             @ready="onEditorReady"
           />
         </div>
+
+        <section v-if="polishPanelOpen" class="archive-surface rounded-archive p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="m-0 text-base font-black text-foreground">{{ polishPanelTitle }}</h2>
+              <p class="m-0 mt-1 text-xs font-semibold text-muted-foreground">
+                {{ isPolishing ? '正在生成候选' : '选择一个候选后再决定是否保存文章' }}
+              </p>
+            </div>
+            <AppButton variant="ghost" size="sm" class="w-max" @click="closePolishPanel">
+              <X class="size-4" aria-hidden="true" />
+              取消
+            </AppButton>
+          </div>
+
+          <div v-if="isPolishing" class="mt-4 text-sm font-semibold text-muted-foreground">
+            正在准备候选...
+          </div>
+
+          <div v-else class="mt-4 divide-y divide-border/70">
+            <article
+              v-for="(suggestion, index) in polishSuggestions"
+              :key="`${suggestion.content}-${index}`"
+              class="py-4 first:pt-0 last:pb-0"
+            >
+              <p class="m-0 whitespace-pre-wrap text-sm leading-7 text-foreground">
+                {{ suggestion.content }}
+              </p>
+              <p v-if="suggestion.reason" class="m-0 mt-2 text-xs font-semibold text-muted-foreground">
+                {{ suggestion.reason }}
+              </p>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <AppButton size="sm" @click="applyPolishSuggestion(suggestion)">
+                  <Sparkles class="size-4" aria-hidden="true" />
+                  替换
+                </AppButton>
+                <AppButton
+                  v-if="polishTarget === 'content_selection'"
+                  variant="secondary"
+                  size="sm"
+                  @click="insertContentSuggestion(suggestion)"
+                >
+                  插入
+                </AppButton>
+                <AppButton variant="secondary" size="sm" @click="copyPolishSuggestion(suggestion)">
+                  <Copy class="size-4" aria-hidden="true" />
+                  复制
+                </AppButton>
+              </div>
+            </article>
+          </div>
+        </section>
       </div>
 
       <aside class="archive-surface h-max rounded-archive p-4 xl:sticky xl:top-24">
         <h2 class="m-0 text-base font-black text-foreground">文章设置</h2>
         <div class="mt-4 space-y-4">
           <label class="block space-y-2">
-            <span class="text-sm font-bold text-foreground">摘要</span>
+            <span class="flex items-center justify-between gap-3">
+              <span class="text-sm font-bold text-foreground">摘要</span>
+              <AppButton
+                variant="ghost"
+                size="sm"
+                class="w-max"
+                :disabled="!canUseAIPolish"
+                @click="requestSummaryCandidates"
+              >
+                <Wand2 class="size-4" aria-hidden="true" />
+                摘要候选
+              </AppButton>
+            </span>
             <textarea
               v-model="articleSummary"
               rows="5"

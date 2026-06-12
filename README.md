@@ -56,6 +56,14 @@ AUTOMATION_HMAC_SECRET=replace-with-a-random-secret
 AUTOMATION_SIGNATURE_TTL=5m
 AUTOMATION_DAILY_DRAFT_LIMIT=1
 AUTOMATION_NOTIFY_EMAIL=owner@example.com
+AI_POLISH_PROVIDER=openai_compatible
+AI_POLISH_BASE_URL=https://api.example.com/v1
+AI_POLISH_API_KEY=replace-with-runtime-secret
+AI_POLISH_MODEL=replace-with-model-name
+AI_POLISH_TIMEOUT=30s
+AI_POLISH_MAX_INPUT_CHARS=6000
+AI_POLISH_MAX_CONTEXT_CHARS=4000
+AI_POLISH_MAX_SUGGESTIONS=3
 EMAIL_SENDER_NAME=name
 EMAIL_SENDER_ADDRESS=...
 EMAIL_SENDER_PASSWORD=...
@@ -64,7 +72,7 @@ UPLOAD_FILE_ALLOWED_MIME=image/jpeg,image/png
 HTTP_PROXY_ADDR=http://host.docker.internal:10808
 ```
 
-`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。`AUTOMATION_HMAC_SECRET` 用于 Codex 自动化草稿 API 的 HMAC 签名校验，也只能通过运行时环境或 Secret Store 注入。Redis 仍使用一个服务实例，默认 `REDIS_CACHE_DB=0` 存放缓存与幂等键，`REDIS_QUEUE_DB=1` 存放 Asynq 队列数据。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
+`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。`AUTOMATION_HMAC_SECRET` 用于 Codex 自动化草稿 API 的 HMAC 签名校验，也只能通过运行时环境或 Secret Store 注入。`AI_POLISH_API_KEY` 用于后台 AI 润色功能，也只能通过运行时环境或 Secret Store 注入，前端不会接收该密钥。Redis 仍使用一个服务实例，默认 `REDIS_CACHE_DB=0` 存放缓存与幂等键，`REDIS_QUEUE_DB=1` 存放 Asynq 队列数据。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
 
 ## 🚀 快速部署
 
@@ -131,6 +139,10 @@ Nostalgia 现在使用统一的用户认证模型：公开注册用户固定为 
 ### 自动化草稿 API
 
 Codex 自动化可通过 `POST /api/automation/articles/drafts` 创建未发布草稿。该接口默认在未配置 `AUTOMATION_HMAC_KEY_ID` 或 `AUTOMATION_HMAC_SECRET` 时返回 `404`，启用后必须携带 `X-Automation-Key-Id`、`X-Automation-Timestamp`、`X-Automation-Signature` 与 `Idempotency-Key`。服务端只会创建 `is_publish=false` 的草稿，并在 `/backend` 文章列表中标记为“自动化草稿”，等待站点 owner 手动审核发布。
+
+### 后台 AI 润色
+
+后台编辑器可通过 `POST /v1/ai/polish` 请求 AI 润色候选。该接口只允许 `role = admin` 的后台 JWT 调用，默认在未配置 `AI_POLISH_BASE_URL`、`AI_POLISH_API_KEY` 或 `AI_POLISH_MODEL` 时返回未配置错误。AI 润色只返回候选文本，不会自动保存或发布文章；应用候选后仍需手动点击“保存文章”。
 
 ## 🧪 本地开发
 
