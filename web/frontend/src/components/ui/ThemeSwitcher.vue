@@ -17,10 +17,10 @@ const items: Array<{ value: ThemeMode; label: string; icon: object }> = [
       v-for="item in items"
       :key="item.value"
       type="button"
-      class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition"
+      class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ease-out"
       :class="
         mode === item.value
-          ? 'bg-accent text-accent-foreground'
+          ? 'scale-105 bg-accent text-accent-foreground shadow-archive'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       "
       role="radio"
