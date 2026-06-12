@@ -718,6 +718,36 @@ func (mr *MockStoreMockRecorder) ListCommentsByArticleID(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).ListCommentsByArticleID), arg0, arg1)
 }
 
+// ListPublishedArticleSitemapItems mocks base method.
+func (m *MockStore) ListPublishedArticleSitemapItems(arg0 context.Context) ([]db.ListPublishedArticleSitemapItemsRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPublishedArticleSitemapItems", arg0)
+	ret0, _ := ret[0].([]db.ListPublishedArticleSitemapItemsRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPublishedArticleSitemapItems indicates an expected call of ListPublishedArticleSitemapItems.
+func (mr *MockStoreMockRecorder) ListPublishedArticleSitemapItems(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPublishedArticleSitemapItems", reflect.TypeOf((*MockStore)(nil).ListPublishedArticleSitemapItems), arg0)
+}
+
+// ListPublishedCategorySitemapItems mocks base method.
+func (m *MockStore) ListPublishedCategorySitemapItems(arg0 context.Context) ([]db.ListPublishedCategorySitemapItemsRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPublishedCategorySitemapItems", arg0)
+	ret0, _ := ret[0].([]db.ListPublishedCategorySitemapItemsRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPublishedCategorySitemapItems indicates an expected call of ListPublishedCategorySitemapItems.
+func (mr *MockStoreMockRecorder) ListPublishedCategorySitemapItems(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPublishedCategorySitemapItems", reflect.TypeOf((*MockStore)(nil).ListPublishedCategorySitemapItems), arg0)
+}
+
 // MarkAutomationArticleRequestCreated mocks base method.
 func (m *MockStore) MarkAutomationArticleRequestCreated(arg0 context.Context, arg1 db.MarkAutomationArticleRequestCreatedParams) (db.AutomationArticleRequest, error) {
 	m.ctrl.T.Helper()

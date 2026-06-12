@@ -204,6 +204,27 @@ LIMIT $1 OFFSET $2;
 SELECT count(*)
 FROM articles;
 
+-- name: ListPublishedArticleSitemapItems :many
+SELECT id,
+       slug,
+       owner,
+       created_at,
+       updated_at
+FROM articles
+WHERE is_publish = true
+  AND deleted_at = '0001-01-01 00:00:00Z'
+ORDER BY GREATEST(created_at, updated_at) DESC;
+
+-- name: ListPublishedCategorySitemapItems :many
+SELECT c.id,
+       MAX(GREATEST(a.created_at, a.updated_at))::timestamptz AS updated_at
+FROM categories c
+         INNER JOIN articles a ON a.category_id = c.id
+WHERE a.is_publish = true
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
+GROUP BY c.id
+ORDER BY c.id;
+
 -- name: DeleteArticle :exec
 DELETE
 FROM articles

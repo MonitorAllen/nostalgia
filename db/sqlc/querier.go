@@ -53,6 +53,8 @@ type Querier interface {
 	ListArticlesByCategoryID(ctx context.Context, arg ListArticlesByCategoryIDParams) ([]ListArticlesByCategoryIDRow, error)
 	ListCategoriesCountArticles(ctx context.Context) ([]ListCategoriesCountArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
+	ListPublishedArticleSitemapItems(ctx context.Context) ([]ListPublishedArticleSitemapItemsRow, error)
+	ListPublishedCategorySitemapItems(ctx context.Context) ([]ListPublishedCategorySitemapItemsRow, error)
 	MarkAutomationArticleRequestCreated(ctx context.Context, arg MarkAutomationArticleRequestCreatedParams) (AutomationArticleRequest, error)
 	SearchArticles(ctx context.Context, arg SearchArticlesParams) ([]SearchArticlesRow, error)
 	SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, categoryID int64) error

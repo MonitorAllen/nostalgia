@@ -636,6 +636,88 @@ func (q *Queries) ListArticles(ctx context.Context, arg ListArticlesParams) ([]L
 	return items, nil
 }
 
+const listPublishedArticleSitemapItems = `-- name: ListPublishedArticleSitemapItems :many
+SELECT id,
+       slug,
+       owner,
+       created_at,
+       updated_at
+FROM articles
+WHERE is_publish = true
+  AND deleted_at = '0001-01-01 00:00:00Z'
+ORDER BY GREATEST(created_at, updated_at) DESC
+`
+
+type ListPublishedArticleSitemapItemsRow struct {
+	ID        uuid.UUID   `json:"id"`
+	Slug      pgtype.Text `json:"slug"`
+	Owner     uuid.UUID   `json:"owner"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func (q *Queries) ListPublishedArticleSitemapItems(ctx context.Context) ([]ListPublishedArticleSitemapItemsRow, error) {
+	rows, err := q.db.Query(ctx, listPublishedArticleSitemapItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPublishedArticleSitemapItemsRow{}
+	for rows.Next() {
+		var i ListPublishedArticleSitemapItemsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Owner,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedCategorySitemapItems = `-- name: ListPublishedCategorySitemapItems :many
+SELECT c.id,
+       MAX(GREATEST(a.created_at, a.updated_at))::timestamptz AS updated_at
+FROM categories c
+         INNER JOIN articles a ON a.category_id = c.id
+WHERE a.is_publish = true
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
+GROUP BY c.id
+ORDER BY c.id
+`
+
+type ListPublishedCategorySitemapItemsRow struct {
+	ID        int64     `json:"id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) ListPublishedCategorySitemapItems(ctx context.Context) ([]ListPublishedCategorySitemapItemsRow, error) {
+	rows, err := q.db.Query(ctx, listPublishedCategorySitemapItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPublishedCategorySitemapItemsRow{}
+	for rows.Next() {
+		var i ListPublishedCategorySitemapItemsRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchArticles = `-- name: SearchArticles :many
 SELECT a.id,
        a.title,
