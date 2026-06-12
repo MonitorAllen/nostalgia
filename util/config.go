@@ -27,6 +27,14 @@ type Config struct {
 	AutomationSignatureTTL    time.Duration `mapstructure:"AUTOMATION_SIGNATURE_TTL"`
 	AutomationDailyDraftLimit int64         `mapstructure:"AUTOMATION_DAILY_DRAFT_LIMIT"`
 	AutomationNotifyEmail     string        `mapstructure:"AUTOMATION_NOTIFY_EMAIL"`
+	AIPolishProvider          string        `mapstructure:"AI_POLISH_PROVIDER"`
+	AIPolishBaseURL           string        `mapstructure:"AI_POLISH_BASE_URL"`
+	AIPolishAPIKey            string        `mapstructure:"AI_POLISH_API_KEY"`
+	AIPolishModel             string        `mapstructure:"AI_POLISH_MODEL"`
+	AIPolishTimeout           time.Duration `mapstructure:"AI_POLISH_TIMEOUT"`
+	AIPolishMaxInputChars     int           `mapstructure:"AI_POLISH_MAX_INPUT_CHARS"`
+	AIPolishMaxContextChars   int           `mapstructure:"AI_POLISH_MAX_CONTEXT_CHARS"`
+	AIPolishMaxSuggestions    int           `mapstructure:"AI_POLISH_MAX_SUGGESTIONS"`
 	HTTPServerAddress         string        `mapstructure:"HTTP_SERVER_ADDRESS"`
 	GrpcGatewayAddress        string        `mapstructure:"GRPC_GATEWAY_ADDRESS"`
 	GRPCServerAddress         string        `mapstructure:"GRPC_SERVER_ADDRESS"`
@@ -50,6 +58,11 @@ func LoadConfig(path string) (config Config, err error) {
 	configReader.SetDefault("REDIS_QUEUE_DB", 1)
 	configReader.SetDefault("AUTOMATION_SIGNATURE_TTL", 5*time.Minute)
 	configReader.SetDefault("AUTOMATION_DAILY_DRAFT_LIMIT", 1)
+	configReader.SetDefault("AI_POLISH_PROVIDER", "openai_compatible")
+	configReader.SetDefault("AI_POLISH_TIMEOUT", 30*time.Second)
+	configReader.SetDefault("AI_POLISH_MAX_INPUT_CHARS", 6000)
+	configReader.SetDefault("AI_POLISH_MAX_CONTEXT_CHARS", 4000)
+	configReader.SetDefault("AI_POLISH_MAX_SUGGESTIONS", 3)
 
 	for _, key := range configEnvKeys() {
 		if bindErr := configReader.BindEnv(key); bindErr != nil {
