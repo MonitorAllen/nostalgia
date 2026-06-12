@@ -102,6 +102,16 @@ service Nostalgia {
       tags: "AI";
     };
   }
+  rpc GetAIConfig (GetAIConfigRequest) returns (GetAIConfigResponse) {
+    option (google.api.http) = {
+      get: "/v1/ai/config"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to inspect non-sensitive AI provider configuration";
+      summary: "get AI config";
+      tags: "AI";
+    };
+  }
   rpc CreateCategory (CreateCategoryRequest) returns (CreateCategoryResponse) {
     option (google.api.http) = {
       post: "/v1/categories"

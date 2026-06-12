@@ -26,3 +26,18 @@ message PolishTextResponse {
   string target = 3;
   string model = 4;
 }
+
+message GetAIConfigRequest {}
+
+message GetAIConfigResponse {
+  string provider = 1;
+  string base_url = 2;
+  string model = 3;
+  bool api_key_configured = 4;
+  bool enabled = 5;
+  string timeout = 6;
+  int32 max_input_chars = 7;
+  int32 max_context_chars = 8;
+  int32 max_suggestions = 9;
+  string source = 10;
+}

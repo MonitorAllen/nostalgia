@@ -138,3 +138,41 @@ func TestPolishTextMapsProviderFailureWithoutLeakingSecret(t *testing.T) {
 	require.Equal(t, codes.Unavailable, st.Code())
 	require.NotContains(t, st.Message(), "secret-key")
 }
+
+func TestGetAIConfigMasksProviderSecret(t *testing.T) {
+	server := newPolishTextTestServer(t, nil)
+	server.config.AIPolishProvider = "openai_compatible"
+	server.config.AIPolishBaseURL = "https://ai.example.com/v1"
+	server.config.AIPolishAPIKey = "secret-key"
+	server.config.AIPolishModel = "writer-model"
+	server.config.AIPolishTimeout = 45 * time.Second
+	server.config.AIPolishMaxInputChars = 7000
+	server.config.AIPolishMaxContextChars = 5000
+	server.config.AIPolishMaxSuggestions = 2
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	resp, err := server.GetAIConfig(ctx, &pb.GetAIConfigRequest{})
+
+	require.NoError(t, err)
+	require.Equal(t, "openai_compatible", resp.GetProvider())
+	require.Equal(t, "https://ai.example.com/v1", resp.GetBaseUrl())
+	require.Equal(t, "writer-model", resp.GetModel())
+	require.True(t, resp.GetApiKeyConfigured())
+	require.True(t, resp.GetEnabled())
+	require.Equal(t, "45s", resp.GetTimeout())
+	require.Equal(t, int32(7000), resp.GetMaxInputChars())
+	require.Equal(t, int32(5000), resp.GetMaxContextChars())
+	require.Equal(t, int32(2), resp.GetMaxSuggestions())
+	require.NotContains(t, resp.String(), "secret-key")
+}
+
+func TestGetAIConfigRequiresAdmin(t *testing.T) {
+	server := newPolishTextTestServer(t, nil)
+	ctx := newContextWithUserBearerToken(t, server.tokenMaker, util.RandUserID(), "visitor", util.Visitor, time.Minute)
+
+	_, err := server.GetAIConfig(ctx, &pb.GetAIConfigRequest{})
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.PermissionDenied, st.Code())
+}
