@@ -140,6 +140,56 @@ func TestConfigExposesAutomationEnvKeys(t *testing.T) {
 	require.Contains(t, keys, "AUTOMATION_NOTIFY_EMAIL")
 }
 
+func TestLoadConfigAIPolishOverrides(t *testing.T) {
+	configPath := t.TempDir() + string(os.PathSeparator)
+
+	setConfigEnv(t, map[string]string{
+		"AI_POLISH_PROVIDER":          "openai_compatible",
+		"AI_POLISH_BASE_URL":          "https://ai.example.com/v1",
+		"AI_POLISH_API_KEY":           "runtime-secret",
+		"AI_POLISH_MODEL":             "writer-model",
+		"AI_POLISH_TIMEOUT":           "45s",
+		"AI_POLISH_MAX_INPUT_CHARS":   "7000",
+		"AI_POLISH_MAX_CONTEXT_CHARS": "5000",
+		"AI_POLISH_MAX_SUGGESTIONS":   "2",
+	})
+
+	config, err := LoadConfig(configPath)
+	require.NoError(t, err)
+	require.Equal(t, "openai_compatible", config.AIPolishProvider)
+	require.Equal(t, "https://ai.example.com/v1", config.AIPolishBaseURL)
+	require.Equal(t, "runtime-secret", config.AIPolishAPIKey)
+	require.Equal(t, "writer-model", config.AIPolishModel)
+	require.Equal(t, 45*time.Second, config.AIPolishTimeout)
+	require.Equal(t, 7000, config.AIPolishMaxInputChars)
+	require.Equal(t, 5000, config.AIPolishMaxContextChars)
+	require.Equal(t, 2, config.AIPolishMaxSuggestions)
+}
+
+func TestLoadConfigAIPolishDefaults(t *testing.T) {
+	configPath := t.TempDir() + string(os.PathSeparator)
+
+	config, err := LoadConfig(configPath)
+	require.NoError(t, err)
+	require.Equal(t, "openai_compatible", config.AIPolishProvider)
+	require.Equal(t, 30*time.Second, config.AIPolishTimeout)
+	require.Equal(t, 6000, config.AIPolishMaxInputChars)
+	require.Equal(t, 4000, config.AIPolishMaxContextChars)
+	require.Equal(t, 3, config.AIPolishMaxSuggestions)
+}
+
+func TestConfigExposesAIPolishEnvKeys(t *testing.T) {
+	keys := configEnvKeys()
+	require.Contains(t, keys, "AI_POLISH_PROVIDER")
+	require.Contains(t, keys, "AI_POLISH_BASE_URL")
+	require.Contains(t, keys, "AI_POLISH_API_KEY")
+	require.Contains(t, keys, "AI_POLISH_MODEL")
+	require.Contains(t, keys, "AI_POLISH_TIMEOUT")
+	require.Contains(t, keys, "AI_POLISH_MAX_INPUT_CHARS")
+	require.Contains(t, keys, "AI_POLISH_MAX_CONTEXT_CHARS")
+	require.Contains(t, keys, "AI_POLISH_MAX_SUGGESTIONS")
+}
+
 func setConfigEnv(t *testing.T, values map[string]string) {
 	t.Helper()
 

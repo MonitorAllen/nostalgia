@@ -230,6 +230,30 @@ func local_request_Nostalgia_UploadFile_0(ctx context.Context, marshaler runtime
 	return msg, metadata, err
 }
 
+func request_Nostalgia_PolishText_0(ctx context.Context, marshaler runtime.Marshaler, client NostalgiaClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq PolishTextRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := client.PolishText(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_Nostalgia_PolishText_0(ctx context.Context, marshaler runtime.Marshaler, server NostalgiaServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq PolishTextRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.PolishText(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 func request_Nostalgia_CreateCategory_0(ctx context.Context, marshaler runtime.Marshaler, client NostalgiaClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq CreateCategoryRequest
@@ -493,6 +517,26 @@ func RegisterNostalgiaHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Nostalgia_UploadFile_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodPost, pattern_Nostalgia_PolishText_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/pb.Nostalgia/PolishText", runtime.WithHTTPPathPattern("/v1/ai/polish"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Nostalgia_PolishText_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Nostalgia_PolishText_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_Nostalgia_CreateCategory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -735,6 +779,23 @@ func RegisterNostalgiaHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		}
 		forward_Nostalgia_UploadFile_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodPost, pattern_Nostalgia_PolishText_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/pb.Nostalgia/PolishText", runtime.WithHTTPPathPattern("/v1/ai/polish"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Nostalgia_PolishText_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_Nostalgia_PolishText_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPost, pattern_Nostalgia_CreateCategory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -830,6 +891,7 @@ var (
 	pattern_Nostalgia_GetArticle_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "articles", "id", "need_content"}, ""))
 	pattern_Nostalgia_UpdateArticle_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "articles"}, ""))
 	pattern_Nostalgia_UploadFile_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "util", "upload_file"}, ""))
+	pattern_Nostalgia_PolishText_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "ai", "polish"}, ""))
 	pattern_Nostalgia_CreateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "categories"}, ""))
 	pattern_Nostalgia_DeleteCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "categories", "id"}, ""))
 	pattern_Nostalgia_UpdateCategory_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "categories"}, ""))
@@ -844,6 +906,7 @@ var (
 	forward_Nostalgia_GetArticle_0        = runtime.ForwardResponseMessage
 	forward_Nostalgia_UpdateArticle_0     = runtime.ForwardResponseMessage
 	forward_Nostalgia_UploadFile_0        = runtime.ForwardResponseMessage
+	forward_Nostalgia_PolishText_0        = runtime.ForwardResponseMessage
 	forward_Nostalgia_CreateCategory_0    = runtime.ForwardResponseMessage
 	forward_Nostalgia_DeleteCategory_0    = runtime.ForwardResponseMessage
 	forward_Nostalgia_UpdateCategory_0    = runtime.ForwardResponseMessage

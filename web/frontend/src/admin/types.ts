@@ -89,3 +89,35 @@ export interface AdminUploadResponse {
   url: string
   filename: string
 }
+
+export type AdminAIPolishMode =
+  | 'improve'
+  | 'shorten'
+  | 'expand'
+  | 'title_candidates'
+  | 'summary_candidates'
+
+export type AdminAIPolishTarget = 'content_selection' | 'title' | 'summary'
+
+export interface AdminAIPolishRequest {
+  mode: AdminAIPolishMode
+  target: AdminAIPolishTarget
+  text: string
+  article_id?: string
+  article_title?: string
+  article_summary?: string
+  article_excerpt?: string
+  locale?: string
+}
+
+export interface AdminAIPolishSuggestion {
+  content: string
+  reason?: string
+}
+
+export interface AdminAIPolishResponse {
+  suggestions: AdminAIPolishSuggestion[]
+  mode: AdminAIPolishMode
+  target: AdminAIPolishTarget
+  model: string
+}

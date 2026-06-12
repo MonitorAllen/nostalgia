@@ -10,6 +10,7 @@ import "rpc_list_articles.proto";
 import "rpc_get_article.proto";
 import "rpc_update_article.proto";
 import "rpc_upload_file.proto";
+import "rpc_polish_text.proto";
 import "category.proto";
 
 option go_package = 'github.com/MonitorAllen/nostalgia/pb';
@@ -88,6 +89,17 @@ service Nostalgia {
       description: "Use this API upload file";
       summary: "upload file";
       tags: "Util";
+    };
+  }
+  rpc PolishText (PolishTextRequest) returns (PolishTextResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/polish"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to polish article text with configured AI provider";
+      summary: "polish article text";
+      tags: "AI";
     };
   }
   rpc CreateCategory (CreateCategoryRequest) returns (CreateCategoryResponse) {
