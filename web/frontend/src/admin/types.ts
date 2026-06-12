@@ -121,3 +121,16 @@ export interface AdminAIPolishResponse {
   target: AdminAIPolishTarget
   model: string
 }
+
+export interface AdminAIConfigResponse {
+  provider: string
+  base_url: string
+  model: string
+  api_key_configured: boolean
+  enabled: boolean
+  timeout: string
+  max_input_chars: number
+  max_context_chars: number
+  max_suggestions: number
+  source: 'runtime_env' | string
+}
