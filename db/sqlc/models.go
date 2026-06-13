@@ -25,6 +25,7 @@ type AiProviderConfig struct {
 	UpdatedBy        pgtype.UUID `json:"updated_by"`
 	CreatedAt        time.Time   `json:"created_at"`
 	UpdatedAt        time.Time   `json:"updated_at"`
+	ApiProtocol      string      `json:"api_protocol"`
 }
 
 type Article struct {

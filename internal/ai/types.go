@@ -17,6 +17,10 @@ const (
 	TargetContentSelection = "content_selection"
 	TargetTitle            = "title"
 	TargetSummary          = "summary"
+
+	APIProtocolChatCompletions = "chat/completions"
+	APIProtocolResponses       = "responses"
+	APIProtocolMessages        = "messages"
 )
 
 var (
@@ -28,6 +32,14 @@ var (
 
 type TextPolisher interface {
 	Polish(ctx context.Context, req PolishRequest) (PolishResponse, error)
+}
+
+type ModelLister interface {
+	ListModels(ctx context.Context) ([]Model, error)
+}
+
+type Model struct {
+	ID string
 }
 
 type PolishRequest struct {

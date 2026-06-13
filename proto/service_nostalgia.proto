@@ -123,6 +123,17 @@ service Nostalgia {
       tags: "AI";
     };
   }
+  rpc ListAIModels (ListAIModelsRequest) returns (ListAIModelsResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/models"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to fetch models from the configured AI provider without persisting them";
+      summary: "list AI models";
+      tags: "AI";
+    };
+  }
   rpc CreateCategory (CreateCategoryRequest) returns (CreateCategoryResponse) {
     option (google.api.http) = {
       post: "/v1/categories"

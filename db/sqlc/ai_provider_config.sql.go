@@ -12,7 +12,7 @@ import (
 )
 
 const getAIProviderConfig = `-- name: GetAIProviderConfig :one
-SELECT purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at
+SELECT purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at, api_protocol
 FROM ai_provider_configs
 WHERE purpose = $1
 LIMIT 1
@@ -35,6 +35,7 @@ func (q *Queries) GetAIProviderConfig(ctx context.Context, purpose string) (AiPr
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApiProtocol,
 	)
 	return i, err
 }
@@ -43,6 +44,7 @@ const upsertAIProviderConfig = `-- name: UpsertAIProviderConfig :one
 INSERT INTO ai_provider_configs (
     purpose,
     provider,
+    api_protocol,
     base_url,
     model,
     api_key_ciphertext,
@@ -63,10 +65,12 @@ INSERT INTO ai_provider_configs (
     $8,
     $9,
     $10,
-    $11
+    $11,
+    $12
 )
 ON CONFLICT (purpose) DO UPDATE
 SET provider = EXCLUDED.provider,
+    api_protocol = EXCLUDED.api_protocol,
     base_url = EXCLUDED.base_url,
     model = EXCLUDED.model,
     api_key_ciphertext = EXCLUDED.api_key_ciphertext,
@@ -77,12 +81,13 @@ SET provider = EXCLUDED.provider,
     enabled = EXCLUDED.enabled,
     updated_by = EXCLUDED.updated_by,
     updated_at = now()
-RETURNING purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at
+RETURNING purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at, api_protocol
 `
 
 type UpsertAIProviderConfigParams struct {
 	Purpose          string      `json:"purpose"`
 	Provider         string      `json:"provider"`
+	ApiProtocol      string      `json:"api_protocol"`
 	BaseUrl          string      `json:"base_url"`
 	Model            string      `json:"model"`
 	ApiKeyCiphertext string      `json:"api_key_ciphertext"`
@@ -98,6 +103,7 @@ func (q *Queries) UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProvid
 	row := q.db.QueryRow(ctx, upsertAIProviderConfig,
 		arg.Purpose,
 		arg.Provider,
+		arg.ApiProtocol,
 		arg.BaseUrl,
 		arg.Model,
 		arg.ApiKeyCiphertext,
@@ -123,6 +129,7 @@ func (q *Queries) UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProvid
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ApiProtocol,
 	)
 	return i, err
 }

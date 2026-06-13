@@ -28,6 +28,7 @@ const (
 	Nostalgia_PolishText_FullMethodName        = "/pb.Nostalgia/PolishText"
 	Nostalgia_GetAIConfig_FullMethodName       = "/pb.Nostalgia/GetAIConfig"
 	Nostalgia_UpdateAIConfig_FullMethodName    = "/pb.Nostalgia/UpdateAIConfig"
+	Nostalgia_ListAIModels_FullMethodName      = "/pb.Nostalgia/ListAIModels"
 	Nostalgia_CreateCategory_FullMethodName    = "/pb.Nostalgia/CreateCategory"
 	Nostalgia_DeleteCategory_FullMethodName    = "/pb.Nostalgia/DeleteCategory"
 	Nostalgia_UpdateCategory_FullMethodName    = "/pb.Nostalgia/UpdateCategory"
@@ -48,6 +49,7 @@ type NostalgiaClient interface {
 	PolishText(ctx context.Context, in *PolishTextRequest, opts ...grpc.CallOption) (*PolishTextResponse, error)
 	GetAIConfig(ctx context.Context, in *GetAIConfigRequest, opts ...grpc.CallOption) (*GetAIConfigResponse, error)
 	UpdateAIConfig(ctx context.Context, in *UpdateAIConfigRequest, opts ...grpc.CallOption) (*GetAIConfigResponse, error)
+	ListAIModels(ctx context.Context, in *ListAIModelsRequest, opts ...grpc.CallOption) (*ListAIModelsResponse, error)
 	CreateCategory(ctx context.Context, in *CreateCategoryRequest, opts ...grpc.CallOption) (*CreateCategoryResponse, error)
 	DeleteCategory(ctx context.Context, in *DeleteCategoryRequest, opts ...grpc.CallOption) (*DeleteCategoryResponse, error)
 	UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error)
@@ -153,6 +155,16 @@ func (c *nostalgiaClient) UpdateAIConfig(ctx context.Context, in *UpdateAIConfig
 	return out, nil
 }
 
+func (c *nostalgiaClient) ListAIModels(ctx context.Context, in *ListAIModelsRequest, opts ...grpc.CallOption) (*ListAIModelsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAIModelsResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_ListAIModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *nostalgiaClient) CreateCategory(ctx context.Context, in *CreateCategoryRequest, opts ...grpc.CallOption) (*CreateCategoryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateCategoryResponse)
@@ -216,6 +228,7 @@ type NostalgiaServer interface {
 	PolishText(context.Context, *PolishTextRequest) (*PolishTextResponse, error)
 	GetAIConfig(context.Context, *GetAIConfigRequest) (*GetAIConfigResponse, error)
 	UpdateAIConfig(context.Context, *UpdateAIConfigRequest) (*GetAIConfigResponse, error)
+	ListAIModels(context.Context, *ListAIModelsRequest) (*ListAIModelsResponse, error)
 	CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error)
 	DeleteCategory(context.Context, *DeleteCategoryRequest) (*DeleteCategoryResponse, error)
 	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
@@ -257,6 +270,9 @@ func (UnimplementedNostalgiaServer) GetAIConfig(context.Context, *GetAIConfigReq
 }
 func (UnimplementedNostalgiaServer) UpdateAIConfig(context.Context, *UpdateAIConfigRequest) (*GetAIConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIConfig not implemented")
+}
+func (UnimplementedNostalgiaServer) ListAIModels(context.Context, *ListAIModelsRequest) (*ListAIModelsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAIModels not implemented")
 }
 func (UnimplementedNostalgiaServer) CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCategory not implemented")
@@ -456,6 +472,24 @@ func _Nostalgia_UpdateAIConfig_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Nostalgia_ListAIModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAIModelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).ListAIModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_ListAIModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).ListAIModels(ctx, req.(*ListAIModelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Nostalgia_CreateCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateCategoryRequest)
 	if err := dec(in); err != nil {
@@ -588,6 +622,10 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAIConfig",
 			Handler:    _Nostalgia_UpdateAIConfig_Handler,
+		},
+		{
+			MethodName: "ListAIModels",
+			Handler:    _Nostalgia_ListAIModels_Handler,
 		},
 		{
 			MethodName: "CreateCategory",

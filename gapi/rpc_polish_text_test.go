@@ -52,6 +52,7 @@ func testAIConfigRow(t *testing.T, server *Server, baseURL string, apiKey string
 	return db.AiProviderConfig{
 		Purpose:          "ai_polish",
 		Provider:         "openai_compatible",
+		ApiProtocol:      ai.APIProtocolChatCompletions,
 		BaseUrl:          baseURL,
 		Model:            "writer-model",
 		ApiKeyCiphertext: encryptTestAIKey(t, server, apiKey),
@@ -255,7 +256,8 @@ func TestUpdateAIConfigStoresEncryptedSecretAndMasksResponse(t *testing.T) {
 		UpsertAIProviderConfig(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, arg db.UpsertAIProviderConfigParams) (db.AiProviderConfig, error) {
 			require.Equal(t, "ai_polish", arg.Purpose)
-			require.Equal(t, "openai_compatible", arg.Provider)
+			require.Equal(t, "DeepSeek", arg.Provider)
+			require.Equal(t, ai.APIProtocolResponses, arg.ApiProtocol)
 			require.Equal(t, "https://ai.example.com/v1", arg.BaseUrl)
 			require.Equal(t, "writer-model", arg.Model)
 			require.Equal(t, int32(45000), arg.TimeoutMs)
@@ -274,6 +276,7 @@ func TestUpdateAIConfigStoresEncryptedSecretAndMasksResponse(t *testing.T) {
 			return db.AiProviderConfig{
 				Purpose:          arg.Purpose,
 				Provider:         arg.Provider,
+				ApiProtocol:      arg.ApiProtocol,
 				BaseUrl:          arg.BaseUrl,
 				Model:            arg.Model,
 				ApiKeyCiphertext: arg.ApiKeyCiphertext,
@@ -288,7 +291,8 @@ func TestUpdateAIConfigStoresEncryptedSecretAndMasksResponse(t *testing.T) {
 	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
 
 	resp, err := server.UpdateAIConfig(ctx, &pb.UpdateAIConfigRequest{
-		Provider:        "openai_compatible",
+		Provider:        "DeepSeek",
+		ApiProtocol:     ai.APIProtocolResponses,
 		BaseUrl:         "https://ai.example.com/v1",
 		Model:           "writer-model",
 		ApiKey:          "new-secret",
@@ -300,6 +304,8 @@ func TestUpdateAIConfigStoresEncryptedSecretAndMasksResponse(t *testing.T) {
 	})
 
 	require.NoError(t, err)
+	require.Equal(t, "DeepSeek", resp.GetProvider())
+	require.Equal(t, ai.APIProtocolResponses, resp.GetApiProtocol())
 	require.Equal(t, "database", resp.GetSource())
 	require.True(t, resp.GetApiKeyConfigured())
 	require.True(t, resp.GetEnabled())
@@ -330,6 +336,42 @@ func TestUpdateAIConfigRejectsEnabledConfigWithoutAPIKey(t *testing.T) {
 	st, ok := status.FromError(err)
 	require.True(t, ok)
 	require.Equal(t, codes.InvalidArgument, st.Code())
+}
+
+func TestListAIModelsUsesProviderModelsEndpointWithoutSaving(t *testing.T) {
+	var gotPath string
+	var gotAuth string
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"writer-model"},{"id":"fast-model"}]}`))
+	}))
+	defer provider.Close()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	row := testAIConfigRow(t, server, provider.URL+"/v1", "database-secret")
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(row, nil)
+	store.EXPECT().
+		UpsertAIProviderConfig(gomock.Any(), gomock.Any()).
+		Times(0)
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	resp, err := server.ListAIModels(ctx, &pb.ListAIModelsRequest{
+		Provider:    "DeepSeek",
+		ApiProtocol: ai.APIProtocolChatCompletions,
+		BaseUrl:     provider.URL + "/v1",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "/v1/models", gotPath)
+	require.Equal(t, "Bearer database-secret", gotAuth)
+	require.Equal(t, []string{"writer-model", "fast-model"}, resp.GetModels())
 }
 
 func TestPolishTextUsesDatabaseConfig(t *testing.T) {

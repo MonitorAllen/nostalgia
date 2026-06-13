@@ -57,6 +57,7 @@ AUTOMATION_SIGNATURE_TTL=5m
 AUTOMATION_DAILY_DRAFT_LIMIT=1
 AUTOMATION_NOTIFY_EMAIL=owner@example.com
 AI_POLISH_PROVIDER=openai_compatible
+AI_POLISH_API_PROTOCOL=chat/completions
 AI_POLISH_BASE_URL=https://api.example.com/v1
 AI_POLISH_API_KEY=replace-with-runtime-secret
 AI_POLISH_MODEL=replace-with-model-name
@@ -72,7 +73,7 @@ UPLOAD_FILE_ALLOWED_MIME=image/jpeg,image/png
 HTTP_PROXY_ADDR=http://host.docker.internal:10808
 ```
 
-`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节，也会作为后台实时 AI 配置的密钥加密材料；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。`DOMAIN` 应设置为公开站点根地址，例如 `https://example.com`，用于生成自动化审核链接、`robots.txt` 与 `sitemap.xml` 中的 canonical URL。`AUTOMATION_HMAC_SECRET` 用于 Codex 自动化草稿 API 的 HMAC 签名校验，也只能通过运行时环境或 Secret Store 注入。`AI_POLISH_*` 环境变量用于后台 AI 润色的初始值与兜底配置；在 `/backend` 的 AI 提供商页面保存配置后，数据库中的加密配置会优先生效，前端不会接收 API Key 明文。Redis 仍使用一个服务实例，默认 `REDIS_CACHE_DB=0` 存放缓存与幂等键，`REDIS_QUEUE_DB=1` 存放 Asynq 队列数据。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
+`TOKEN_SYMMETRIC_KEY` 用于签发访问令牌，至少 32 字节，也会作为后台实时 AI 配置的密钥加密材料；`SETUP_TOKEN` 只用于首次创建管理员账号，不是后台登录密码，也不要提交真实值。`DOMAIN` 应设置为公开站点根地址，例如 `https://example.com`，用于生成自动化审核链接、`robots.txt` 与 `sitemap.xml` 中的 canonical URL。`AUTOMATION_HMAC_SECRET` 用于 Codex 自动化草稿 API 的 HMAC 签名校验，也只能通过运行时环境或 Secret Store 注入。`AI_POLISH_*` 环境变量用于后台 AI 润色的初始值与兜底配置，其中 `AI_POLISH_API_PROTOCOL` 支持 `chat/completions`、`responses`、`messages`；在 `/backend` 的 AI 提供商页面保存配置后，数据库中的加密配置会优先生效，前端不会接收 API Key 明文。Redis 仍使用一个服务实例，默认 `REDIS_CACHE_DB=0` 存放缓存与幂等键，`REDIS_QUEUE_DB=1` 存放 Asynq 队列数据。通过 Makefile 启动本地 PostgreSQL 时，宿主机端口是 `15432`；Docker Compose 内部服务仍通过 `postgres:5432` 互联。
 
 ## 🚀 快速部署
 

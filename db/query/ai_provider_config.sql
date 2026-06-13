@@ -8,6 +8,7 @@ LIMIT 1;
 INSERT INTO ai_provider_configs (
     purpose,
     provider,
+    api_protocol,
     base_url,
     model,
     api_key_ciphertext,
@@ -20,6 +21,7 @@ INSERT INTO ai_provider_configs (
 ) VALUES (
     sqlc.arg(purpose),
     sqlc.arg(provider),
+    sqlc.arg(api_protocol),
     sqlc.arg(base_url),
     sqlc.arg(model),
     sqlc.arg(api_key_ciphertext),
@@ -32,6 +34,7 @@ INSERT INTO ai_provider_configs (
 )
 ON CONFLICT (purpose) DO UPDATE
 SET provider = EXCLUDED.provider,
+    api_protocol = EXCLUDED.api_protocol,
     base_url = EXCLUDED.base_url,
     model = EXCLUDED.model,
     api_key_ciphertext = EXCLUDED.api_key_ciphertext,

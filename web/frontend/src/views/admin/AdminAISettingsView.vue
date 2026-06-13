@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bot, CheckCircle2, KeyRound, RefreshCw, Save, ShieldCheck, XCircle } from '@lucide/vue'
-import { getAdminAIConfig, updateAdminAIConfig } from '@/admin/api/adminAiApi'
-import type { AdminAIConfigResponse } from '@/admin/types'
+import { getAdminAIConfig, listAdminAIModels, updateAdminAIConfig } from '@/admin/api/adminAiApi'
+import type { AdminAIConfigResponse, AdminAIProtocol } from '@/admin/types'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -14,10 +14,13 @@ const toast = useToast()
 const config = ref<AdminAIConfigResponse | null>(null)
 const loading = ref(false)
 const saving = ref(false)
+const modelsLoading = ref(false)
+const modelOptions = ref<string[]>([])
 const apiKeyDraft = ref('')
 const clearApiKey = ref(false)
 const form = ref({
-  provider: 'openai_compatible',
+  provider: 'OpenAI Compatible',
+  apiProtocol: 'chat/completions' as AdminAIProtocol,
   baseUrl: '',
   model: '',
   timeout: '30s',
@@ -28,6 +31,7 @@ const form = ref({
 })
 
 const providerLabel = computed(() => config.value?.provider || '未设置')
+const protocolLabel = computed(() => config.value?.api_protocol || 'chat/completions')
 const modelLabel = computed(() => config.value?.model || '未设置')
 const baseUrlLabel = computed(() => config.value?.base_url || '未设置')
 const sourceLabel = computed(() =>
@@ -38,10 +42,19 @@ const sourceLabel = computed(() =>
       : config.value?.source || '未设置'
 )
 const canSubmit = computed(() => !loading.value && !saving.value)
+const canRefreshModels = computed(() => {
+  return (
+    canSubmit.value &&
+    !modelsLoading.value &&
+    Boolean(form.value.baseUrl.trim()) &&
+    (Boolean(apiKeyDraft.value.trim()) || Boolean(config.value?.api_key_configured && !clearApiKey.value))
+  )
+})
 
 const syncForm = (nextConfig: AdminAIConfigResponse | null) => {
   form.value = {
-    provider: nextConfig?.provider || 'openai_compatible',
+    provider: nextConfig?.provider || 'OpenAI Compatible',
+    apiProtocol: nextConfig?.api_protocol || 'chat/completions',
     baseUrl: nextConfig?.base_url || '',
     model: nextConfig?.model || '',
     timeout: nextConfig?.timeout || '30s',
@@ -52,6 +65,7 @@ const syncForm = (nextConfig: AdminAIConfigResponse | null) => {
   }
   apiKeyDraft.value = ''
   clearApiKey.value = false
+  modelOptions.value = []
 }
 
 const toPositiveNumber = (value: string, fallback: number) => {
@@ -87,6 +101,7 @@ const saveConfig = async () => {
   try {
     const response = await updateAdminAIConfig({
       provider: form.value.provider.trim(),
+      api_protocol: form.value.apiProtocol,
       base_url: form.value.baseUrl.trim(),
       model: form.value.model.trim(),
       api_key: clearApiKey.value ? '' : apiKeyDraft.value.trim(),
@@ -107,6 +122,32 @@ const saveConfig = async () => {
     })
   } finally {
     saving.value = false
+  }
+}
+
+const refreshModels = async () => {
+  if (!canRefreshModels.value) return
+  modelsLoading.value = true
+
+  try {
+    const response = await listAdminAIModels({
+      provider: form.value.provider.trim(),
+      api_protocol: form.value.apiProtocol,
+      base_url: form.value.baseUrl.trim(),
+      api_key: apiKeyDraft.value.trim() || undefined
+    })
+    modelOptions.value = response.data.models ?? []
+    if (modelOptions.value.length && !form.value.model.trim()) {
+      form.value.model = modelOptions.value[0]
+    }
+    toast.add({
+      severity: 'success',
+      summary: '模型列表已刷新',
+      detail: modelOptions.value.length ? `获取到 ${modelOptions.value.length} 个模型` : '提供商没有返回模型',
+      life: 2400
+    })
+  } finally {
+    modelsLoading.value = false
   }
 }
 
@@ -164,20 +205,48 @@ onMounted(() => {
 
         <div class="grid gap-3 md:grid-cols-2">
           <label class="block space-y-2">
-            <span class="text-sm font-bold text-foreground">Provider</span>
-            <select
-              v-model="form.provider"
-              class="h-11 w-full rounded-full border border-border bg-surface px-4 text-sm font-semibold text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/18 disabled:cursor-not-allowed disabled:opacity-60"
-              :disabled="!canSubmit"
-            >
-              <option value="openai_compatible">OpenAI Compatible</option>
-            </select>
+            <span class="text-sm font-bold text-foreground">提供商名称</span>
+            <AppInput v-model="form.provider" placeholder="OpenAI Compatible" :disabled="!canSubmit" />
           </label>
 
           <label class="block space-y-2">
-            <span class="text-sm font-bold text-foreground">Model</span>
-            <AppInput v-model="form.model" placeholder="gpt-4.1-mini" :disabled="!canSubmit" />
+            <span class="text-sm font-bold text-foreground">API 协议</span>
+            <select
+              v-model="form.apiProtocol"
+              class="h-11 w-full rounded-full border border-border bg-surface px-4 text-sm font-semibold text-foreground transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/18 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="!canSubmit"
+            >
+              <option value="chat/completions">chat/completions</option>
+              <option value="responses">responses</option>
+              <option value="messages">messages</option>
+            </select>
           </label>
+
+          <div class="space-y-2 md:col-span-2">
+            <span class="text-sm font-bold text-foreground">Model</span>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <AppInput
+                id="admin-ai-model"
+                v-model="form.model"
+                list="admin-ai-model-options"
+                placeholder="gpt-4.1-mini"
+                :disabled="!canSubmit"
+              />
+              <datalist id="admin-ai-model-options">
+                <option v-for="model in modelOptions" :key="model" :value="model" />
+              </datalist>
+              <AppButton
+                type="button"
+                variant="secondary"
+                class="sm:shrink-0"
+                :disabled="!canRefreshModels"
+                @click="refreshModels"
+              >
+                <RefreshCw class="size-4" aria-hidden="true" />
+                {{ modelsLoading ? '获取中' : '刷新模型' }}
+              </AppButton>
+            </div>
+          </div>
 
           <label class="block space-y-2 md:col-span-2">
             <span class="text-sm font-bold text-foreground">Base URL</span>
@@ -252,6 +321,13 @@ onMounted(() => {
             <dt class="text-xs font-bold text-muted-foreground">当前 Model</dt>
             <dd class="m-0 mt-2 break-all text-sm font-black text-foreground">{{ modelLabel }}</dd>
           </div>
+          <div class="rounded-archive border border-border p-4">
+            <dt class="text-xs font-bold text-muted-foreground">当前协议</dt>
+            <dd class="m-0 mt-2 break-all text-sm font-black text-foreground">{{ protocolLabel }}</dd>
+          </div>
+        </dl>
+
+        <dl class="m-0 mt-3 grid gap-3 sm:grid-cols-2">
           <div class="rounded-archive border border-border p-4">
             <dt class="text-xs font-bold text-muted-foreground">当前 Base URL</dt>
             <dd class="m-0 mt-2 break-all text-sm font-black text-foreground">{{ baseUrlLabel }}</dd>

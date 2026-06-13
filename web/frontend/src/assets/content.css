@@ -339,6 +339,54 @@
   --prose-measure: 72ch;
 }
 
+.admin-editor-content .ck-editor__editable.reading-prose h1,
+.admin-editor-content .ck-editor__editable.reading-prose h2,
+.admin-editor-content .ck-editor__editable.reading-prose h3,
+.admin-editor-content .ck-editor__editable.reading-prose h4,
+.admin-editor-content .ck-editor__editable.reading-prose h5,
+.admin-editor-content .ck-editor__editable.reading-prose h6 {
+  color: rgb(var(--color-foreground));
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.25;
+  margin: 2rem auto 0.85rem;
+  max-width: min(100%, var(--prose-measure));
+  text-wrap: balance;
+}
+
+.admin-editor-content .ck-editor__editable.reading-prose h1 {
+  font-size: 2.25rem;
+}
+
+.admin-editor-content .ck-editor__editable.reading-prose h2 {
+  font-size: 1.8rem;
+}
+
+.admin-editor-content .ck-editor__editable.reading-prose h3 {
+  font-size: 1.45rem;
+}
+
+.admin-editor-content .ck-editor__editable.reading-prose p,
+.admin-editor-content .ck-editor__editable.reading-prose li {
+  color: rgb(var(--color-foreground) / 0.88);
+  font-size: 1.03rem;
+  line-height: 1.9;
+}
+
+.admin-editor-content .ck-editor__editable.reading-prose p,
+.admin-editor-content .ck-editor__editable.reading-prose ul,
+.admin-editor-content .ck-editor__editable.reading-prose ol,
+.admin-editor-content .ck-editor__editable.reading-prose blockquote {
+  max-width: min(100%, var(--prose-measure));
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.admin-editor-content .ck-editor__editable.reading-prose p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
 .admin-editor-content .ck-content,
 .admin-editor-content .ck-content.ck-editor__editable {
   color: rgb(var(--color-foreground));

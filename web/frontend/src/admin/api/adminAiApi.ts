@@ -2,6 +2,8 @@ import adminHttp from './adminHttp'
 import type {
   AdminAIConfigResponse,
   AdminAIConfigUpdateRequest,
+  AdminAIModelsRequest,
+  AdminAIModelsResponse,
   AdminAIPolishRequest,
   AdminAIPolishResponse
 } from '../types'
@@ -16,4 +18,8 @@ export function getAdminAIConfig() {
 
 export function updateAdminAIConfig(data: AdminAIConfigUpdateRequest) {
   return adminHttp.patch<AdminAIConfigResponse>('/ai/config', data)
+}
+
+export function listAdminAIModels(data: AdminAIModelsRequest) {
+  return adminHttp.post<AdminAIModelsResponse>('/ai/models', data)
 }
