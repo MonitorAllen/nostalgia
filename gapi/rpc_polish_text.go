@@ -45,7 +45,19 @@ func (server *Server) PolishText(ctx context.Context, req *pb.PolishTextRequest)
 		if !cfg.usable() {
 			return nil, status.Error(codes.FailedPrecondition, "AI 润色尚未配置")
 		}
-		polisher = ai.NewOpenAICompatiblePolisher(cfg.toRuntimeConfig(server.config))
+		polisher = ai.NewPolishService(ai.ServiceConfig{
+			Provider:         cfg.Provider,
+			APIProtocol:      cfg.APIProtocol,
+			BaseURL:          cfg.BaseURL,
+			APIKey:           cfg.APIKey,
+			Model:            cfg.Model,
+			Timeout:          cfg.Timeout,
+			MaxInputChars:    cfg.MaxInputChars,
+			MaxContextChars:  cfg.MaxContextChars,
+			MaxSuggestions:   cfg.MaxSuggestions,
+			PromptTemplates:  cfg.PromptTemplates,
+			HTTPProxyAddress: server.config.HTTPProxyAddr,
+		}, nil)
 	}
 	if polisher == nil {
 		return nil, status.Error(codes.FailedPrecondition, "AI 润色尚未配置")

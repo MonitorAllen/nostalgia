@@ -94,11 +94,13 @@ func normalizeProvider(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "anthropic", "claude":
 		return ProviderAnthropic
-	case ProviderOpenAI, "openai-compatible", "openai compatible", "":
-		return ProviderOpenAI
 	default:
-		return strings.ToLower(strings.TrimSpace(value))
+		return ProviderOpenAI
 	}
+}
+
+func IsAnthropicProvider(value string) bool {
+	return normalizeProvider(value) == ProviderAnthropic
 }
 
 func normalizeProviderAPIProtocol(value string) string {

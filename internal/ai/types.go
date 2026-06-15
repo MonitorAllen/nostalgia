@@ -101,11 +101,6 @@ type PolishResponse struct {
 	Model       string
 }
 
-type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
 func (req PolishRequest) normalized() PolishRequest {
 	req.Mode = strings.TrimSpace(req.Mode)
 	req.Target = strings.TrimSpace(req.Target)

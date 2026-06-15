@@ -312,6 +312,55 @@ func TestUpdateAIConfigStoresEncryptedSecretAndMasksResponse(t *testing.T) {
 	require.NotContains(t, resp.String(), "new-secret")
 }
 
+func TestUpdateAIConfigStoresPromptTemplates(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+	store := mockdb.NewMockStore(ctrl)
+	server := newTestServer(t, newGAPITestStore(store), nil, nil)
+	store.EXPECT().
+		GetAIProviderConfig(gomock.Any(), "ai_polish").
+		Return(db.AiProviderConfig{}, pgx.ErrNoRows)
+	store.EXPECT().
+		UpsertAIProviderConfig(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, arg db.UpsertAIProviderConfigParams) (db.AiProviderConfig, error) {
+			require.JSONEq(t, `{"improve":"custom {{text}}"}`, string(arg.PromptTemplates))
+			return db.AiProviderConfig{
+				Purpose:          arg.Purpose,
+				Provider:         arg.Provider,
+				ApiProtocol:      arg.ApiProtocol,
+				BaseUrl:          arg.BaseUrl,
+				Model:            arg.Model,
+				ApiKeyCiphertext: arg.ApiKeyCiphertext,
+				TimeoutMs:        arg.TimeoutMs,
+				MaxInputChars:    arg.MaxInputChars,
+				MaxContextChars:  arg.MaxContextChars,
+				MaxSuggestions:   arg.MaxSuggestions,
+				PromptTemplates:  arg.PromptTemplates,
+				Enabled:          arg.Enabled,
+				UpdatedBy:        arg.UpdatedBy,
+			}, nil
+		})
+
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+	resp, err := server.UpdateAIConfig(ctx, &pb.UpdateAIConfigRequest{
+		Provider:        "openai",
+		ApiProtocol:     ai.APIProtocolChatCompletions,
+		BaseUrl:         "https://ai.example.com/v1",
+		Model:           "writer-model",
+		ApiKey:          "new-secret",
+		Timeout:         "30s",
+		MaxInputChars:   6000,
+		MaxContextChars: 4000,
+		MaxSuggestions:  3,
+		Enabled:         true,
+		PromptTemplates: map[string]string{ai.ModeImprove: "custom {{text}}"},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "custom {{text}}", resp.GetPromptTemplates()[ai.ModeImprove])
+	require.NotEmpty(t, resp.GetDefaultPromptTemplates()[ai.ModeImprove])
+}
+
 func TestUpdateAIConfigRejectsEnabledConfigWithoutAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
@@ -372,6 +421,28 @@ func TestListAIModelsUsesProviderModelsEndpointWithoutSaving(t *testing.T) {
 	require.Equal(t, "/v1/models", gotPath)
 	require.Equal(t, "Bearer database-secret", gotAuth)
 	require.Equal(t, []string{"writer-model", "fast-model"}, resp.GetModels())
+}
+
+func TestListAIModelsReturnsUnimplementedForAnthropic(t *testing.T) {
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"claude-test"}]}`))
+	}))
+	defer provider.Close()
+
+	server := newTestServer(t, nil, nil, nil)
+	ctx := newContextWithAdminBearerToken(t, server.tokenMaker, time.Minute)
+
+	_, err := server.ListAIModels(ctx, &pb.ListAIModelsRequest{
+		Provider:    ai.ProviderAnthropic,
+		ApiProtocol: ai.APIProtocolMessages,
+		BaseUrl:     provider.URL,
+		ApiKey:      "secret-key",
+	})
+
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	require.Equal(t, codes.Unimplemented, st.Code())
 }
 
 func TestPolishTextUsesDatabaseConfig(t *testing.T) {

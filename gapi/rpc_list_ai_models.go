@@ -42,9 +42,21 @@ func (server *Server) ListAIModels(ctx context.Context, req *pb.ListAIModelsRequ
 		return nil, status.Error(codes.InvalidArgument, "unsupported AI API protocol")
 	}
 
-	lister, ok := ai.NewOpenAICompatiblePolisher(cfg.toRuntimeConfig(server.config)).(ai.ModelLister)
-	if !ok {
-		return nil, status.Error(codes.Internal, "AI provider does not support listing models")
+	if ai.IsAnthropicProvider(cfg.Provider) {
+		return nil, status.Error(codes.Unimplemented, "Anthropic model listing is not supported yet")
+	}
+
+	lister, err := ai.NewProviderAdapter(ai.ServiceConfig{
+		Provider:         cfg.Provider,
+		APIProtocol:      cfg.APIProtocol,
+		BaseURL:          cfg.BaseURL,
+		APIKey:           cfg.APIKey,
+		Model:            cfg.Model,
+		Timeout:          cfg.Timeout,
+		HTTPProxyAddress: server.config.HTTPProxyAddr,
+	})
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "unsupported AI provider")
 	}
 
 	models, err := lister.ListModels(ctx)
