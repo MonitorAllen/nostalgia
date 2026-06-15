@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { ExternalLink, Home, LogIn, LogOut, Menu, Search, User, Wrench, X } from '@lucide/vue'
+import { ExternalLink, Home, LogIn, LogOut, Menu, Search, Shield, User, Wrench, X } from '@lucide/vue'
 import { useUserStore } from '@/store/module/user'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -13,8 +13,10 @@ const userStore = useUserStore()
 const searchValue = ref('')
 const mobileOpen = ref(false)
 const userMenuOpen = ref(false)
+const userMenuRef = ref<HTMLElement | null>(null)
 
 const hasUser = computed(() => !!userStore.userInfo)
+const isAdminUser = computed(() => userStore.userInfo?.role === 'admin')
 const username = computed(() => userStore.userInfo?.username ?? '访客')
 
 const handleSearch = () => {
@@ -22,12 +24,36 @@ const handleSearch = () => {
   if (!query) return
   searchValue.value = ''
   mobileOpen.value = false
+  userMenuOpen.value = false
   router.push({ path: '/search', query: { q: query } })
 }
 
 const logout = () => {
+  userMenuOpen.value = false
+  mobileOpen.value = false
   userStore.logout()
 }
+
+const closeMobileMenu = () => {
+  mobileOpen.value = false
+  userMenuOpen.value = false
+}
+
+const handleDocumentClick = (event: MouseEvent) => {
+  if (!userMenuOpen.value) return
+  const target = event.target
+  if (!(target instanceof Node)) return
+  if (userMenuRef.value?.contains(target)) return
+  userMenuOpen.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
@@ -86,15 +112,24 @@ const logout = () => {
       <div class="ml-auto hidden shrink-0 items-center justify-end gap-2 lg:flex">
         <ThemeSwitcher />
 
-        <div v-if="hasUser" class="relative">
+        <div v-if="hasUser" ref="userMenuRef" class="relative">
           <AppButton variant="ghost" size="sm" @click="userMenuOpen = !userMenuOpen">
             <User class="h-4 w-4" />
             {{ username }}
           </AppButton>
           <div
             v-if="userMenuOpen"
-            class="archive-glass absolute right-0 mt-2 w-44 rounded-archive p-2"
+            class="archive-glass absolute right-0 mt-2 w-48 rounded-archive p-2"
           >
+            <RouterLink
+              v-if="isAdminUser"
+              :to="{ name: 'adminArticles' }"
+              class="flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              @click="userMenuOpen = false"
+            >
+              <Shield class="h-4 w-4" />
+              后台管理
+            </RouterLink>
             <button
               type="button"
               class="flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -147,7 +182,7 @@ const logout = () => {
           />
         </label>
         <div class="mt-3 flex flex-col gap-2">
-          <RouterLink to="/" class="rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted"
+          <RouterLink to="/" class="rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted" @click="closeMobileMenu"
             >主页</RouterLink
           >
           <a
@@ -159,6 +194,14 @@ const logout = () => {
             工具
           </a>
           <ThemeSwitcher class="w-max" />
+          <RouterLink
+            v-if="hasUser && isAdminUser"
+            :to="{ name: 'adminArticles' }"
+            class="rounded-full px-3 py-2 text-sm font-semibold hover:bg-muted"
+            @click="closeMobileMenu"
+          >
+            后台管理
+          </RouterLink>
           <button
             v-if="hasUser"
             type="button"

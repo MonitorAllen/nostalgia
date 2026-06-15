@@ -49,6 +49,15 @@ describe('nginx deployment ingress config', () => {
     expect(nginx).toMatch(/listen 80 default_server;[\s\S]*location \/ \{[\s\S]*return 301 https:\/\/\$host\$request_uri;/)
   })
 
+  test('routes crawler discovery files through the api service', () => {
+    const nginx = readRepoFile('web/nginx.conf')
+
+    expect(nginx).toContain('location = /robots.txt')
+    expect(nginx).toContain('location = /sitemap.xml')
+    expect(nginx).toContain('proxy_pass http://api:8080/robots.txt')
+    expect(nginx).toContain('proxy_pass http://api:8080/sitemap.xml')
+  })
+
   test('production compose exposes web as the only public ingress', () => {
     const compose = readRepoFile('docker-compose.yaml')
 

@@ -14,7 +14,7 @@ import (
 type Querier interface {
 	AddCommentLikes(ctx context.Context, id int64) (Comment, error)
 	CountAdminUsers(ctx context.Context) (int64, error)
-	CountAllArticles(ctx context.Context) (int64, error)
+	CountAllArticles(ctx context.Context, title pgtype.Text) (int64, error)
 	CountArticles(ctx context.Context, arg CountArticlesParams) (int64, error)
 	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
 	CountAutomationDraftsToday(ctx context.Context) (int64, error)
@@ -34,6 +34,7 @@ type Querier interface {
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
+	GetAIProviderConfig(ctx context.Context, purpose string) (AiProviderConfig, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error)
 	GetArticleBySlug(ctx context.Context, slug pgtype.Text) (GetArticleBySlugRow, error)
 	GetArticleForUpdate(ctx context.Context, id uuid.UUID) (GetArticleForUpdateRow, error)
@@ -53,6 +54,8 @@ type Querier interface {
 	ListArticlesByCategoryID(ctx context.Context, arg ListArticlesByCategoryIDParams) ([]ListArticlesByCategoryIDRow, error)
 	ListCategoriesCountArticles(ctx context.Context) ([]ListCategoriesCountArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
+	ListPublishedArticleSitemapItems(ctx context.Context) ([]ListPublishedArticleSitemapItemsRow, error)
+	ListPublishedCategorySitemapItems(ctx context.Context) ([]ListPublishedCategorySitemapItemsRow, error)
 	MarkAutomationArticleRequestCreated(ctx context.Context, arg MarkAutomationArticleRequestCreatedParams) (AutomationArticleRequest, error)
 	SearchArticles(ctx context.Context, arg SearchArticlesParams) ([]SearchArticlesRow, error)
 	SetArticleDefaultCategoryIdByCategoryId(ctx context.Context, categoryID int64) error
@@ -60,6 +63,7 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
+	UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProviderConfigParams) (AiProviderConfig, error)
 }
 
 var _ Querier = (*Queries)(nil)

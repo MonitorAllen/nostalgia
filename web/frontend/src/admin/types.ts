@@ -98,6 +98,7 @@ export type AdminAIPolishMode =
   | 'summary_candidates'
 
 export type AdminAIPolishTarget = 'content_selection' | 'title' | 'summary'
+export type AdminAIProtocol = 'chat/completions' | 'responses' | 'messages'
 
 export interface AdminAIPolishRequest {
   mode: AdminAIPolishMode
@@ -120,4 +121,43 @@ export interface AdminAIPolishResponse {
   mode: AdminAIPolishMode
   target: AdminAIPolishTarget
   model: string
+}
+
+export interface AdminAIConfigResponse {
+  provider: string
+  api_protocol: AdminAIProtocol
+  base_url: string
+  model: string
+  api_key_configured: boolean
+  enabled: boolean
+  timeout: string
+  max_input_chars: number
+  max_context_chars: number
+  max_suggestions: number
+  source: 'runtime_env' | string
+}
+
+export interface AdminAIConfigUpdateRequest {
+  provider: string
+  api_protocol: AdminAIProtocol
+  base_url: string
+  model: string
+  api_key?: string
+  timeout: string
+  max_input_chars: number
+  max_context_chars: number
+  max_suggestions: number
+  enabled: boolean
+  clear_api_key?: boolean
+}
+
+export interface AdminAIModelsRequest {
+  provider: string
+  api_protocol: AdminAIProtocol
+  base_url: string
+  api_key?: string
+}
+
+export interface AdminAIModelsResponse {
+  models: string[]
 }

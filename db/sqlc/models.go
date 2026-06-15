@@ -11,6 +11,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AiProviderConfig struct {
+	Purpose          string      `json:"purpose"`
+	Provider         string      `json:"provider"`
+	BaseUrl          string      `json:"base_url"`
+	Model            string      `json:"model"`
+	ApiKeyCiphertext string      `json:"api_key_ciphertext"`
+	TimeoutMs        int32       `json:"timeout_ms"`
+	MaxInputChars    int32       `json:"max_input_chars"`
+	MaxContextChars  int32       `json:"max_context_chars"`
+	MaxSuggestions   int32       `json:"max_suggestions"`
+	Enabled          bool        `json:"enabled"`
+	UpdatedBy        pgtype.UUID `json:"updated_by"`
+	CreatedAt        time.Time   `json:"created_at"`
+	UpdatedAt        time.Time   `json:"updated_at"`
+	ApiProtocol      string      `json:"api_protocol"`
+}
+
 type Article struct {
 	ID uuid.UUID `json:"id"`
 	// 标题

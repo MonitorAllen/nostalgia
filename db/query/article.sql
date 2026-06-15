@@ -197,12 +197,37 @@ SELECT a.id,
        c.name as category_name
 FROM articles a
          LEFT JOIN categories c on c.id = a.category_id
-ORDER BY a.created_at DESC
+WHERE (sqlc.narg(title)::text IS NULL OR a.title ILIKE '%' || sqlc.narg(title)::text || '%')
+ORDER BY
+    (a.created_by_automation = true AND a.automation_status = 'pending_review' AND a.is_publish = false) DESC,
+    a.created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: CountAllArticles :one
 SELECT count(*)
-FROM articles;
+FROM articles a
+WHERE (sqlc.narg(title)::text IS NULL OR a.title ILIKE '%' || sqlc.narg(title)::text || '%');
+
+-- name: ListPublishedArticleSitemapItems :many
+SELECT id,
+       slug,
+       owner,
+       created_at,
+       updated_at
+FROM articles
+WHERE is_publish = true
+  AND deleted_at = '0001-01-01 00:00:00Z'
+ORDER BY GREATEST(created_at, updated_at) DESC;
+
+-- name: ListPublishedCategorySitemapItems :many
+SELECT c.id,
+       MAX(GREATEST(a.created_at, a.updated_at))::timestamptz AS updated_at
+FROM categories c
+         INNER JOIN articles a ON a.category_id = c.id
+WHERE a.is_publish = true
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
+GROUP BY c.id
+ORDER BY c.id;
 
 -- name: DeleteArticle :exec
 DELETE

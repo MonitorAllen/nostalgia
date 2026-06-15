@@ -73,6 +73,143 @@ func TestOpenAICompatiblePolisherParsesSuggestions(t *testing.T) {
 	require.Equal(t, "writer-model", result.Model)
 }
 
+func TestOpenAICompatiblePolisherUsesResponsesProtocol(t *testing.T) {
+	var gotPath string
+	var gotModel string
+	var gotInput []map[string]string
+
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+
+		var payload struct {
+			Model string              `json:"model"`
+			Input []map[string]string `json:"input"`
+		}
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		gotModel = payload.Model
+		gotInput = payload.Input
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"output_text": "{\"suggestions\":[{\"content\":\"Responses 表达\",\"reason\":\"协议正确\"}]}"
+		}`))
+	}))
+	defer provider.Close()
+
+	polisher := NewOpenAICompatiblePolisher(util.Config{
+		AIPolishBaseURL:         provider.URL + "/v1/",
+		AIPolishAPIKey:          "secret-key",
+		AIPolishModel:           "writer-model",
+		AIPolishAPIProtocol:     APIProtocolResponses,
+		AIPolishTimeout:         time.Second,
+		AIPolishMaxInputChars:   6000,
+		AIPolishMaxContextChars: 4000,
+		AIPolishMaxSuggestions:  3,
+	})
+
+	result, err := polisher.Polish(context.Background(), PolishRequest{
+		Mode:   ModeImprove,
+		Target: TargetContentSelection,
+		Text:   "原始表达",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "/v1/responses", gotPath)
+	require.Equal(t, "writer-model", gotModel)
+	require.Len(t, gotInput, 2)
+	require.Equal(t, "Responses 表达", result.Suggestions[0].Content)
+}
+
+func TestOpenAICompatiblePolisherUsesMessagesProtocol(t *testing.T) {
+	var gotPath string
+	var gotAPIKey string
+	var gotVersion string
+	var gotModel string
+	var gotMessages []map[string]string
+
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotAPIKey = r.Header.Get("x-api-key")
+		gotVersion = r.Header.Get("anthropic-version")
+
+		var payload struct {
+			Model    string              `json:"model"`
+			Messages []map[string]string `json:"messages"`
+		}
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		gotModel = payload.Model
+		gotMessages = payload.Messages
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"content": [
+				{"type": "text", "text": "{\"suggestions\":[{\"content\":\"Messages 表达\",\"reason\":\"协议正确\"}]}"}
+			]
+		}`))
+	}))
+	defer provider.Close()
+
+	polisher := NewOpenAICompatiblePolisher(util.Config{
+		AIPolishBaseURL:         provider.URL + "/v1/",
+		AIPolishAPIKey:          "secret-key",
+		AIPolishModel:           "writer-model",
+		AIPolishAPIProtocol:     APIProtocolMessages,
+		AIPolishTimeout:         time.Second,
+		AIPolishMaxInputChars:   6000,
+		AIPolishMaxContextChars: 4000,
+		AIPolishMaxSuggestions:  3,
+	})
+
+	result, err := polisher.Polish(context.Background(), PolishRequest{
+		Mode:   ModeImprove,
+		Target: TargetContentSelection,
+		Text:   "原始表达",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "/v1/messages", gotPath)
+	require.Equal(t, "secret-key", gotAPIKey)
+	require.NotEmpty(t, gotVersion)
+	require.Equal(t, "writer-model", gotModel)
+	require.Len(t, gotMessages, 1)
+	require.Equal(t, "Messages 表达", result.Suggestions[0].Content)
+}
+
+func TestOpenAICompatiblePolisherListsModelsFromStandardEndpoint(t *testing.T) {
+	var gotPath string
+	var gotAuth string
+
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"id": "writer-model"},
+				{"id": "fast-model"}
+			]
+		}`))
+	}))
+	defer provider.Close()
+
+	polisher := NewOpenAICompatiblePolisher(util.Config{
+		AIPolishBaseURL:     provider.URL + "/v1/",
+		AIPolishAPIKey:      "secret-key",
+		AIPolishModel:       "writer-model",
+		AIPolishAPIProtocol: APIProtocolChatCompletions,
+		AIPolishTimeout:     time.Second,
+	})
+	lister, ok := polisher.(ModelLister)
+	require.True(t, ok)
+
+	models, err := lister.ListModels(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, "/v1/models", gotPath)
+	require.Equal(t, "Bearer secret-key", gotAuth)
+	require.Equal(t, []Model{{ID: "writer-model"}, {ID: "fast-model"}}, models)
+}
+
 func TestOpenAICompatiblePolisherDisabledWhenConfigIncomplete(t *testing.T) {
 	polisher := NewOpenAICompatiblePolisher(util.Config{
 		AIPolishBaseURL: "https://ai.example.com/v1",

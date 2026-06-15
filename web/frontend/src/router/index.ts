@@ -9,6 +9,7 @@ import CategoryArticleView from '@/views/category/CategoryArticleView.vue'
 import Forbidden from '@/views/Forbidden.vue'
 import { ADMIN_BASE_PATH, ADMIN_LOGIN_PATH } from '@/admin/adminRoutes'
 import { useAuthStore } from '@/store/module/auth'
+import { applySeoMetadata, buildRouteSeoMetadata } from '@/util/seo'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -108,6 +109,11 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminCategoryView.vue')
         },
         {
+          path: 'ai-settings',
+          name: 'adminAiSettings',
+          component: () => import('@/views/admin/AdminAISettingsView.vue')
+        },
+        {
           path: ':pathMatch(.*)*',
           name: 'adminNotFound',
           redirect: { name: 'adminArticles' }
@@ -135,6 +141,10 @@ router.beforeEach(async (to) => {
     name: 'adminLogin',
     query: { redirect: to.fullPath }
   }
+})
+
+router.afterEach((to) => {
+  applySeoMetadata(buildRouteSeoMetadata(to))
 })
 
 export default router

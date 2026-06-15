@@ -5,6 +5,7 @@ import { getCategory } from '@/api/category'
 import { useToast } from '@/composables/useToast'
 import ArticleList from '@/components/article/ArticleList.vue'
 import ArchiveTrail from '@/components/ui/ArchiveTrail.vue'
+import { applySeoMetadata, buildCategorySeoMetadata } from '@/util/seo'
 
 const props = defineProps({
   id: {
@@ -21,6 +22,7 @@ const fetchCategory = async (id: number) => {
   try {
     const resp = await getCategory({ id })
     categoryName.value = resp.data.category.name
+    applySeoMetadata(buildCategorySeoMetadata(id, categoryName.value))
   } catch (error: any) {
     toast.add({
       severity: 'error',

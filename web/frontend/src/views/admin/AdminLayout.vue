@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, type Component } from 'vue'
+import { computed, ref, watch, type Component } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { BookOpen, ExternalLink, FolderTree, LogOut, Menu, X } from '@lucide/vue'
+import {
+  Bot,
+  BookOpen,
+  ExternalLink,
+  FolderTree,
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X
+} from '@lucide/vue'
 import { useAdminAuthStore } from '@/admin/stores/adminAuth'
 import AppButton from '@/components/ui/AppButton.vue'
 import ThemeSwitcher from '@/components/ui/ThemeSwitcher.vue'
@@ -11,6 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const adminAuth = useAdminAuthStore()
 const mobileMenuOpen = ref(false)
+const sidebarCollapsed = ref(false)
 
 const navItems: Array<{
   label: string
@@ -30,22 +41,40 @@ const navItems: Array<{
     icon: FolderTree,
     activeRoutes: ['adminCategories'],
   },
+  {
+    label: 'AI 设置',
+    to: { name: 'adminAiSettings' },
+    icon: Bot,
+    activeRoutes: ['adminAiSettings'],
+  },
 ]
 
 const adminName = computed(() => adminAuth.admin?.username || 'Owner')
+const isEditorRoute = computed(() =>
+  ['adminArticleNew', 'adminArticleEdit'].includes(String(route.name || ''))
+)
+const isSidebarCollapsed = computed(() => sidebarCollapsed.value)
+const adminShellStyle = computed(() => ({
+  '--admin-sidebar-width': isSidebarCollapsed.value ? '4.75rem' : '16.5rem',
+}))
 
 const isActive = (activeRoutes: string[]) => {
   return typeof route.name === 'string' && activeRoutes.includes(route.name)
 }
 
-const navLinkClass = (activeRoutes: string[]) =>
+const navLinkClass = (activeRoutes: string[], collapsed = false) =>
   cn(
-    'flex h-10 items-center gap-3 rounded-full px-3 text-sm font-semibold transition-colors',
+    'flex h-10 items-center gap-3 rounded-full text-sm font-semibold transition-all duration-200',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    collapsed ? 'justify-center px-0' : 'px-3',
     isActive(activeRoutes)
       ? 'bg-accent/10 text-accent'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
   )
+
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
 
 const closeMobileMenu = () => {
   mobileMenuOpen.value = false
@@ -56,6 +85,16 @@ const handleLogout = async () => {
   adminAuth.clear()
   await router.replace({ name: 'adminLogin' })
 }
+
+watch(
+  () => route.name,
+  () => {
+    if (isEditorRoute.value) {
+      sidebarCollapsed.value = true
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -67,7 +106,9 @@ const handleLogout = async () => {
           class="flex min-w-0 items-center gap-3 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           @click="closeMobileMenu"
         >
-          <img src="/logo.svg" alt="Nostalgia" class="size-9 shrink-0" />
+          <span class="archive-glass grid size-9 shrink-0 place-items-center rounded-full">
+            <img src="/favicon.svg" alt="" class="size-6" aria-hidden="true" />
+          </span>
           <div class="min-w-0">
             <p class="m-0 truncate text-sm font-black leading-5">Nostalgia Admin</p>
             <p class="m-0 truncate text-xs font-semibold text-muted-foreground">{{ adminName }}</p>
@@ -123,49 +164,103 @@ const handleLogout = async () => {
       </nav>
     </header>
 
-    <div class="mx-auto grid min-h-dvh w-full max-w-7xl grid-cols-1 lg:grid-cols-[17rem_1fr]">
-      <aside class="hidden border-r border-border/70 px-4 py-5 lg:block">
-        <div class="sticky top-5 flex h-[calc(100dvh-2.5rem)] flex-col">
-          <RouterLink
-            :to="{ name: 'adminArticles' }"
-            class="flex items-center gap-3 rounded-archive px-2 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    <div
+      class="grid min-h-dvh w-full grid-cols-1 transition-[grid-template-columns] duration-200 lg:grid-cols-[var(--admin-sidebar-width)_minmax(0,1fr)]"
+      :style="adminShellStyle"
+    >
+      <aside class="hidden border-r border-border/70 bg-surface/45 px-3 py-4 lg:block">
+        <div class="sticky top-4 flex h-[calc(100dvh-2rem)] flex-col">
+          <div
+            v-if="isSidebarCollapsed"
+            class="collapsed-sidebar-header flex flex-col items-center gap-2"
           >
-            <img src="/logo.svg" alt="Nostalgia" class="size-10 shrink-0" />
-            <div class="min-w-0">
-              <p class="m-0 truncate text-sm font-black leading-5">Nostalgia Admin</p>
-              <p class="m-0 truncate text-xs font-semibold text-muted-foreground">{{ adminName }}</p>
-            </div>
-          </RouterLink>
+            <RouterLink
+              :to="{ name: 'adminArticles' }"
+              class="archive-glass grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              aria-label="Nostalgia Admin"
+            >
+              <img src="/favicon.svg" alt="" class="size-7" aria-hidden="true" />
+            </RouterLink>
+            <AppButton
+              variant="ghost"
+              size="icon"
+              aria-label="展开后台导航"
+              title="展开后台导航"
+              @click="toggleSidebar"
+            >
+              <PanelLeftOpen class="size-4" aria-hidden="true" />
+            </AppButton>
+          </div>
+
+          <div
+            v-else
+            class="flex items-center gap-2"
+          >
+            <RouterLink
+              :to="{ name: 'adminArticles' }"
+              class="flex min-w-0 items-center gap-3 rounded-archive px-2 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <span class="archive-glass grid size-10 shrink-0 place-items-center rounded-full">
+                <img src="/favicon.svg" alt="" class="size-7" aria-hidden="true" />
+              </span>
+              <div class="min-w-0">
+                <p class="m-0 truncate text-sm font-black leading-5">Nostalgia Admin</p>
+                <p class="m-0 truncate text-xs font-semibold text-muted-foreground">{{ adminName }}</p>
+              </div>
+            </RouterLink>
+            <AppButton
+              variant="ghost"
+              size="icon"
+              aria-label="收起后台导航"
+              title="收起后台导航"
+              @click="toggleSidebar"
+            >
+              <PanelLeftClose class="size-4" aria-hidden="true" />
+            </AppButton>
+          </div>
 
           <nav class="mt-7" aria-label="后台导航">
             <ul class="m-0 list-none space-y-1 p-0">
               <li v-for="item in navItems" :key="item.label">
-                <RouterLink :to="item.to" :class="navLinkClass(item.activeRoutes)">
-                  <component :is="item.icon" class="size-4" aria-hidden="true" />
-                  <span>{{ item.label }}</span>
+                <RouterLink
+                  :to="item.to"
+                  :class="navLinkClass(item.activeRoutes, isSidebarCollapsed)"
+                  :title="isSidebarCollapsed ? item.label : undefined"
+                >
+                  <component :is="item.icon" class="size-4 shrink-0" aria-hidden="true" />
+                  <span v-if="!isSidebarCollapsed">{{ item.label }}</span>
                 </RouterLink>
               </li>
             </ul>
           </nav>
 
           <div class="mt-auto space-y-3 border-t border-border/70 pt-4">
-            <ThemeSwitcher />
+            <ThemeSwitcher v-if="!isSidebarCollapsed" />
             <RouterLink
               :to="{ name: 'home' }"
-              class="flex h-10 items-center gap-3 rounded-full px-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              class="flex h-10 items-center gap-3 rounded-full text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-3'"
+              :title="isSidebarCollapsed ? '查看站点' : undefined"
             >
-              <ExternalLink class="size-4" aria-hidden="true" />
-              <span>查看站点</span>
+              <ExternalLink class="size-4 shrink-0" aria-hidden="true" />
+              <span v-if="!isSidebarCollapsed">查看站点</span>
             </RouterLink>
-            <AppButton variant="ghost" class="h-10 w-full justify-start px-3 text-danger hover:text-danger" @click="handleLogout">
-              <LogOut class="size-4" aria-hidden="true" />
-              <span>退出登录</span>
+            <AppButton
+              variant="ghost"
+              class="h-10 w-full text-danger hover:text-danger"
+              :class="isSidebarCollapsed ? 'justify-center px-0' : 'justify-start px-3'"
+              :aria-label="isSidebarCollapsed ? '退出登录' : undefined"
+              :title="isSidebarCollapsed ? '退出登录' : undefined"
+              @click="handleLogout"
+            >
+              <LogOut class="size-4 shrink-0" aria-hidden="true" />
+              <span v-if="!isSidebarCollapsed">退出登录</span>
             </AppButton>
           </div>
         </div>
       </aside>
 
-      <section class="min-w-0 px-4 py-5 sm:px-6 lg:px-8" aria-label="后台内容">
+      <section class="min-w-0 px-4 py-5 sm:px-6 lg:px-8 xl:px-10" aria-label="后台内容">
         <RouterView />
       </section>
     </div>

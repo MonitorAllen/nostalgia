@@ -73,6 +73,8 @@ func (server *Server) setupRouter() {
 
 	router.GET("/healthz", server.healthz)
 	router.GET("/readyz", server.readyz)
+	router.GET("/robots.txt", server.robotsTxt)
+	router.GET("/sitemap.xml", server.sitemapXML)
 
 	public := router.Group("/api")
 	{

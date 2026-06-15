@@ -15,11 +15,12 @@ import (
 
 const countAllArticles = `-- name: CountAllArticles :one
 SELECT count(*)
-FROM articles
+FROM articles a
+WHERE ($1::text IS NULL OR a.title ILIKE '%' || $1::text || '%')
 `
 
-func (q *Queries) CountAllArticles(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countAllArticles)
+func (q *Queries) CountAllArticles(ctx context.Context, title pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllArticles, title)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -468,13 +469,17 @@ SELECT a.id,
        c.name as category_name
 FROM articles a
          LEFT JOIN categories c on c.id = a.category_id
-ORDER BY a.created_at DESC
+WHERE ($3::text IS NULL OR a.title ILIKE '%' || $3::text || '%')
+ORDER BY
+    (a.created_by_automation = true AND a.automation_status = 'pending_review' AND a.is_publish = false) DESC,
+    a.created_at DESC
 LIMIT $1 OFFSET $2
 `
 
 type ListAllArticlesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	Title  pgtype.Text `json:"title"`
 }
 
 type ListAllArticlesRow struct {
@@ -500,7 +505,7 @@ type ListAllArticlesRow struct {
 }
 
 func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error) {
-	rows, err := q.db.Query(ctx, listAllArticles, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listAllArticles, arg.Limit, arg.Offset, arg.Title)
 	if err != nil {
 		return nil, err
 	}
@@ -626,6 +631,88 @@ func (q *Queries) ListArticles(ctx context.Context, arg ListArticlesParams) ([]L
 			&i.CategoryName,
 			&i.Username,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedArticleSitemapItems = `-- name: ListPublishedArticleSitemapItems :many
+SELECT id,
+       slug,
+       owner,
+       created_at,
+       updated_at
+FROM articles
+WHERE is_publish = true
+  AND deleted_at = '0001-01-01 00:00:00Z'
+ORDER BY GREATEST(created_at, updated_at) DESC
+`
+
+type ListPublishedArticleSitemapItemsRow struct {
+	ID        uuid.UUID   `json:"id"`
+	Slug      pgtype.Text `json:"slug"`
+	Owner     uuid.UUID   `json:"owner"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func (q *Queries) ListPublishedArticleSitemapItems(ctx context.Context) ([]ListPublishedArticleSitemapItemsRow, error) {
+	rows, err := q.db.Query(ctx, listPublishedArticleSitemapItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPublishedArticleSitemapItemsRow{}
+	for rows.Next() {
+		var i ListPublishedArticleSitemapItemsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Owner,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedCategorySitemapItems = `-- name: ListPublishedCategorySitemapItems :many
+SELECT c.id,
+       MAX(GREATEST(a.created_at, a.updated_at))::timestamptz AS updated_at
+FROM categories c
+         INNER JOIN articles a ON a.category_id = c.id
+WHERE a.is_publish = true
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
+GROUP BY c.id
+ORDER BY c.id
+`
+
+type ListPublishedCategorySitemapItemsRow struct {
+	ID        int64     `json:"id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) ListPublishedCategorySitemapItems(ctx context.Context) ([]ListPublishedCategorySitemapItemsRow, error) {
+	rows, err := q.db.Query(ctx, listPublishedCategorySitemapItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPublishedCategorySitemapItemsRow{}
+	for rows.Next() {
+		var i ListPublishedCategorySitemapItemsRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -182,7 +182,9 @@
   font-weight: 750;
 }
 
-.reading-prose hr {
+.reading-prose hr,
+.reading-prose.ck-content.admin-preview-content hr,
+.admin-editor-content .ck-content hr {
   height: 1px;
   margin: 2rem 0;
   border: 0;
@@ -241,15 +243,37 @@
   width: 100%;
 }
 
-.reading-prose figure.table {
+.reading-prose figure.table,
+.admin-editor-content .ck-content figure.table {
   display: block;
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: clip;
   border-radius: 0.8rem;
 }
 
-.reading-prose figure.table table {
-  min-width: min(44rem, 100%);
+.reading-prose figure.table table,
+.admin-editor-content .ck-content figure.table table {
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
   margin: 0;
+}
+
+.reading-prose figure.table > figcaption,
+.admin-editor-content .ck-content figure.table > figcaption {
+  display: block;
+  width: 100%;
+  margin-top: 0.65rem;
+  background: transparent;
+  caption-side: bottom;
+  color: rgb(var(--color-muted-foreground));
+  font-size: 0.9rem;
+  line-height: 1.6;
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  writing-mode: horizontal-tb;
 }
 
 .reading-prose--compact {
@@ -293,13 +317,94 @@
   margin: 0.45rem 0;
 }
 
+.admin-editor-shell {
+  --admin-editor-header-offset: 6rem;
+  --admin-editor-layout-gap: 1.25rem;
+  --admin-editor-page-gap: 0.75rem;
+  --admin-editor-bottom-inset: 1.25rem;
+  --admin-editor-shell-width: 820px;
+  --admin-editor-settings-width: 22rem;
+  --admin-editor-workbench-height: calc(
+    100dvh - var(--admin-editor-header-offset) - var(--admin-editor-page-gap) - var(--admin-editor-bottom-inset)
+  );
+
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-editor-page-gap);
+}
+
+.admin-editor-frame {
+  --prose-measure: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--admin-editor-layout-gap);
+  align-items: start;
+}
+
+.admin-editor-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-editor-settings {
+  width: 100%;
+  min-width: 0;
+}
+
+@container (min-width: 1192px) {
+  .admin-editor-frame {
+    --prose-measure: 72ch;
+
+    grid-template-columns: minmax(0, var(--admin-editor-shell-width)) var(--admin-editor-settings-width);
+    justify-content: center;
+  }
+
+  .admin-editor-panel {
+    max-width: var(--admin-editor-shell-width);
+  }
+
+  .admin-editor-settings {
+    position: sticky;
+    top: calc(var(--admin-editor-header-offset) + var(--admin-editor-layout-gap));
+    max-width: var(--admin-editor-settings-width);
+  }
+}
+
+.admin-editor-content {
+  height: var(--admin-editor-workbench-height);
+  min-height: 32rem;
+  overflow: visible;
+}
+
 .admin-editor-content .ck.ck-editor {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
   color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck.ck-editor__top {
+  flex: 0 0 auto;
+  position: relative;
+  top: auto;
+  z-index: 20;
 }
 
 .admin-editor-content .ck.ck-toolbar {
   border-color: rgb(var(--color-border));
   background: rgb(var(--color-surface-raised));
+}
+
+.admin-editor-content .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {
+  position: static;
+  z-index: 20;
+  width: auto !important;
+  margin-left: 0 !important;
+}
+
+.admin-editor-content .ck.ck-sticky-panel__placeholder {
+  display: none !important;
 }
 
 .admin-editor-content .ck.ck-button,
@@ -308,16 +413,28 @@
   color: rgb(var(--color-muted-foreground));
 }
 
-.admin-editor-content .ck.ck-button:hover,
-.admin-editor-content .ck.ck-dropdown__button:hover {
-  background: rgb(var(--color-muted));
+.admin-editor-content .ck.ck-button:hover:not(.ck-disabled),
+.admin-editor-content .ck.ck-dropdown__button:hover:not(.ck-disabled) {
+  background: rgb(var(--color-accent) / 0.12);
   color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck.ck-button:hover:not(.ck-disabled) .ck-icon,
+.admin-editor-content .ck.ck-dropdown__button:hover:not(.ck-disabled) .ck-icon {
+  color: currentColor;
 }
 
 .admin-editor-content .ck.ck-button.ck-on,
 .admin-editor-content .ck.ck-dropdown__button.ck-on {
   background: rgb(var(--color-accent) / 0.14);
   color: rgb(var(--color-accent));
+}
+
+.admin-editor-content .ck.ck-editor__main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .admin-editor-content .ck.ck-editor__main > .ck-editor__editable {
@@ -330,18 +447,34 @@
   box-shadow: 0 0 0 2px rgb(var(--color-accent) / 0.18) !important;
 }
 
+.admin-editor-content .ck.ck-editor__editable.ck-editor__editable_inline {
+  min-height: 100%;
+  padding: 1.25rem 2rem 3rem;
+}
+
 .admin-editor-content .ck-content {
-  min-height: 58vh;
-  padding: 2rem min(3vw, 2.5rem);
-}
-
-.admin-editor-content .ck-content.reading-prose {
-  --prose-measure: 72ch;
-}
-
-.admin-editor-content .ck-content,
-.admin-editor-content .ck-content.ck-editor__editable {
   color: rgb(var(--color-foreground));
+  overflow-wrap: break-word;
+  word-break: break-word;
+  text-align: left;
+}
+
+.admin-editor-content .ck-content::after {
+  display: block;
+  clear: both;
+  content: '';
+}
+
+.admin-editor-content .ck-content > :first-child {
+  margin-top: 0;
+}
+
+.admin-editor-content .ck.ck-editor__editable.ck-editor__editable_inline > :first-child {
+  margin-top: 0;
+}
+
+.admin-editor-content .ck-content > :last-child {
+  margin-bottom: 0;
 }
 
 .admin-editor-content .ck-content h1,
@@ -349,14 +482,240 @@
 .admin-editor-content .ck-content h3,
 .admin-editor-content .ck-content h4,
 .admin-editor-content .ck-content h5,
-.admin-editor-content .ck-content h6,
+.admin-editor-content .ck-content h6 {
+  color: rgb(var(--color-foreground));
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.25;
+  margin: 2rem 0 0.85rem;
+  max-width: min(100%, var(--prose-measure));
+  text-wrap: balance;
+}
+
+.admin-editor-content .ck-content h1 {
+  font-size: 2.25rem;
+}
+
+.admin-editor-content .ck-content h2 {
+  font-size: 1.8rem;
+}
+
+.admin-editor-content .ck-content h3 {
+  font-size: 1.45rem;
+}
+
+.admin-editor-content .ck-content h4 {
+  font-size: 1.2rem;
+}
+
+.admin-editor-content .ck-content h5,
+.admin-editor-content .ck-content h6 {
+  font-size: 1.05rem;
+}
+
 .admin-editor-content .ck-content p,
-.admin-editor-content .ck-content li,
-.admin-editor-content .ck-content blockquote,
-.admin-editor-content .ck-content pre,
-.admin-editor-content .ck-content table,
-.admin-editor-content .ck-content figure {
+.admin-editor-content .ck-content li {
+  color: rgb(var(--color-foreground) / 0.88);
+  font-size: 1.03rem;
+  line-height: 1.9;
+}
+
+.admin-editor-content .ck-content p,
+.admin-editor-content .ck-content ul,
+.admin-editor-content .ck-content ol,
+.admin-editor-content .ck-content blockquote {
+  max-width: min(100%, var(--prose-measure));
+}
+
+.admin-editor-content .ck-content
+  > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote) {
+  max-width: min(100%, var(--prose-measure));
+}
+
+.admin-editor-content .ck-content
+  > :where(pre, figure, table, hr) {
   max-width: 100%;
+}
+
+.admin-editor-content .ck-content
+  > :where(figure.table, table, pre, hr) {
+  clear: both;
+}
+
+.admin-editor-content .ck-content p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-editor-content .ck-content ul,
+.admin-editor-content .ck-content ol {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding-left: 1.55rem;
+}
+
+.admin-editor-content .ck-content li {
+  margin: 0.4rem 0;
+  padding-left: 0.15rem;
+}
+
+.admin-editor-content .ck-content li::marker {
+  color: rgb(var(--color-accent));
+  font-weight: 700;
+}
+
+.admin-editor-content .ck-content a {
+  color: rgb(var(--color-accent));
+  border-bottom: 1px solid rgb(var(--color-accent) / 0.35);
+  font-weight: 650;
+  text-decoration: none;
+  text-underline-offset: 0.18em;
+}
+
+.admin-editor-content .ck-content a:hover {
+  border-bottom-color: rgb(var(--color-accent));
+}
+
+.admin-editor-content .ck-content blockquote {
+  margin: 1.5rem 0;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.85rem;
+  background: rgb(var(--color-surface-raised));
+  color: rgb(var(--color-muted-foreground));
+  padding: 1rem 1.2rem;
+}
+
+.admin-editor-content .ck-content blockquote p {
+  color: inherit;
+}
+
+.admin-editor-content .ck-content pre,
+.admin-editor-content .ck-content code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+.admin-editor-content .ck-content code {
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.35rem;
+  background: rgb(var(--color-code));
+  color: rgb(var(--color-foreground));
+  font-size: 0.92em;
+  padding: 0.15rem 0.35rem;
+}
+
+.admin-editor-content .ck-content pre {
+  max-width: 100%;
+  margin: 1.4rem 0;
+  overflow-x: auto;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.9rem;
+  background: rgb(var(--color-code)) !important;
+  color: rgb(var(--color-foreground));
+  line-height: 1.75;
+  padding: 1rem;
+}
+
+.admin-editor-content .ck-content pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.admin-editor-content .ck-content figure,
+.admin-editor-content .ck-content table,
+.admin-editor-content .ck-content hr {
+  max-width: 100%;
+}
+
+.admin-editor-content .ck-content figure {
+  margin: 1.65rem auto;
+}
+
+.admin-editor-content .ck-content img {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0.8rem;
+  box-shadow: 0 14px 34px rgb(var(--color-foreground) / 0.08);
+}
+
+.admin-editor-content .ck-content figcaption {
+  margin-top: 0.65rem;
+  color: rgb(var(--color-muted-foreground));
+  font-size: 0.9rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.admin-editor-content .ck-content table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 0.8rem;
+  font-size: 0.96rem;
+}
+
+.admin-editor-content .ck-content th,
+.admin-editor-content .ck-content td {
+  border: 1px solid rgb(var(--color-border));
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-editor-content .ck-content th {
+  background: rgb(var(--color-surface-raised));
+  color: rgb(var(--color-foreground));
+  font-weight: 750;
+}
+
+.admin-editor-content .ck-content figure.image {
+  text-align: center;
+}
+
+.admin-editor-content .ck-content figure.image img {
+  width: auto;
+}
+
+.admin-editor-content .ck-content figure.image-style-align-left {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.admin-editor-content .ck-content figure.image-style-align-right {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+.admin-editor-content .ck-content figure.image-style-align-center {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.admin-editor-content .ck-content figure.image-style-side,
+.admin-editor-content .ck-content figure.image-style-align-right {
+  float: right;
+  max-width: min(50%, 24rem);
+  margin: 0.35rem 0 1rem 1.5rem;
+}
+
+.admin-editor-content .ck-content figure.image-style-align-left {
+  float: left;
+  max-width: min(50%, 24rem);
+  margin: 0.35rem 1.5rem 1rem 0;
+}
+
+.admin-editor-content .ck-content figure.image-style-side img,
+.admin-editor-content .ck-content figure.image-style-align-left img,
+.admin-editor-content .ck-content figure.image-style-align-right img {
+  width: 100%;
+}
+
+.admin-editor-content .ck-content,
+.admin-editor-content .ck-content.ck-editor__editable {
+  color: rgb(var(--color-foreground));
 }
 
 @media (max-width: 640px) {
@@ -385,7 +744,15 @@
     margin: 1.25rem auto;
   }
 
-  .admin-editor-content .ck-content {
-    padding: 1.25rem;
+  .admin-editor-content .ck.ck-editor__editable.ck-editor__editable_inline {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .admin-editor-content .ck-content figure.image-style-side,
+  .admin-editor-content .ck-content figure.image-style-align-left,
+  .admin-editor-content .ck-content figure.image-style-align-right {
+    float: none;
+    max-width: 100%;
+    margin: 1.25rem auto;
   }
 }

@@ -36,7 +36,6 @@ func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDi
 		tokenMaker:      tokenMaker,
 		taskDistributor: taskDistributor,
 		cache:           cache,
-		textPolisher:    ai.NewOpenAICompatiblePolisher(config),
 	}
 
 	return server, nil

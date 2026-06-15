@@ -145,6 +145,7 @@ func TestLoadConfigAIPolishOverrides(t *testing.T) {
 
 	setConfigEnv(t, map[string]string{
 		"AI_POLISH_PROVIDER":          "openai_compatible",
+		"AI_POLISH_API_PROTOCOL":      "responses",
 		"AI_POLISH_BASE_URL":          "https://ai.example.com/v1",
 		"AI_POLISH_API_KEY":           "runtime-secret",
 		"AI_POLISH_MODEL":             "writer-model",
@@ -157,6 +158,7 @@ func TestLoadConfigAIPolishOverrides(t *testing.T) {
 	config, err := LoadConfig(configPath)
 	require.NoError(t, err)
 	require.Equal(t, "openai_compatible", config.AIPolishProvider)
+	require.Equal(t, "responses", config.AIPolishAPIProtocol)
 	require.Equal(t, "https://ai.example.com/v1", config.AIPolishBaseURL)
 	require.Equal(t, "runtime-secret", config.AIPolishAPIKey)
 	require.Equal(t, "writer-model", config.AIPolishModel)
@@ -172,6 +174,7 @@ func TestLoadConfigAIPolishDefaults(t *testing.T) {
 	config, err := LoadConfig(configPath)
 	require.NoError(t, err)
 	require.Equal(t, "openai_compatible", config.AIPolishProvider)
+	require.Equal(t, "chat/completions", config.AIPolishAPIProtocol)
 	require.Equal(t, 30*time.Second, config.AIPolishTimeout)
 	require.Equal(t, 6000, config.AIPolishMaxInputChars)
 	require.Equal(t, 4000, config.AIPolishMaxContextChars)
@@ -181,6 +184,7 @@ func TestLoadConfigAIPolishDefaults(t *testing.T) {
 func TestConfigExposesAIPolishEnvKeys(t *testing.T) {
 	keys := configEnvKeys()
 	require.Contains(t, keys, "AI_POLISH_PROVIDER")
+	require.Contains(t, keys, "AI_POLISH_API_PROTOCOL")
 	require.Contains(t, keys, "AI_POLISH_BASE_URL")
 	require.Contains(t, keys, "AI_POLISH_API_KEY")
 	require.Contains(t, keys, "AI_POLISH_MODEL")

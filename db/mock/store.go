@@ -68,18 +68,18 @@ func (mr *MockStoreMockRecorder) CountAdminUsers(arg0 interface{}) *gomock.Call 
 }
 
 // CountAllArticles mocks base method.
-func (m *MockStore) CountAllArticles(arg0 context.Context) (int64, error) {
+func (m *MockStore) CountAllArticles(arg0 context.Context, arg1 pgtype.Text) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountAllArticles", arg0)
+	ret := m.ctrl.Call(m, "CountAllArticles", arg0, arg1)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountAllArticles indicates an expected call of CountAllArticles.
-func (mr *MockStoreMockRecorder) CountAllArticles(arg0 interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) CountAllArticles(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAllArticles", reflect.TypeOf((*MockStore)(nil).CountAllArticles), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAllArticles", reflect.TypeOf((*MockStore)(nil).CountAllArticles), arg0, arg1)
 }
 
 // CountArticles mocks base method.
@@ -435,6 +435,21 @@ func (mr *MockStoreMockRecorder) DeleteCommentsByArticleID(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).DeleteCommentsByArticleID), arg0, arg1)
 }
 
+// GetAIProviderConfig mocks base method.
+func (m *MockStore) GetAIProviderConfig(arg0 context.Context, arg1 string) (db.AiProviderConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAIProviderConfig", arg0, arg1)
+	ret0, _ := ret[0].(db.AiProviderConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAIProviderConfig indicates an expected call of GetAIProviderConfig.
+func (mr *MockStoreMockRecorder) GetAIProviderConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAIProviderConfig", reflect.TypeOf((*MockStore)(nil).GetAIProviderConfig), arg0, arg1)
+}
+
 // GetArticle mocks base method.
 func (m *MockStore) GetArticle(arg0 context.Context, arg1 uuid.UUID) (db.GetArticleRow, error) {
 	m.ctrl.T.Helper()
@@ -718,6 +733,36 @@ func (mr *MockStoreMockRecorder) ListCommentsByArticleID(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).ListCommentsByArticleID), arg0, arg1)
 }
 
+// ListPublishedArticleSitemapItems mocks base method.
+func (m *MockStore) ListPublishedArticleSitemapItems(arg0 context.Context) ([]db.ListPublishedArticleSitemapItemsRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPublishedArticleSitemapItems", arg0)
+	ret0, _ := ret[0].([]db.ListPublishedArticleSitemapItemsRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPublishedArticleSitemapItems indicates an expected call of ListPublishedArticleSitemapItems.
+func (mr *MockStoreMockRecorder) ListPublishedArticleSitemapItems(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPublishedArticleSitemapItems", reflect.TypeOf((*MockStore)(nil).ListPublishedArticleSitemapItems), arg0)
+}
+
+// ListPublishedCategorySitemapItems mocks base method.
+func (m *MockStore) ListPublishedCategorySitemapItems(arg0 context.Context) ([]db.ListPublishedCategorySitemapItemsRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPublishedCategorySitemapItems", arg0)
+	ret0, _ := ret[0].([]db.ListPublishedCategorySitemapItemsRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPublishedCategorySitemapItems indicates an expected call of ListPublishedCategorySitemapItems.
+func (mr *MockStoreMockRecorder) ListPublishedCategorySitemapItems(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPublishedCategorySitemapItems", reflect.TypeOf((*MockStore)(nil).ListPublishedCategorySitemapItems), arg0)
+}
+
 // MarkAutomationArticleRequestCreated mocks base method.
 func (m *MockStore) MarkAutomationArticleRequestCreated(arg0 context.Context, arg1 db.MarkAutomationArticleRequestCreatedParams) (db.AutomationArticleRequest, error) {
 	m.ctrl.T.Helper()
@@ -864,6 +909,21 @@ func (m *MockStore) UpdateVerifyEmail(arg0 context.Context, arg1 db.UpdateVerify
 func (mr *MockStoreMockRecorder) UpdateVerifyEmail(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVerifyEmail", reflect.TypeOf((*MockStore)(nil).UpdateVerifyEmail), arg0, arg1)
+}
+
+// UpsertAIProviderConfig mocks base method.
+func (m *MockStore) UpsertAIProviderConfig(arg0 context.Context, arg1 db.UpsertAIProviderConfigParams) (db.AiProviderConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertAIProviderConfig", arg0, arg1)
+	ret0, _ := ret[0].(db.AiProviderConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertAIProviderConfig indicates an expected call of UpsertAIProviderConfig.
+func (mr *MockStoreMockRecorder) UpsertAIProviderConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertAIProviderConfig", reflect.TypeOf((*MockStore)(nil).UpsertAIProviderConfig), arg0, arg1)
 }
 
 // VerifyEmailTx mocks base method.

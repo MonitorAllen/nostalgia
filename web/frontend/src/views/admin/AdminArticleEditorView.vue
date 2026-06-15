@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Copy, ImagePlus, Save, Sparkles, Trash2, Wand2, X } from '@lucide/vue'
+import { ArrowLeft, Copy, Eye, ImagePlus, Save, Sparkles, Trash2, Wand2, X } from '@lucide/vue'
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
 import { ClassicEditor, type EditorConfig } from 'ckeditor5'
 import 'ckeditor5/ckeditor5.css'
@@ -38,6 +38,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import { useToast } from '@/composables/useToast'
+import { sanitizeHtml } from '@/util/sanitizeHtml'
 
 interface DraftPayload {
   id: string
@@ -82,6 +83,7 @@ const polishTarget = ref<AdminAIPolishTarget>('content_selection')
 const polishMode = ref<AdminAIPolishMode>('improve')
 const polishSuggestions = ref<AdminAIPolishSuggestion[]>([])
 const selectedPolishText = ref('')
+const previewOpen = ref(false)
 
 let initialContent = ''
 let initialArticle = ''
@@ -142,6 +144,8 @@ const canSave = computed(() => {
 })
 
 const coverPreview = computed(() => article.value.cover || '')
+const previewContent = computed(() => sanitizeHtml(editorData.value || ''))
+const adminArticleListLocation = computed(() => ({ name: 'adminArticles', query: route.query }))
 
 const polishPanelTitle = computed(() => {
   if (polishTarget.value === 'title') return '标题候选'
@@ -273,7 +277,11 @@ const loadEditor = async () => {
     if (route.name === 'adminArticleNew') {
       const response = await createAdminArticle({ title: '无标题文章', is_publish: false })
       applyArticle(response.data.article)
-      await router.replace({ name: 'adminArticleEdit', params: { id: response.data.article.id } })
+      await router.replace({
+        name: 'adminArticleEdit',
+        params: { id: response.data.article.id },
+        query: route.query
+      })
     } else {
       const articleId = getRouteArticleId()
       if (!articleId) throw new Error('缺少文章 ID')
@@ -311,7 +319,7 @@ const editorConfig = computed<EditorConfig>(() => ({
 }))
 
 const onEditorReady = (readyEditor: ClassicEditor) => {
-  readyEditor.ui.view.editable.element?.classList.add('reading-prose')
+  readyEditor.ui.view.editable.element?.classList.add('admin-editor-prose', 'ck-content')
   editorInstance.value = readyEditor
 }
 
@@ -607,13 +615,21 @@ const removeCover = () => {
   article.value.cover = ''
 }
 
+const openPreview = () => {
+  previewOpen.value = true
+}
+
+const closePreview = () => {
+  previewOpen.value = false
+}
+
 const updateCategory = (event: Event) => {
   const value = (event.target as HTMLSelectElement).value
   article.value.category_id = value || undefined
 }
 
 const goBack = () => {
-  void router.push({ name: 'adminArticles' })
+  void router.push(adminArticleListLocation.value)
 }
 
 const handleSaveShortcut = (event: KeyboardEvent) => {
@@ -655,38 +671,26 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="space-y-5">
+  <main class="admin-editor-shell">
     <header
-      class="sticky top-0 z-30 -mx-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+      class="sticky top-0 z-30 -mx-4 border-b border-border/70 bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
     >
       <div
-        class="mx-auto flex max-w-7xl flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
+        class="mx-auto flex max-w-7xl flex-col gap-2 xl:flex-row xl:items-center xl:justify-between"
       >
-        <div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <AppButton variant="ghost" size="sm" class="w-max" @click="goBack">
             <ArrowLeft class="size-4" aria-hidden="true" />
             返回
           </AppButton>
-
-          <label class="min-w-0 flex-1">
-            <span class="sr-only">文章标题</span>
-            <AppInput
-              v-model="articleTitle"
-              placeholder="无标题文章"
-              class="h-12 rounded-archive text-base font-black sm:text-lg"
-              :disabled="!isLayoutReady"
-            />
-          </label>
-          <AppButton
-            variant="secondary"
-            size="sm"
-            class="w-max"
-            :disabled="!canUseAIPolish"
-            @click="requestTitleCandidates"
-          >
-            <Wand2 class="size-4" aria-hidden="true" />
-            标题候选
-          </AppButton>
+          <div class="min-w-0 flex-1">
+            <h1 class="m-0 truncate text-lg font-black text-foreground">
+              {{ articleTitle || '无标题文章' }}
+            </h1>
+            <p class="m-0 text-xs font-semibold text-muted-foreground">
+              实际标题在文章设置中编辑
+            </p>
+          </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -722,6 +726,10 @@ onBeforeUnmount(() => {
           >
             扩写
           </AppButton>
+          <AppButton variant="secondary" size="sm" :disabled="!isLayoutReady" @click="openPreview">
+            <Eye class="size-4" aria-hidden="true" />
+            预览
+          </AppButton>
           <AppButton :disabled="!canSave" @click="saveArticle">
             <Save class="size-4" aria-hidden="true" />
             {{ isSaving ? '保存中...' : '保存文章' }}
@@ -740,9 +748,9 @@ onBeforeUnmount(() => {
       <p class="m-0 text-sm font-semibold text-muted-foreground">正在准备编辑器</p>
     </section>
 
-    <section v-else class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <div class="min-w-0 space-y-3">
-        <div class="archive-surface admin-editor-content overflow-hidden rounded-archive">
+    <section v-else class="admin-editor-frame">
+      <div class="admin-editor-panel min-w-0 space-y-3">
+        <div class="archive-surface admin-editor-content overflow-visible rounded-archive">
           <Ckeditor
             v-model="editorData"
             :editor="ClassicEditor"
@@ -804,9 +812,32 @@ onBeforeUnmount(() => {
         </section>
       </div>
 
-      <aside class="archive-surface h-max rounded-archive p-4 xl:sticky xl:top-24">
+      <aside class="admin-editor-settings archive-surface h-max rounded-archive p-4">
         <h2 class="m-0 text-base font-black text-foreground">文章设置</h2>
         <div class="mt-4 space-y-4">
+          <label class="block space-y-2">
+            <span class="flex items-center justify-between gap-3">
+              <span class="text-sm font-bold text-foreground">标题</span>
+              <AppButton
+                variant="ghost"
+                size="sm"
+                class="w-max"
+                :disabled="!canUseAIPolish"
+                @click="requestTitleCandidates"
+              >
+                <Wand2 class="size-4" aria-hidden="true" />
+                标题候选
+              </AppButton>
+            </span>
+            <AppInput
+              v-model="articleTitle"
+              aria-label="文章标题"
+              placeholder="无标题文章"
+              class="rounded-archive text-base font-black"
+              :disabled="!isLayoutReady"
+            />
+          </label>
+
           <label class="block space-y-2">
             <span class="flex items-center justify-between gap-3">
               <span class="text-sm font-bold text-foreground">摘要</span>
@@ -935,5 +966,62 @@ onBeforeUnmount(() => {
         </div>
       </aside>
     </section>
+
+    <Teleport to="body">
+      <div
+        v-if="previewOpen"
+        class="fixed inset-0 z-50 overflow-y-auto bg-background/72 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-article-preview-title"
+        @click.self="closePreview"
+      >
+        <div class="mx-auto my-6 w-full max-w-[860px]">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p class="m-0 text-xs font-bold text-muted-foreground">实际阅读效果</p>
+              <h2 id="admin-article-preview-title" class="m-0 text-xl font-black text-foreground">
+                文章预览
+              </h2>
+            </div>
+            <AppButton variant="secondary" size="icon" aria-label="关闭预览" @click="closePreview">
+              <X class="size-4" aria-hidden="true" />
+            </AppButton>
+          </div>
+
+          <article class="archive-surface rounded-[1.1rem] p-5 md:p-8">
+            <header class="space-y-5 border-b border-border pb-6">
+              <div class="flex flex-wrap gap-2">
+                <AppBadge v-if="article.category_id" tone="accent">
+                  {{ categories.find((category) => String(category.id) === String(article.category_id))?.name || '分类' }}
+                </AppBadge>
+                <AppBadge :tone="isPublished ? 'accent' : 'neutral'">
+                  {{ isPublished ? '已发布' : '草稿' }}
+                </AppBadge>
+              </div>
+              <h1 class="m-0 text-3xl font-extrabold leading-tight text-foreground md:text-4xl">
+                {{ articleTitle || '无标题文章' }}
+              </h1>
+            </header>
+
+            <section
+              v-if="articleSummary"
+              class="my-6 rounded-archive border border-border bg-surface-raised p-4"
+            >
+              <p class="m-0 text-xs font-black text-muted-foreground">摘要</p>
+              <p class="m-0 mt-2 text-base leading-8 text-foreground/85">{{ articleSummary }}</p>
+            </section>
+
+            <img
+              v-if="coverPreview"
+              :src="coverPreview"
+              :alt="articleTitle || '文章封面'"
+              class="mb-6 aspect-[16/9] w-full rounded-archive object-cover"
+            />
+            <div class="reading-prose ck-content admin-preview-content" v-html="previewContent" />
+          </article>
+        </div>
+      </div>
+    </Teleport>
   </main>
 </template>

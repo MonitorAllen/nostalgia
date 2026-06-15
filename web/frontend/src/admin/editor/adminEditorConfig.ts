@@ -8,6 +8,7 @@ import {
   Code,
   CodeBlock,
   Essentials,
+  GeneralHtmlSupport,
   Heading,
   HorizontalLine,
   ImageBlock,
@@ -47,6 +48,11 @@ import { CODE_BLOCK_LANGUAGES } from '@/editor/contentLanguages'
 import { ADMIN_EDITOR_TOOLBAR_ITEMS } from './adminEditorPolicy'
 
 export const adminEditorConfig: EditorConfig = {
+  ui: {
+    viewportOffset: {
+      top: 68
+    }
+  },
   toolbar: {
     items: [...ADMIN_EDITOR_TOOLBAR_ITEMS],
     shouldNotGroupWhenFull: false
@@ -61,6 +67,7 @@ export const adminEditorConfig: EditorConfig = {
     Code,
     CodeBlock,
     Essentials,
+    GeneralHtmlSupport,
     Heading,
     HorizontalLine,
     ImageBlock,
@@ -129,6 +136,16 @@ export const adminEditorConfig: EditorConfig = {
       { model: 'heading4', view: 'h4', title: '标题 4', class: 'ck-heading_heading4' },
       { model: 'heading5', view: 'h5', title: '标题 5', class: 'ck-heading_heading5' },
       { model: 'heading6', view: 'h6', title: '标题 6', class: 'ck-heading_heading6' }
+    ]
+  },
+  htmlSupport: {
+    allow: [
+      {
+        name: /^.*$/,
+        styles: true,
+        attributes: true,
+        classes: true
+      }
     ]
   },
   placeholder: '这一刻的想法……'
