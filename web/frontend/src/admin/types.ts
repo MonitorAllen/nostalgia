@@ -99,6 +99,7 @@ export type AdminAIPolishMode =
 
 export type AdminAIPolishTarget = 'content_selection' | 'title' | 'summary'
 export type AdminAIProtocol = 'chat/completions' | 'responses' | 'messages'
+export type AdminAIPromptTemplates = Partial<Record<AdminAIPolishMode, string>>
 
 export interface AdminAIPolishRequest {
   mode: AdminAIPolishMode
@@ -135,6 +136,8 @@ export interface AdminAIConfigResponse {
   max_context_chars: number
   max_suggestions: number
   source: 'runtime_env' | string
+  prompt_templates: AdminAIPromptTemplates
+  default_prompt_templates: AdminAIPromptTemplates
 }
 
 export interface AdminAIConfigUpdateRequest {
@@ -149,6 +152,7 @@ export interface AdminAIConfigUpdateRequest {
   max_suggestions: number
   enabled: boolean
   clear_api_key?: boolean
+  prompt_templates?: AdminAIPromptTemplates
 }
 
 export interface AdminAIModelsRequest {

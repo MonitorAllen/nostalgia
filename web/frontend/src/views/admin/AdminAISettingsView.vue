@@ -3,7 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bot, CheckCircle2, KeyRound, RefreshCw, Save, ShieldCheck, XCircle } from '@lucide/vue'
 import { getAdminAIConfig, listAdminAIModels, updateAdminAIConfig } from '@/admin/api/adminAiApi'
-import type { AdminAIConfigResponse, AdminAIProtocol } from '@/admin/types'
+import { getAIPolishModeLabel } from '@/admin/ai/polish'
+import type { AdminAIConfigResponse, AdminAIPolishMode, AdminAIProtocol } from '@/admin/types'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -18,6 +19,22 @@ const modelsLoading = ref(false)
 const modelOptions = ref<string[]>([])
 const apiKeyDraft = ref('')
 const clearApiKey = ref(false)
+const promptModes: AdminAIPolishMode[] = [
+  'improve',
+  'shorten',
+  'expand',
+  'title_candidates',
+  'summary_candidates'
+]
+const createPromptTemplateState = (): Record<AdminAIPolishMode, string> => ({
+  improve: '',
+  shorten: '',
+  expand: '',
+  title_candidates: '',
+  summary_candidates: ''
+})
+const promptTemplates = ref<Record<AdminAIPolishMode, string>>(createPromptTemplateState())
+const defaultPromptTemplates = ref<Record<AdminAIPolishMode, string>>(createPromptTemplateState())
 const form = ref({
   provider: 'OpenAI Compatible',
   apiProtocol: 'chat/completions' as AdminAIProtocol,
@@ -66,6 +83,13 @@ const syncForm = (nextConfig: AdminAIConfigResponse | null) => {
   apiKeyDraft.value = ''
   clearApiKey.value = false
   modelOptions.value = []
+
+  const nextDefaults = nextConfig?.default_prompt_templates ?? {}
+  const nextTemplates = nextConfig?.prompt_templates ?? {}
+  for (const mode of promptModes) {
+    defaultPromptTemplates.value[mode] = nextDefaults[mode] || ''
+    promptTemplates.value[mode] = nextTemplates[mode] || nextDefaults[mode] || ''
+  }
 }
 
 const toPositiveNumber = (value: string, fallback: number) => {
@@ -110,7 +134,8 @@ const saveConfig = async () => {
       max_context_chars: toNonNegativeNumber(form.value.maxContextChars, 4000),
       max_suggestions: toPositiveNumber(form.value.maxSuggestions, 3),
       enabled: form.value.enabled && !clearApiKey.value,
-      clear_api_key: clearApiKey.value
+      clear_api_key: clearApiKey.value,
+      prompt_templates: { ...promptTemplates.value }
     })
     config.value = response.data
     syncForm(response.data)
@@ -122,6 +147,16 @@ const saveConfig = async () => {
     })
   } finally {
     saving.value = false
+  }
+}
+
+const resetPromptTemplate = (mode: AdminAIPolishMode) => {
+  promptTemplates.value[mode] = defaultPromptTemplates.value[mode] || ''
+}
+
+const resetAllPromptTemplates = () => {
+  for (const mode of promptModes) {
+    resetPromptTemplate(mode)
   }
 }
 
@@ -283,6 +318,50 @@ onMounted(() => {
             <AppInput v-model="form.maxSuggestions" type="number" :disabled="!canSubmit" />
           </label>
         </div>
+
+        <section class="mt-5 rounded-archive border border-border bg-surface-raised p-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+              <h2 class="m-0 text-base font-black text-foreground">高级提示词</h2>
+              <p class="m-0 mt-1 text-pretty text-sm text-muted-foreground">
+                每个操作都可以使用独立模板，保存后随下一次润色请求生效。
+              </p>
+            </div>
+            <AppButton
+              type="button"
+              variant="secondary"
+              size="sm"
+              class="sm:shrink-0"
+              :disabled="!canSubmit"
+              @click="resetAllPromptTemplates"
+            >
+              恢复全部默认
+            </AppButton>
+          </div>
+
+          <div class="mt-4 grid gap-4">
+            <label v-for="mode in promptModes" :key="mode" class="block space-y-2">
+              <span class="flex items-center justify-between gap-3">
+                <span class="text-sm font-bold text-foreground">{{ getAIPolishModeLabel(mode) }}</span>
+                <AppButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  :disabled="!canSubmit"
+                  @click="resetPromptTemplate(mode)"
+                >
+                  恢复默认
+                </AppButton>
+              </span>
+              <textarea
+                v-model="promptTemplates[mode]"
+                rows="7"
+                class="w-full resize-y rounded-archive border border-border bg-surface px-4 py-3 font-mono text-xs leading-6 text-foreground outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="!canSubmit"
+              />
+            </label>
+          </div>
+        </section>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-2">
           <label class="flex items-start gap-3 rounded-archive border border-border bg-surface-raised p-3">
