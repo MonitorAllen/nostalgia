@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -21,6 +22,9 @@ const (
 	APIProtocolChatCompletions = "chat/completions"
 	APIProtocolResponses       = "responses"
 	APIProtocolMessages        = "messages"
+
+	ProviderOpenAI    = "openai"
+	ProviderAnthropic = "anthropic"
 )
 
 var (
@@ -41,6 +45,38 @@ type ModelLister interface {
 type Model struct {
 	ID string
 }
+
+type ServiceConfig struct {
+	Provider         string
+	APIProtocol      string
+	BaseURL          string
+	APIKey           string
+	Model            string
+	Timeout          time.Duration
+	MaxInputChars    int
+	MaxContextChars  int
+	MaxSuggestions   int
+	PromptTemplates  map[string]string
+	HTTPProxyAddress string
+}
+
+type GenerateRequest struct {
+	Protocol string
+	Model    string
+	Prompt   string
+}
+
+type GenerateResponse struct {
+	Content string
+	Model   string
+}
+
+type ProviderAdapter interface {
+	Generate(ctx context.Context, req GenerateRequest) (GenerateResponse, error)
+	ListModels(ctx context.Context) ([]Model, error)
+}
+
+type ProviderFactory func(ServiceConfig) (ProviderAdapter, error)
 
 type PolishRequest struct {
 	Mode           string
