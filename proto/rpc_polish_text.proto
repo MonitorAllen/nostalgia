@@ -41,6 +41,8 @@ message GetAIConfigResponse {
   int32 max_suggestions = 9;
   string source = 10;
   string api_protocol = 11;
+  map<string, string> prompt_templates = 12;
+  map<string, string> default_prompt_templates = 13;
 }
 
 message UpdateAIConfigRequest {
@@ -55,6 +57,7 @@ message UpdateAIConfigRequest {
   bool enabled = 9;
   bool clear_api_key = 10;
   string api_protocol = 11;
+  map<string, string> prompt_templates = 12;
 }
 
 message ListAIModelsRequest {

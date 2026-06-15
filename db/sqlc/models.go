@@ -26,6 +26,7 @@ type AiProviderConfig struct {
 	CreatedAt        time.Time   `json:"created_at"`
 	UpdatedAt        time.Time   `json:"updated_at"`
 	ApiProtocol      string      `json:"api_protocol"`
+	PromptTemplates  []byte      `json:"prompt_templates"`
 }
 
 type Article struct {

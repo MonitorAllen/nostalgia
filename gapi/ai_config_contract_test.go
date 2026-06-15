@@ -27,3 +27,16 @@ func TestAIConfigRuntimeMutationContracts(t *testing.T) {
 	require.Contains(t, string(migrationSource), "CREATE TABLE ai_provider_configs")
 	require.Contains(t, string(migrationSource), "api_key_ciphertext")
 }
+
+func TestAIConfigPromptTemplateContracts(t *testing.T) {
+	protoSource, err := os.ReadFile("../proto/rpc_polish_text.proto")
+	require.NoError(t, err)
+	querySource, err := os.ReadFile("../db/query/ai_provider_config.sql")
+	require.NoError(t, err)
+	migrationSource, err := os.ReadFile("../db/migration/000013_add_ai_prompt_templates.up.sql")
+	require.NoError(t, err)
+
+	require.Contains(t, string(protoSource), "map<string, string> prompt_templates =")
+	require.Contains(t, string(querySource), "prompt_templates")
+	require.Contains(t, string(migrationSource), "ADD COLUMN prompt_templates jsonb")
+}

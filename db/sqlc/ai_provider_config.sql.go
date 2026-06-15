@@ -12,7 +12,7 @@ import (
 )
 
 const getAIProviderConfig = `-- name: GetAIProviderConfig :one
-SELECT purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at, api_protocol
+SELECT purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at, api_protocol, prompt_templates
 FROM ai_provider_configs
 WHERE purpose = $1
 LIMIT 1
@@ -36,6 +36,7 @@ func (q *Queries) GetAIProviderConfig(ctx context.Context, purpose string) (AiPr
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ApiProtocol,
+		&i.PromptTemplates,
 	)
 	return i, err
 }
@@ -52,6 +53,7 @@ INSERT INTO ai_provider_configs (
     max_input_chars,
     max_context_chars,
     max_suggestions,
+    prompt_templates,
     enabled,
     updated_by
 ) VALUES (
@@ -66,7 +68,8 @@ INSERT INTO ai_provider_configs (
     $9,
     $10,
     $11,
-    $12
+    $12,
+    $13
 )
 ON CONFLICT (purpose) DO UPDATE
 SET provider = EXCLUDED.provider,
@@ -78,10 +81,11 @@ SET provider = EXCLUDED.provider,
     max_input_chars = EXCLUDED.max_input_chars,
     max_context_chars = EXCLUDED.max_context_chars,
     max_suggestions = EXCLUDED.max_suggestions,
+    prompt_templates = EXCLUDED.prompt_templates,
     enabled = EXCLUDED.enabled,
     updated_by = EXCLUDED.updated_by,
     updated_at = now()
-RETURNING purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at, api_protocol
+RETURNING purpose, provider, base_url, model, api_key_ciphertext, timeout_ms, max_input_chars, max_context_chars, max_suggestions, enabled, updated_by, created_at, updated_at, api_protocol, prompt_templates
 `
 
 type UpsertAIProviderConfigParams struct {
@@ -95,6 +99,7 @@ type UpsertAIProviderConfigParams struct {
 	MaxInputChars    int32       `json:"max_input_chars"`
 	MaxContextChars  int32       `json:"max_context_chars"`
 	MaxSuggestions   int32       `json:"max_suggestions"`
+	PromptTemplates  []byte      `json:"prompt_templates"`
 	Enabled          bool        `json:"enabled"`
 	UpdatedBy        pgtype.UUID `json:"updated_by"`
 }
@@ -111,6 +116,7 @@ func (q *Queries) UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProvid
 		arg.MaxInputChars,
 		arg.MaxContextChars,
 		arg.MaxSuggestions,
+		arg.PromptTemplates,
 		arg.Enabled,
 		arg.UpdatedBy,
 	)
@@ -130,6 +136,7 @@ func (q *Queries) UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProvid
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ApiProtocol,
+		&i.PromptTemplates,
 	)
 	return i, err
 }

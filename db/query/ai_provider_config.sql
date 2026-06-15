@@ -16,6 +16,7 @@ INSERT INTO ai_provider_configs (
     max_input_chars,
     max_context_chars,
     max_suggestions,
+    prompt_templates,
     enabled,
     updated_by
 ) VALUES (
@@ -29,6 +30,7 @@ INSERT INTO ai_provider_configs (
     sqlc.arg(max_input_chars),
     sqlc.arg(max_context_chars),
     sqlc.arg(max_suggestions),
+    sqlc.arg(prompt_templates),
     sqlc.arg(enabled),
     sqlc.narg(updated_by)
 )
@@ -42,6 +44,7 @@ SET provider = EXCLUDED.provider,
     max_input_chars = EXCLUDED.max_input_chars,
     max_context_chars = EXCLUDED.max_context_chars,
     max_suggestions = EXCLUDED.max_suggestions,
+    prompt_templates = EXCLUDED.prompt_templates,
     enabled = EXCLUDED.enabled,
     updated_by = EXCLUDED.updated_by,
     updated_at = now()
