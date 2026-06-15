@@ -47,6 +47,28 @@ describe('admin UI polish contracts', () => {
     expect(source).not.toContain('快速检查文章状态、调整发布节奏')
   })
 
+  test('article list keeps pagination and search state in the route query', () => {
+    const source = readSource('views/admin/AdminArticleListView.vue')
+    const editorSource = readSource('views/admin/AdminArticleEditorView.vue')
+    const protoSource = readSource('../../../proto/rpc_list_articles.proto')
+    const gapiSource = readSource('../../../gapi/rpc_list_articles.go')
+    const sqlSource = readSource('../../../db/query/article.sql')
+
+    expect(source).toContain('useRoute')
+    expect(source).toContain('syncQueryFromRoute')
+    expect(source).toContain('writeListQuery')
+    expect(source).toContain("router.push({ name: 'adminArticleEdit', params: { id }, query: route.query })")
+    expect(source).toContain('watch(')
+    expect(source).toContain("query: { title: nextTitle || undefined, page: String(query.page) }")
+    expect(editorSource).toContain('adminArticleListLocation')
+    expect(editorSource).toContain("query: route.query")
+    expect(protoSource).toContain('string title = 3;')
+    expect(gapiSource).toContain('arg.Title = pgtype.Text')
+    expect(gapiSource).toContain('CountAllArticles(ctx, arg.Title)')
+    expect(sqlSource).toContain('sqlc.narg(title)')
+    expect(sqlSource).toContain('CountAllArticles :one')
+  })
+
   test('editor moves title into settings and exposes article preview modal', () => {
     const source = readSource('views/admin/AdminArticleEditorView.vue')
     const configSource = readSource('admin/editor/adminEditorConfig.ts')
@@ -58,15 +80,110 @@ describe('admin UI polish contracts', () => {
     expect(source).toContain('文章预览')
     expect(source).toContain('实际阅读效果')
     expect(source).toContain('aria-label="文章标题"')
-    expect(source).toContain("classList.add('reading-prose', 'ck-content')")
+    expect(source).toContain("classList.add('admin-editor-prose', 'ck-content')")
     expect(configSource).toContain('GeneralHtmlSupport')
     expect(configSource).toContain('htmlSupport')
     expect(configSource).toContain('styles: true')
     expect(configSource).toContain('attributes: true')
     expect(configSource).toContain('classes: true')
-    expect(contentCss).toContain('.admin-editor-content .ck-editor__editable.reading-prose h1')
-    expect(contentCss).toContain('.admin-editor-content .ck-editor__editable.reading-prose p')
+    expect(contentCss).toContain('.admin-editor-content .ck-content h1')
+    expect(contentCss).toContain('.admin-editor-content .ck-content p')
+    expect(contentCss).not.toContain('margin: 2rem auto 0.85rem;')
     expect(source).not.toContain('class="h-12 rounded-archive text-base font-black sm:text-lg"')
+  })
+
+  test('admin editor prose preserves rich content styling inside the reader-width shell', () => {
+    const contentCss = readSource('assets/content.css')
+
+    expect(contentCss).toContain('.admin-editor-content .ck-content::after')
+    expect(contentCss).toContain(
+      '.admin-editor-content .ck.ck-editor__editable.ck-editor__editable_inline {'
+    )
+    expect(contentCss).toContain('overflow-wrap: break-word;')
+    expect(contentCss).toContain('padding: 1.25rem 2rem 3rem;')
+    expect(contentCss).not.toContain('max-width: var(--prose-measure);')
+    expect(contentCss).toContain('.admin-editor-content .ck-content figure.image img')
+    expect(contentCss).toContain('.admin-editor-content .ck-content figure.table')
+    expect(contentCss).toContain('.admin-editor-content .ck-content th,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content figure.image-style-side')
+    expect(contentCss).toContain('> :where(figure.table, table, pre, hr) {\n  clear: both;')
+    expect(contentCss).toContain(
+      '.admin-editor-frame {\n  --prose-measure: 100%;\n  display: grid;'
+    )
+    expect(contentCss).toContain(
+      '@container (min-width: 1192px) {\n  .admin-editor-frame {\n    --prose-measure: 72ch;'
+    )
+    expect(contentCss).toContain(
+      '.admin-editor-content .ck-content\n  > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote)'
+    )
+  })
+
+  test('admin editor matches reader width and keeps toolbar below the page header', () => {
+    const source = readSource('views/admin/AdminArticleEditorView.vue')
+    const contentCss = readSource('assets/content.css')
+
+    expect(source).toContain("class=\"admin-editor-shell")
+    expect(source).toContain("class=\"admin-editor-frame")
+    expect(source).toContain("class=\"admin-editor-panel")
+    expect(source).toContain("class=\"admin-editor-settings")
+    expect(source).toContain("class=\"sticky top-0")
+    expect(source).not.toContain('2xl:grid-cols')
+    expect(source).not.toContain('2xl:sticky')
+    expect(contentCss).toContain('--admin-editor-header-offset')
+    expect(contentCss).toContain('--admin-editor-shell-width: 820px;')
+    expect(contentCss).toContain('--admin-editor-settings-width: 22rem;')
+    expect(contentCss).toContain('--admin-editor-layout-gap: 1.25rem;')
+    expect(contentCss).toContain('container-type: inline-size;')
+    expect(contentCss).toContain('.admin-editor-frame {')
+    expect(contentCss).toContain('grid-template-columns: minmax(0, 1fr);')
+    expect(contentCss).toContain('.admin-editor-panel {')
+    expect(contentCss).toContain('@container (min-width: 1192px) {')
+    expect(contentCss).toContain(
+      'grid-template-columns: minmax(0, var(--admin-editor-shell-width)) var(--admin-editor-settings-width);'
+    )
+    expect(contentCss).toContain('justify-content: center;')
+    expect(contentCss).toContain('max-width: var(--admin-editor-shell-width);')
+    expect(contentCss).toContain('max-width: var(--admin-editor-settings-width);')
+    expect(source).toContain('archive-surface admin-editor-content overflow-visible')
+    expect(contentCss).not.toContain('overflow: clip;')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-toolbar {')
+    expect(contentCss).toContain('position: sticky;')
+    expect(contentCss).toContain('top: var(--admin-editor-header-offset);')
+    expect(contentCss).toContain('z-index: 20;')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {')
+    expect(contentCss).toContain('position: static;')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-sticky-panel__placeholder {')
+    expect(contentCss).toContain('display: none !important;')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-editor__editable.ck-editor__editable_inline {')
+    expect(contentCss).toContain('padding: 1.25rem 2rem 3rem;')
+    expect(contentCss).not.toContain('padding: 1.25rem 0 3rem;')
+  })
+
+  test('admin editor visual details stay readable across hover, preview, and table captions', () => {
+    const source = readSource('views/admin/AdminArticleEditorView.vue')
+    const contentCss = readSource('assets/content.css')
+
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-button:hover:not(.ck-disabled),')
+    expect(contentCss).toContain('background: rgb(var(--color-accent) / 0.12);')
+    expect(contentCss).toContain('.admin-editor-content .ck-content > :first-child')
+    expect(contentCss).toContain('margin-top: 0;')
+    expect(contentCss).toContain('.reading-prose hr,')
+    expect(contentCss).toContain('.reading-prose.ck-content.admin-preview-content hr,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content hr {')
+    expect(contentCss).toContain('.reading-prose figure.table,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content figure.table {')
+    expect(contentCss).toContain('overflow-x: auto;')
+    expect(contentCss).toContain('overflow-y: clip;')
+    expect(contentCss).toContain('.reading-prose figure.table table,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content figure.table table {')
+    expect(contentCss).toContain('width: max-content;')
+    expect(contentCss).toContain('min-width: 100%;')
+    expect(contentCss).toContain('max-width: none;')
+    expect(contentCss).toContain('.reading-prose figure.table > figcaption,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content figure.table > figcaption')
+    expect(contentCss).toContain('display: block;')
+    expect(contentCss).toContain('writing-mode: horizontal-tb;')
+    expect(source).toContain('class="reading-prose ck-content admin-preview-content"')
   })
 
   test('admin routes include a dedicated AI settings page', () => {

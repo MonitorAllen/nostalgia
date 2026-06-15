@@ -15,11 +15,12 @@ import (
 
 const countAllArticles = `-- name: CountAllArticles :one
 SELECT count(*)
-FROM articles
+FROM articles a
+WHERE ($1::text IS NULL OR a.title ILIKE '%' || $1::text || '%')
 `
 
-func (q *Queries) CountAllArticles(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countAllArticles)
+func (q *Queries) CountAllArticles(ctx context.Context, title pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllArticles, title)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -468,6 +469,7 @@ SELECT a.id,
        c.name as category_name
 FROM articles a
          LEFT JOIN categories c on c.id = a.category_id
+WHERE ($3::text IS NULL OR a.title ILIKE '%' || $3::text || '%')
 ORDER BY
     (a.created_by_automation = true AND a.automation_status = 'pending_review' AND a.is_publish = false) DESC,
     a.created_at DESC
@@ -475,8 +477,9 @@ LIMIT $1 OFFSET $2
 `
 
 type ListAllArticlesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	Title  pgtype.Text `json:"title"`
 }
 
 type ListAllArticlesRow struct {
@@ -502,7 +505,7 @@ type ListAllArticlesRow struct {
 }
 
 func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error) {
-	rows, err := q.db.Query(ctx, listAllArticles, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listAllArticles, arg.Limit, arg.Offset, arg.Title)
 	if err != nil {
 		return nil, err
 	}

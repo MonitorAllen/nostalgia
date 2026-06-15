@@ -145,6 +145,7 @@ const canSave = computed(() => {
 
 const coverPreview = computed(() => article.value.cover || '')
 const previewContent = computed(() => sanitizeHtml(editorData.value || ''))
+const adminArticleListLocation = computed(() => ({ name: 'adminArticles', query: route.query }))
 
 const polishPanelTitle = computed(() => {
   if (polishTarget.value === 'title') return '标题候选'
@@ -276,7 +277,11 @@ const loadEditor = async () => {
     if (route.name === 'adminArticleNew') {
       const response = await createAdminArticle({ title: '无标题文章', is_publish: false })
       applyArticle(response.data.article)
-      await router.replace({ name: 'adminArticleEdit', params: { id: response.data.article.id } })
+      await router.replace({
+        name: 'adminArticleEdit',
+        params: { id: response.data.article.id },
+        query: route.query
+      })
     } else {
       const articleId = getRouteArticleId()
       if (!articleId) throw new Error('缺少文章 ID')
@@ -314,7 +319,7 @@ const editorConfig = computed<EditorConfig>(() => ({
 }))
 
 const onEditorReady = (readyEditor: ClassicEditor) => {
-  readyEditor.ui.view.editable.element?.classList.add('reading-prose', 'ck-content')
+  readyEditor.ui.view.editable.element?.classList.add('admin-editor-prose', 'ck-content')
   editorInstance.value = readyEditor
 }
 
@@ -624,7 +629,7 @@ const updateCategory = (event: Event) => {
 }
 
 const goBack = () => {
-  void router.push({ name: 'adminArticles' })
+  void router.push(adminArticleListLocation.value)
 }
 
 const handleSaveShortcut = (event: KeyboardEvent) => {
@@ -666,14 +671,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="space-y-5">
+  <main class="admin-editor-shell space-y-3">
     <header
-      class="sticky top-0 z-30 -mx-4 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+      class="sticky top-0 z-30 -mx-4 border-b border-border/70 bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
     >
       <div
-        class="mx-auto flex max-w-7xl flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
+        class="mx-auto flex max-w-7xl flex-col gap-2 xl:flex-row xl:items-center xl:justify-between"
       >
-        <div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <AppButton variant="ghost" size="sm" class="w-max" @click="goBack">
             <ArrowLeft class="size-4" aria-hidden="true" />
             返回
@@ -743,9 +748,9 @@ onBeforeUnmount(() => {
       <p class="m-0 text-sm font-semibold text-muted-foreground">正在准备编辑器</p>
     </section>
 
-    <section v-else class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <div class="min-w-0 space-y-3">
-        <div class="archive-surface admin-editor-content overflow-hidden rounded-archive">
+    <section v-else class="admin-editor-frame">
+      <div class="admin-editor-panel min-w-0 space-y-3">
+        <div class="archive-surface admin-editor-content overflow-visible rounded-archive">
           <Ckeditor
             v-model="editorData"
             :editor="ClassicEditor"
@@ -807,7 +812,7 @@ onBeforeUnmount(() => {
         </section>
       </div>
 
-      <aside class="archive-surface h-max rounded-archive p-4 2xl:sticky 2xl:top-24">
+      <aside class="admin-editor-settings archive-surface h-max rounded-archive p-4">
         <h2 class="m-0 text-base font-black text-foreground">文章设置</h2>
         <div class="mt-4 space-y-4">
           <label class="block space-y-2">
@@ -1013,7 +1018,7 @@ onBeforeUnmount(() => {
               :alt="articleTitle || '文章封面'"
               class="mb-6 aspect-[16/9] w-full rounded-archive object-cover"
             />
-            <div class="reading-prose ck-content" v-html="previewContent" />
+            <div class="reading-prose ck-content admin-preview-content" v-html="previewContent" />
           </article>
         </div>
       </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { CalendarDays, Eye, Folder, Heart, Pencil, Plus, Search, Trash2 } from '@lucide/vue'
 import { isAutomationDraft } from '@/admin/articleAutomation'
 import type { AdminArticle } from '@/admin/types'
@@ -15,6 +15,7 @@ import AppInput from '@/components/ui/AppInput.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
@@ -40,6 +41,29 @@ const hasArticles = computed(() => visibleArticles.value.length > 0)
 const showingFrom = computed(() => (total.value === 0 ? 0 : (query.page - 1) * query.limit + 1))
 const showingTo = computed(() => Math.min(query.page * query.limit, total.value))
 
+const routeString = (value: unknown) => {
+  if (Array.isArray(value)) return String(value[0] ?? '')
+  return typeof value === 'string' ? value : ''
+}
+
+const routePage = (value: unknown) => {
+  const parsed = Number(routeString(value))
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1
+}
+
+const syncQueryFromRoute = () => {
+  query.title = routeString(route.query.title).trim()
+  query.page = routePage(route.query.page)
+}
+
+const writeListQuery = () => {
+  const nextTitle = query.title.trim()
+  void router.replace({
+    name: 'adminArticles',
+    query: { title: nextTitle || undefined, page: String(query.page) },
+  })
+}
+
 const fetchArticles = async () => {
   if (loading.value) return
 
@@ -63,7 +87,7 @@ const fetchArticles = async () => {
 
 const searchArticles = () => {
   query.page = 1
-  void fetchArticles()
+  writeListQuery()
 }
 
 const clearSearch = () => {
@@ -72,11 +96,11 @@ const clearSearch = () => {
 }
 
 const createArticle = () => {
-  void router.push({ name: 'adminArticleNew' })
+  void router.push({ name: 'adminArticleNew', query: route.query })
 }
 
 const editArticle = (id: string) => {
-  void router.push({ name: 'adminArticleEdit', params: { id } })
+  void router.push({ name: 'adminArticleEdit', params: { id }, query: route.query })
 }
 
 const togglePublish = async (article: AdminArticle) => {
@@ -128,7 +152,7 @@ const confirmDelete = async () => {
 
     if (articles.value.length === 0 && query.page > 1) {
       query.page -= 1
-      await fetchArticles()
+      writeListQuery()
     }
   } catch {
     // Admin HTTP client already shows a toast for request failures.
@@ -140,7 +164,7 @@ const confirmDelete = async () => {
 const changePage = (page: number) => {
   if (page < 1 || page > totalPages.value || page === query.page) return
   query.page = page
-  void fetchArticles()
+  writeListQuery()
 }
 
 const formatDate = (value?: string) => {
@@ -175,8 +199,17 @@ const coverLabel = (article: AdminArticle) => {
 const isActionBusy = (key: string) => activeAction.value === key
 
 onMounted(() => {
+  syncQueryFromRoute()
   void fetchArticles()
 })
+
+watch(
+  () => [route.query.title, route.query.page],
+  () => {
+    syncQueryFromRoute()
+    void fetchArticles()
+  }
+)
 </script>
 
 <template>

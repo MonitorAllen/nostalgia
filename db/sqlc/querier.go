@@ -14,7 +14,7 @@ import (
 type Querier interface {
 	AddCommentLikes(ctx context.Context, id int64) (Comment, error)
 	CountAdminUsers(ctx context.Context) (int64, error)
-	CountAllArticles(ctx context.Context) (int64, error)
+	CountAllArticles(ctx context.Context, title pgtype.Text) (int64, error)
 	CountArticles(ctx context.Context, arg CountArticlesParams) (int64, error)
 	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
 	CountAutomationDraftsToday(ctx context.Context) (int64, error)

@@ -9,6 +9,7 @@ option go_package = "github.com/MonitorAllen/nostalgia/pb";
 message ListArticlesRequest {
   int32 page = 1;
   int32 limit = 2;
+  string title = 3;
 }
 
 message ListArticlesResponse {

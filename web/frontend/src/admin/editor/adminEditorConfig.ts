@@ -48,6 +48,11 @@ import { CODE_BLOCK_LANGUAGES } from '@/editor/contentLanguages'
 import { ADMIN_EDITOR_TOOLBAR_ITEMS } from './adminEditorPolicy'
 
 export const adminEditorConfig: EditorConfig = {
+  ui: {
+    viewportOffset: {
+      top: 68
+    }
+  },
   toolbar: {
     items: [...ADMIN_EDITOR_TOOLBAR_ITEMS],
     shouldNotGroupWhenFull: false

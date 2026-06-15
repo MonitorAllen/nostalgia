@@ -197,6 +197,7 @@ SELECT a.id,
        c.name as category_name
 FROM articles a
          LEFT JOIN categories c on c.id = a.category_id
+WHERE (sqlc.narg(title)::text IS NULL OR a.title ILIKE '%' || sqlc.narg(title)::text || '%')
 ORDER BY
     (a.created_by_automation = true AND a.automation_status = 'pending_review' AND a.is_publish = false) DESC,
     a.created_at DESC
@@ -204,7 +205,8 @@ LIMIT $1 OFFSET $2;
 
 -- name: CountAllArticles :one
 SELECT count(*)
-FROM articles;
+FROM articles a
+WHERE (sqlc.narg(title)::text IS NULL OR a.title ILIKE '%' || sqlc.narg(title)::text || '%');
 
 -- name: ListPublishedArticleSitemapItems :many
 SELECT id,
