@@ -318,12 +318,20 @@
 }
 
 .admin-editor-shell {
-  --admin-editor-header-offset: 4.25rem;
+  --admin-editor-header-offset: 6rem;
   --admin-editor-layout-gap: 1.25rem;
+  --admin-editor-page-gap: 0.75rem;
+  --admin-editor-bottom-inset: 1.25rem;
   --admin-editor-shell-width: 820px;
   --admin-editor-settings-width: 22rem;
+  --admin-editor-workbench-height: calc(
+    100dvh - var(--admin-editor-header-offset) - var(--admin-editor-page-gap) - var(--admin-editor-bottom-inset)
+  );
 
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-editor-page-gap);
 }
 
 .admin-editor-frame {
@@ -363,13 +371,23 @@
   }
 }
 
+.admin-editor-content {
+  height: var(--admin-editor-workbench-height);
+  min-height: 32rem;
+  overflow: visible;
+}
+
 .admin-editor-content .ck.ck-editor {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
   color: rgb(var(--color-foreground));
 }
 
 .admin-editor-content .ck.ck-editor__top {
-  position: sticky;
-  top: var(--admin-editor-header-offset);
+  flex: 0 0 auto;
+  position: relative;
+  top: auto;
   z-index: 20;
 }
 
@@ -412,6 +430,13 @@
   color: rgb(var(--color-accent));
 }
 
+.admin-editor-content .ck.ck-editor__main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .admin-editor-content .ck.ck-editor__main > .ck-editor__editable {
   border-color: rgb(var(--color-border));
   background: rgb(var(--color-surface));
@@ -423,7 +448,7 @@
 }
 
 .admin-editor-content .ck.ck-editor__editable.ck-editor__editable_inline {
-  min-height: 58vh;
+  min-height: 100%;
   padding: 1.25rem 2rem 3rem;
 }
 

@@ -671,7 +671,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="admin-editor-shell space-y-3">
+  <main class="admin-editor-shell">
     <header
       class="sticky top-0 z-30 -mx-4 border-b border-border/70 bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
     >
