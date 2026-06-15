@@ -36,6 +36,7 @@ certs/
 /resources/
 
 .agent
+.codegraph/
 .agents/
 !.agents/
 .agents/*
