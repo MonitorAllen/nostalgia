@@ -173,7 +173,7 @@ func TestLoadConfigAIPolishDefaults(t *testing.T) {
 
 	config, err := LoadConfig(configPath)
 	require.NoError(t, err)
-	require.Equal(t, "openai_compatible", config.AIPolishProvider)
+	require.Equal(t, "openai", config.AIPolishProvider)
 	require.Equal(t, "chat/completions", config.AIPolishAPIProtocol)
 	require.Equal(t, 30*time.Second, config.AIPolishTimeout)
 	require.Equal(t, 6000, config.AIPolishMaxInputChars)
