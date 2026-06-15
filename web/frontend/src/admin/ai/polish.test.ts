@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
   buildAIPolishRequest,
+  createAIPolishSession,
+  getAIPolishApplyLabel,
   getAIPolishModeLabel,
   normalizeSelectedText,
   truncateForAIPolish
@@ -52,5 +54,27 @@ describe('AI polish helpers', () => {
   test('labels modes', () => {
     expect(getAIPolishModeLabel('shorten')).toBe('精简')
     expect(getAIPolishModeLabel('summary_candidates')).toBe('摘要候选')
+  })
+
+  test('creates pending content polish sessions', () => {
+    expect(
+      createAIPolishSession({
+        mode: 'improve',
+        target: 'content_selection',
+        sourceText: '原文'
+      })
+    ).toMatchObject({
+      mode: 'improve',
+      target: 'content_selection',
+      sourceText: '原文',
+      status: 'loading',
+      selectedSuggestionIndex: -1
+    })
+  })
+
+  test('labels explicit apply actions', () => {
+    expect(getAIPolishApplyLabel('content_selection')).toBe('替换选区')
+    expect(getAIPolishApplyLabel('title')).toBe('应用到标题')
+    expect(getAIPolishApplyLabel('summary')).toBe('应用到摘要')
   })
 })

@@ -352,12 +352,22 @@
   min-width: 0;
 }
 
+.admin-ai-drawer {
+  max-height: var(--admin-editor-workbench-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 @container (min-width: 1192px) {
   .admin-editor-frame {
     --prose-measure: 72ch;
 
     grid-template-columns: minmax(0, var(--admin-editor-shell-width)) var(--admin-editor-settings-width);
     justify-content: center;
+  }
+
+  .admin-editor-frame.has-ai-drawer {
+    grid-template-columns: minmax(0, var(--admin-editor-shell-width)) var(--admin-editor-settings-width);
   }
 
   .admin-editor-panel {

@@ -212,6 +212,13 @@ describe('admin UI polish contracts', () => {
     expect(contentCss).toContain('display: block;')
     expect(contentCss).toContain('writing-mode: horizontal-tb;')
     expect(source).toContain('class="reading-prose ck-content admin-preview-content"')
+    expect(source).toContain('aiDrawerOpen')
+    expect(source).toContain('aiPolishSession')
+    expect(source).toContain('admin-ai-drawer')
+    expect(source).toContain('replaceSelectionWithSuggestion')
+    expect(source).toContain('captureEditorSelection')
+    expect(source).toContain('restoreCapturedSelection')
+    expect(contentCss).toContain('.admin-ai-drawer')
   })
 
   test('admin routes include a dedicated AI settings page', () => {

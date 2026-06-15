@@ -14,6 +14,16 @@ interface BuildAIPolishRequestInput {
 
 const DEFAULT_CONTEXT_CHARS = 4000
 
+export type AIPolishSessionStatus = 'idle' | 'loading' | 'ready' | 'error'
+
+export interface AIPolishSession {
+  mode: AdminAIPolishMode
+  target: AdminAIPolishTarget
+  sourceText: string
+  status: AIPolishSessionStatus
+  selectedSuggestionIndex: number
+}
+
 const modeLabels: Record<AdminAIPolishMode, string> = {
   improve: '润色',
   shorten: '精简',
@@ -38,6 +48,26 @@ export function truncateForAIPolish(value = '', maxChars = DEFAULT_CONTEXT_CHARS
 
 export function getAIPolishModeLabel(mode: AdminAIPolishMode) {
   return modeLabels[mode]
+}
+
+export function createAIPolishSession(input: {
+  mode: AdminAIPolishMode
+  target: AdminAIPolishTarget
+  sourceText: string
+}): AIPolishSession {
+  return {
+    mode: input.mode,
+    target: input.target,
+    sourceText: input.sourceText,
+    status: 'loading',
+    selectedSuggestionIndex: -1
+  }
+}
+
+export function getAIPolishApplyLabel(target: AdminAIPolishTarget) {
+  if (target === 'title') return '应用到标题'
+  if (target === 'summary') return '应用到摘要'
+  return '替换选区'
 }
 
 export function buildAIPolishRequest(input: BuildAIPolishRequestInput): AdminAIPolishRequest {
