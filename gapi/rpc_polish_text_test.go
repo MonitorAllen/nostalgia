@@ -128,6 +128,8 @@ func TestPolishTextSuccess(t *testing.T) {
 		Mode:           ai.ModeImprove,
 		Target:         ai.TargetContentSelection,
 		Text:           "原始表达",
+		RichText:       "<h2>原始表达</h2><ul><li>保留结构</li></ul>",
+		InputFormat:    "html",
 		ArticleId:      "article-id",
 		ArticleTitle:   "文章标题",
 		ArticleSummary: "文章摘要",
@@ -139,6 +141,8 @@ func TestPolishTextSuccess(t *testing.T) {
 	require.Equal(t, ai.ModeImprove, polisher.request.Mode)
 	require.Equal(t, ai.TargetContentSelection, polisher.request.Target)
 	require.Equal(t, "原始表达", polisher.request.Text)
+	require.Equal(t, "<h2>原始表达</h2><ul><li>保留结构</li></ul>", polisher.request.RichText)
+	require.Equal(t, "html", polisher.request.InputFormat)
 	require.Equal(t, "文章标题", polisher.request.ArticleTitle)
 	require.Len(t, resp.GetSuggestions(), 1)
 	require.Equal(t, "更自然的表达", resp.GetSuggestions()[0].GetContent())

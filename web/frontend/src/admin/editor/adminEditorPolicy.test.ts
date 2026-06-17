@@ -6,6 +6,8 @@ import {
 
 describe('ADMIN_EDITOR_TOOLBAR_ITEMS', () => {
   test('keeps core blog authoring tools', () => {
+    expect(ADMIN_EDITOR_TOOLBAR_ITEMS).toContain('sourceEditing')
+    expect(ADMIN_EDITOR_TOOLBAR_ITEMS).toContain('showBlocks')
     expect(ADMIN_EDITOR_TOOLBAR_ITEMS).toContain('heading')
     expect(ADMIN_EDITOR_TOOLBAR_ITEMS).toContain('bold')
     expect(ADMIN_EDITOR_TOOLBAR_ITEMS).toContain('italic')

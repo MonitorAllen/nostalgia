@@ -65,7 +65,7 @@ func (server *Server) runtimeAIPolishConfig() resolvedAIConfig {
 		BaseURL:          strings.TrimSpace(server.config.AIPolishBaseURL),
 		Model:            strings.TrimSpace(server.config.AIPolishModel),
 		APIKey:           strings.TrimSpace(server.config.AIPolishAPIKey),
-		Timeout:          normalizedDuration(server.config.AIPolishTimeout, 30*time.Second),
+		Timeout:          normalizedDuration(server.config.AIPolishTimeout, 60*time.Second),
 		MaxInputChars:    normalizedPositive(server.config.AIPolishMaxInputChars, 6000),
 		MaxContextChars:  normalizedNonNegative(server.config.AIPolishMaxContextChars, 4000),
 		MaxSuggestions:   normalizedPositive(server.config.AIPolishMaxSuggestions, 3),

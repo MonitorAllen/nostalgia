@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -50,6 +51,60 @@ func TestOpenAIAdapterUsesChatCompletions(t *testing.T) {
 	require.Equal(t, "/chat/completions", gotPath)
 	require.Equal(t, "hello", gotPrompt)
 	require.Equal(t, "raw candidate", resp.Content)
+}
+
+func TestOpenAIAdapterUsesChatCompletionsWithVersionedBaseURL(t *testing.T) {
+	var gotPath string
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		require.Equal(t, "Bearer secret-key", r.Header.Get("Authorization"))
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"chatcmpl_1","object":"chat.completion","created":0,"model":"writer-model","choices":[{"index":0,"message":{"role":"assistant","content":"direct candidate"},"finish_reason":"stop"}]}`))
+	}))
+	defer provider.Close()
+
+	adapter := NewOpenAIAdapter(ServiceConfig{
+		BaseURL:     provider.URL + "/v1",
+		APIKey:      "secret-key",
+		APIProtocol: APIProtocolChatCompletions,
+		Model:       "writer-model",
+	})
+
+	resp, err := adapter.Generate(context.Background(), GenerateRequest{
+		Protocol: APIProtocolChatCompletions,
+		Model:    "writer-model",
+		Prompt:   "hello",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "/v1/chat/completions", gotPath)
+	require.Equal(t, "direct candidate", resp.Content)
+}
+
+func TestProviderHTTPClientIgnoresEnvironmentProxyWhenHTTPProxyAddressEmpty(t *testing.T) {
+	t.Setenv("HTTP_PROXY", "http://127.0.0.1:65535")
+	t.Setenv("HTTPS_PROXY", "http://127.0.0.1:65535")
+
+	client := newProviderHTTPClient(ServiceConfig{})
+	transport, ok := client.Transport.(*http.Transport)
+
+	require.True(t, ok)
+	require.Nil(t, transport.Proxy)
+}
+
+func TestProviderHTTPClientUsesExplicitHTTPProxyAddress(t *testing.T) {
+	client := newProviderHTTPClient(ServiceConfig{HTTPProxyAddress: "http://127.0.0.1:18080"})
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok)
+	require.NotNil(t, transport.Proxy)
+
+	requestURL, err := url.Parse("https://api.openai.com/v1/chat/completions")
+	require.NoError(t, err)
+	proxyURL, err := transport.Proxy(&http.Request{URL: requestURL})
+
+	require.NoError(t, err)
+	require.Equal(t, "http://127.0.0.1:18080", proxyURL.String())
 }
 
 func TestOpenAIAdapterUsesResponses(t *testing.T) {

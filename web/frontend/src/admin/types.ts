@@ -105,6 +105,8 @@ export interface AdminAIPolishRequest {
   mode: AdminAIPolishMode
   target: AdminAIPolishTarget
   text: string
+  rich_text?: string
+  input_format?: 'plain_text' | 'html'
   article_id?: string
   article_title?: string
   article_summary?: string

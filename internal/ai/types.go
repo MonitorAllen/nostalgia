@@ -82,6 +82,8 @@ type PolishRequest struct {
 	Mode           string
 	Target         string
 	Text           string
+	RichText       string
+	InputFormat    string
 	ArticleID      string
 	ArticleTitle   string
 	ArticleSummary string
@@ -105,6 +107,8 @@ func (req PolishRequest) normalized() PolishRequest {
 	req.Mode = strings.TrimSpace(req.Mode)
 	req.Target = strings.TrimSpace(req.Target)
 	req.Text = strings.TrimSpace(req.Text)
+	req.RichText = strings.TrimSpace(req.RichText)
+	req.InputFormat = strings.TrimSpace(req.InputFormat)
 	req.ArticleID = strings.TrimSpace(req.ArticleID)
 	req.ArticleTitle = strings.TrimSpace(req.ArticleTitle)
 	req.ArticleSummary = strings.TrimSpace(req.ArticleSummary)
@@ -112,6 +116,9 @@ func (req PolishRequest) normalized() PolishRequest {
 	req.Locale = strings.TrimSpace(req.Locale)
 	if req.Locale == "" {
 		req.Locale = "zh-CN"
+	}
+	if req.InputFormat == "" {
+		req.InputFormat = "plain_text"
 	}
 	return req
 }

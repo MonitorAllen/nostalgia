@@ -36,6 +36,7 @@ func (service *PolishService) Polish(ctx context.Context, req PolishRequest) (Po
 	req.ArticleTitle = limitRunes(req.ArticleTitle, service.config.MaxContextChars)
 	req.ArticleSummary = limitRunes(req.ArticleSummary, service.config.MaxContextChars)
 	req.ArticleExcerpt = limitRunes(req.ArticleExcerpt, service.config.MaxContextChars)
+	req.RichText = limitRunes(req.RichText, service.config.MaxInputChars)
 
 	adapter, err := service.factory(service.config)
 	if err != nil {
@@ -46,6 +47,8 @@ func (service *PolishService) Polish(ctx context.Context, req PolishRequest) (Po
 		Mode:           req.Mode,
 		Target:         req.Target,
 		Text:           req.Text,
+		RichText:       req.RichText,
+		InputFormat:    req.InputFormat,
 		ArticleTitle:   req.ArticleTitle,
 		ArticleSummary: req.ArticleSummary,
 		ArticleExcerpt: req.ArticleExcerpt,

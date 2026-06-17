@@ -20,6 +20,8 @@ func (server *Server) PolishText(ctx context.Context, req *pb.PolishTextRequest)
 		Mode:           req.GetMode(),
 		Target:         req.GetTarget(),
 		Text:           req.GetText(),
+		RichText:       req.GetRichText(),
+		InputFormat:    req.GetInputFormat(),
 		ArticleID:      req.GetArticleId(),
 		ArticleTitle:   req.GetArticleTitle(),
 		ArticleSummary: req.GetArticleSummary(),

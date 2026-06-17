@@ -13,6 +13,8 @@ message PolishTextRequest {
   string article_summary = 6;
   string article_excerpt = 7;
   string locale = 8;
+  string rich_text = 9;
+  string input_format = 10;
 }
 
 message PolishSuggestion {

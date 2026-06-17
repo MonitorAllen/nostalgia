@@ -358,6 +358,25 @@
   overscroll-behavior: contain;
 }
 
+.admin-ai-suggestion-content {
+  --prose-measure: 100%;
+
+  max-width: 100%;
+}
+
+.admin-ai-suggestion-content > :first-child {
+  margin-top: 0;
+}
+
+.admin-ai-suggestion-content > :last-child {
+  margin-bottom: 0;
+}
+
+.admin-ai-suggestion-content pre,
+.admin-ai-suggestion-content figure.table {
+  max-width: 100%;
+}
+
 @container (min-width: 1192px) {
   .admin-editor-frame {
     --prose-measure: 72ch;
@@ -584,6 +603,14 @@
 
 .admin-editor-content .ck-content a:hover {
   border-bottom-color: rgb(var(--color-accent));
+}
+
+.admin-editor-content .ck-content .admin-ai-polish-target {
+  border-radius: 0.25rem;
+  background: rgb(var(--color-accent) / 0.18);
+  box-shadow:
+    0 0 0 1px rgb(var(--color-accent) / 0.22),
+    0 0.1rem 0.35rem rgb(var(--color-accent) / 0.12);
 }
 
 .admin-editor-content .ck-content blockquote {

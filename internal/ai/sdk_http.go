@@ -9,6 +9,7 @@ import (
 
 func newProviderHTTPClient(config ServiceConfig) *http.Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
 	if proxyAddr := strings.TrimSpace(config.HTTPProxyAddress); proxyAddr != "" {
 		if proxyURL, err := url.Parse(proxyAddr); err == nil {
 			transport.Proxy = http.ProxyURL(proxyURL)
