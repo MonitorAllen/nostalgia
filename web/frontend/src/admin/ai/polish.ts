@@ -4,6 +4,8 @@ interface BuildAIPolishRequestInput {
   mode: AdminAIPolishMode
   target: AdminAIPolishTarget
   text: string
+  richText?: string
+  inputFormat?: 'plain_text' | 'html'
   articleId?: string
   articleTitle?: string
   articleSummary?: string
@@ -13,6 +15,17 @@ interface BuildAIPolishRequestInput {
 }
 
 const DEFAULT_CONTEXT_CHARS = 4000
+
+export type AIPolishSessionStatus = 'idle' | 'loading' | 'ready' | 'error'
+
+export interface AIPolishSession {
+  mode: AdminAIPolishMode
+  target: AdminAIPolishTarget
+  sourceText: string
+  sourceRichText: string
+  status: AIPolishSessionStatus
+  selectedSuggestionIndex: number
+}
 
 const modeLabels: Record<AdminAIPolishMode, string> = {
   improve: '润色',
@@ -40,6 +53,42 @@ export function getAIPolishModeLabel(mode: AdminAIPolishMode) {
   return modeLabels[mode]
 }
 
+export function createAIPolishSession(input: {
+  mode: AdminAIPolishMode
+  target: AdminAIPolishTarget
+  sourceText: string
+  sourceRichText?: string
+}): AIPolishSession {
+  return {
+    mode: input.mode,
+    target: input.target,
+    sourceText: input.sourceText,
+    sourceRichText: input.sourceRichText?.trim() || '',
+    status: 'loading',
+    selectedSuggestionIndex: -1
+  }
+}
+
+export function getAIPolishApplyLabel(target: AdminAIPolishTarget) {
+  if (target === 'title') return '应用到标题'
+  if (target === 'summary') return '应用到摘要'
+  return '替换选区'
+}
+
+export function buildAIPolishContentPreview(input: {
+  articleContent: string
+  sourceText: string
+  sourceRichText?: string
+  replacementHtml: string
+}) {
+  const selectedHtml = input.sourceRichText?.trim()
+  if (selectedHtml && input.articleContent.includes(selectedHtml)) {
+    return input.articleContent.replace(selectedHtml, input.replacementHtml)
+  }
+
+  return input.articleContent
+}
+
 export function buildAIPolishRequest(input: BuildAIPolishRequestInput): AdminAIPolishRequest {
   const maxContextChars = input.maxContextChars ?? DEFAULT_CONTEXT_CHARS
 
@@ -47,6 +96,8 @@ export function buildAIPolishRequest(input: BuildAIPolishRequestInput): AdminAIP
     mode: input.mode,
     target: input.target,
     text: normalizeSelectedText(input.text),
+    ...(input.richText ? { rich_text: input.richText.trim() } : {}),
+    ...(input.inputFormat ? { input_format: input.inputFormat } : {}),
     ...(input.articleId ? { article_id: input.articleId } : {}),
     article_title: truncateForAIPolish(input.articleTitle || '', maxContextChars),
     article_summary: truncateForAIPolish(input.articleSummary || '', maxContextChars),

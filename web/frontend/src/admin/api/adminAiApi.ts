@@ -8,8 +8,13 @@ import type {
   AdminAIPolishResponse
 } from '../types'
 
+export const AI_POLISH_REQUEST_TIMEOUT_MS = 310000
+
 export function polishAdminText(data: AdminAIPolishRequest) {
-  return adminHttp.post<AdminAIPolishResponse>('/ai/polish', data, { skipErrorHandler: true })
+  return adminHttp.post<AdminAIPolishResponse>('/ai/polish', data, {
+    skipErrorHandler: true,
+    timeout: AI_POLISH_REQUEST_TIMEOUT_MS
+  })
 }
 
 export function getAdminAIConfig() {

@@ -2,6 +2,7 @@ package gapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
@@ -35,6 +36,7 @@ type resolvedAIConfig struct {
 	MaxInputChars    int
 	MaxContextChars  int
 	MaxSuggestions   int
+	PromptTemplates  map[string]string
 	EnabledRequested bool
 	Source           string
 }
@@ -63,10 +65,11 @@ func (server *Server) runtimeAIPolishConfig() resolvedAIConfig {
 		BaseURL:          strings.TrimSpace(server.config.AIPolishBaseURL),
 		Model:            strings.TrimSpace(server.config.AIPolishModel),
 		APIKey:           strings.TrimSpace(server.config.AIPolishAPIKey),
-		Timeout:          normalizedDuration(server.config.AIPolishTimeout, 30*time.Second),
+		Timeout:          normalizedDuration(server.config.AIPolishTimeout, 60*time.Second),
 		MaxInputChars:    normalizedPositive(server.config.AIPolishMaxInputChars, 6000),
 		MaxContextChars:  normalizedNonNegative(server.config.AIPolishMaxContextChars, 4000),
 		MaxSuggestions:   normalizedPositive(server.config.AIPolishMaxSuggestions, 3),
+		PromptTemplates:  ai.DefaultPromptTemplates(),
 		EnabledRequested: true,
 		Source:           aiConfigSourceEnv,
 	}
@@ -89,6 +92,7 @@ func (server *Server) aiConfigFromRow(row db.AiProviderConfig) (resolvedAIConfig
 		MaxInputChars:    normalizedPositive(int(row.MaxInputChars), 6000),
 		MaxContextChars:  normalizedNonNegative(int(row.MaxContextChars), 4000),
 		MaxSuggestions:   normalizedPositive(int(row.MaxSuggestions), 3),
+		PromptTemplates:  decodePromptTemplates(row.PromptTemplates),
 		EnabledRequested: row.Enabled,
 		Source:           aiConfigSourceDB,
 	}, nil
@@ -96,17 +100,19 @@ func (server *Server) aiConfigFromRow(row db.AiProviderConfig) (resolvedAIConfig
 
 func (cfg resolvedAIConfig) toResponse() *pb.GetAIConfigResponse {
 	return &pb.GetAIConfigResponse{
-		Provider:         cfg.Provider,
-		ApiProtocol:      cfg.APIProtocol,
-		BaseUrl:          cfg.BaseURL,
-		Model:            cfg.Model,
-		ApiKeyConfigured: cfg.apiKeyConfigured(),
-		Enabled:          cfg.usable(),
-		Timeout:          cfg.Timeout.String(),
-		MaxInputChars:    int32(cfg.MaxInputChars),
-		MaxContextChars:  int32(cfg.MaxContextChars),
-		MaxSuggestions:   int32(cfg.MaxSuggestions),
-		Source:           cfg.Source,
+		Provider:               cfg.Provider,
+		ApiProtocol:            cfg.APIProtocol,
+		BaseUrl:                cfg.BaseURL,
+		Model:                  cfg.Model,
+		ApiKeyConfigured:       cfg.apiKeyConfigured(),
+		Enabled:                cfg.usable(),
+		Timeout:                cfg.Timeout.String(),
+		MaxInputChars:          int32(cfg.MaxInputChars),
+		MaxContextChars:        int32(cfg.MaxContextChars),
+		MaxSuggestions:         int32(cfg.MaxSuggestions),
+		Source:                 cfg.Source,
+		PromptTemplates:        ai.NormalizePromptTemplates(cfg.PromptTemplates),
+		DefaultPromptTemplates: ai.DefaultPromptTemplates(),
 	}
 }
 
@@ -175,6 +181,7 @@ func (server *Server) buildUpdatedAIConfig(ctx context.Context, req *pb.UpdateAI
 		MaxInputChars:    choosePositive(req.GetMaxInputChars(), current.MaxInputChars, 6000),
 		MaxContextChars:  chooseNonNegative(req.GetMaxContextChars(), current.MaxContextChars, 4000),
 		MaxSuggestions:   choosePositive(req.GetMaxSuggestions(), current.MaxSuggestions, 3),
+		PromptTemplates:  choosePromptTemplates(req.GetPromptTemplates(), current.PromptTemplates),
 		EnabledRequested: req.GetEnabled(),
 		Source:           aiConfigSourceDB,
 	}
@@ -237,6 +244,7 @@ func (server *Server) saveAIConfig(ctx context.Context, cfg resolvedAIConfig, up
 		MaxInputChars:    int32(cfg.MaxInputChars),
 		MaxContextChars:  int32(cfg.MaxContextChars),
 		MaxSuggestions:   int32(cfg.MaxSuggestions),
+		PromptTemplates:  encodePromptTemplates(cfg.PromptTemplates),
 		Enabled:          cfg.EnabledRequested,
 		UpdatedBy:        updatedBy,
 	})
@@ -245,6 +253,38 @@ func (server *Server) saveAIConfig(ctx context.Context, cfg resolvedAIConfig, up
 	}
 
 	return server.aiConfigFromRow(row)
+}
+
+func decodePromptTemplates(raw []byte) map[string]string {
+	if len(raw) == 0 {
+		return ai.DefaultPromptTemplates()
+	}
+	var values map[string]string
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return ai.DefaultPromptTemplates()
+	}
+	return ai.NormalizePromptTemplates(values)
+}
+
+func encodePromptTemplates(values map[string]string) []byte {
+	normalized := make(map[string]string)
+	for _, key := range ai.PromptTemplateKeys() {
+		if value := strings.TrimSpace(values[key]); value != "" {
+			normalized[key] = value
+		}
+	}
+	encoded, err := json.Marshal(normalized)
+	if err != nil {
+		return []byte(`{}`)
+	}
+	return encoded
+}
+
+func choosePromptTemplates(next map[string]string, current map[string]string) map[string]string {
+	if len(next) > 0 {
+		return next
+	}
+	return current
 }
 
 func normalizedDuration(value time.Duration, fallback time.Duration) time.Duration {

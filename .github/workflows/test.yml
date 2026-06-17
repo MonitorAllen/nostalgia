@@ -37,7 +37,7 @@ jobs:
       AUTOMATION_SIGNATURE_TTL: 5m
       AUTOMATION_DAILY_DRAFT_LIMIT: "1"
       AUTOMATION_NOTIFY_EMAIL: noreply@example.com
-      AI_POLISH_PROVIDER: openai_compatible
+      AI_POLISH_PROVIDER: openai
       AI_POLISH_API_PROTOCOL: chat/completions
       AI_POLISH_BASE_URL: ""
       AI_POLISH_API_KEY: ""

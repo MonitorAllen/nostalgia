@@ -59,7 +59,7 @@ func LoadConfig(path string) (config Config, err error) {
 	configReader.SetDefault("REDIS_QUEUE_DB", 1)
 	configReader.SetDefault("AUTOMATION_SIGNATURE_TTL", 5*time.Minute)
 	configReader.SetDefault("AUTOMATION_DAILY_DRAFT_LIMIT", 1)
-	configReader.SetDefault("AI_POLISH_PROVIDER", "openai_compatible")
+	configReader.SetDefault("AI_POLISH_PROVIDER", "openai")
 	configReader.SetDefault("AI_POLISH_API_PROTOCOL", "chat/completions")
 	configReader.SetDefault("AI_POLISH_TIMEOUT", 30*time.Second)
 	configReader.SetDefault("AI_POLISH_MAX_INPUT_CHARS", 6000)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -21,6 +22,9 @@ const (
 	APIProtocolChatCompletions = "chat/completions"
 	APIProtocolResponses       = "responses"
 	APIProtocolMessages        = "messages"
+
+	ProviderOpenAI    = "openai"
+	ProviderAnthropic = "anthropic"
 )
 
 var (
@@ -42,10 +46,44 @@ type Model struct {
 	ID string
 }
 
+type ServiceConfig struct {
+	Provider         string
+	APIProtocol      string
+	BaseURL          string
+	APIKey           string
+	Model            string
+	Timeout          time.Duration
+	MaxInputChars    int
+	MaxContextChars  int
+	MaxSuggestions   int
+	PromptTemplates  map[string]string
+	HTTPProxyAddress string
+}
+
+type GenerateRequest struct {
+	Protocol string
+	Model    string
+	Prompt   string
+}
+
+type GenerateResponse struct {
+	Content string
+	Model   string
+}
+
+type ProviderAdapter interface {
+	Generate(ctx context.Context, req GenerateRequest) (GenerateResponse, error)
+	ListModels(ctx context.Context) ([]Model, error)
+}
+
+type ProviderFactory func(ServiceConfig) (ProviderAdapter, error)
+
 type PolishRequest struct {
 	Mode           string
 	Target         string
 	Text           string
+	RichText       string
+	InputFormat    string
 	ArticleID      string
 	ArticleTitle   string
 	ArticleSummary string
@@ -65,15 +103,12 @@ type PolishResponse struct {
 	Model       string
 }
 
-type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
 func (req PolishRequest) normalized() PolishRequest {
 	req.Mode = strings.TrimSpace(req.Mode)
 	req.Target = strings.TrimSpace(req.Target)
 	req.Text = strings.TrimSpace(req.Text)
+	req.RichText = strings.TrimSpace(req.RichText)
+	req.InputFormat = strings.TrimSpace(req.InputFormat)
 	req.ArticleID = strings.TrimSpace(req.ArticleID)
 	req.ArticleTitle = strings.TrimSpace(req.ArticleTitle)
 	req.ArticleSummary = strings.TrimSpace(req.ArticleSummary)
@@ -81,6 +116,9 @@ func (req PolishRequest) normalized() PolishRequest {
 	req.Locale = strings.TrimSpace(req.Locale)
 	if req.Locale == "" {
 		req.Locale = "zh-CN"
+	}
+	if req.InputFormat == "" {
+		req.InputFormat = "plain_text"
 	}
 	return req
 }

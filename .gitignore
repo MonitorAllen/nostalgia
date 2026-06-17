@@ -37,6 +37,7 @@ certs/
 
 .agent
 .codegraph/
+.superpowers/
 .agents/
 !.agents/
 .agents/*
