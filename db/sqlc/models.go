@@ -138,11 +138,13 @@ type User struct {
 	Email           string    `json:"email"`
 	IsEmailVerified bool      `json:"is_email_verified"`
 	// 介绍
-	About     string    `json:"about"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
+	About          string             `json:"about"`
+	Role           string             `json:"role"`
+	CreatedAt      time.Time          `json:"created_at"`
+	UpdatedAt      time.Time          `json:"updated_at"`
+	DeletedAt      time.Time          `json:"deleted_at"`
+	DisabledAt     pgtype.Timestamptz `json:"disabled_at"`
+	DisabledReason string             `json:"disabled_reason"`
 }
 
 type VerifyEmail struct {

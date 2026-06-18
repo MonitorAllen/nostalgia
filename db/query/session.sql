@@ -14,3 +14,8 @@ SELECT *
 FROM sessions
 WHERE id = $1
 LIMIT 1;
+
+-- name: BlockUserSessions :exec
+UPDATE sessions
+SET is_blocked = true
+WHERE user_id = $1;
