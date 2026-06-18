@@ -79,6 +79,37 @@ export interface AdminCategoryAllResponse {
   categories: AdminCategory[]
 }
 
+export type AdminUserStatusFilter = 'all' | 'enabled' | 'disabled'
+
+export interface ManagedAdminUser {
+  id: string
+  username: string
+  full_name: string
+  email: string
+  is_email_verified: boolean
+  role: 'visitor'
+  created_at: string
+  updated_at?: string
+  disabled_at?: string
+  disabled_reason?: string
+}
+
+export interface AdminUserListResponse {
+  users: ManagedAdminUser[]
+  count: string | number
+}
+
+export interface UpdateAdminUserRequest {
+  id: string
+  full_name: string
+  email: string
+  is_email_verified: boolean
+}
+
+export interface DisableAdminUserRequest {
+  reason?: string
+}
+
 export interface AdminUploadRequest {
   article_id: string
   content: string
