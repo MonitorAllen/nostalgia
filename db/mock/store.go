@@ -479,6 +479,21 @@ func (mr *MockStoreMockRecorder) DisableVisitorUser(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableVisitorUser", reflect.TypeOf((*MockStore)(nil).DisableVisitorUser), arg0, arg1)
 }
 
+// DisableVisitorUserTx mocks base method.
+func (m *MockStore) DisableVisitorUserTx(arg0 context.Context, arg1 db.DisableVisitorUserTxParams) (db.DisableVisitorUserTxResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableVisitorUserTx", arg0, arg1)
+	ret0, _ := ret[0].(db.DisableVisitorUserTxResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DisableVisitorUserTx indicates an expected call of DisableVisitorUserTx.
+func (mr *MockStoreMockRecorder) DisableVisitorUserTx(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableVisitorUserTx", reflect.TypeOf((*MockStore)(nil).DisableVisitorUserTx), arg0, arg1)
+}
+
 // EnableVisitorUser mocks base method.
 func (m *MockStore) EnableVisitorUser(arg0 context.Context, arg1 uuid.UUID) (db.User, error) {
 	m.ctrl.T.Helper()

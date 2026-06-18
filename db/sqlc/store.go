@@ -18,6 +18,7 @@ type Store interface {
 	DeleteCategoryTx(ctx context.Context, arg DeleteCategoryTxParams) error
 	UpdateCategoryTx(ctx context.Context, arg UpdateCategoryTxParams) (UpdateCategoryTxResult, error)
 	CreateCategoryTx(ctx context.Context, arg CreateCategoryTxParams) (CreateCategoryTxResult, error)
+	DisableVisitorUserTx(ctx context.Context, arg DisableVisitorUserTxParams) (DisableVisitorUserTxResult, error)
 }
 
 // SQLStore provides all functions to execute SQL queries and transactions

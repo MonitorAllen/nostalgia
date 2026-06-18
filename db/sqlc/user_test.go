@@ -2,14 +2,18 @@ package db
 
 import (
 	"context"
-	"github.com/MonitorAllen/nostalgia/util"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/MonitorAllen/nostalgia/util"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/require"
 )
 
 func createRandomUser(t *testing.T) User {
+	t.Helper()
+
 	hashPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
@@ -34,6 +38,37 @@ func createRandomUser(t *testing.T) User {
 	require.NotZero(t, user.CreatedAt)
 
 	return user
+}
+
+func createRandomSession(t *testing.T, userID uuid.UUID) Session {
+	t.Helper()
+
+	arg := CreateSessionParams{
+		ID:           uuid.New(),
+		UserID:       userID,
+		RefreshToken: uuid.NewString(),
+		UserAgent:    "db-test",
+		ClientIp:     "127.0.0.1",
+		IsBlocked:    false,
+		ExpiresAt:    time.Now().Add(time.Hour),
+	}
+
+	session, err := testStore.CreateSession(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, session)
+	require.Equal(t, arg.ID, session.ID)
+	require.Equal(t, arg.UserID, session.UserID)
+	require.False(t, session.IsBlocked)
+
+	return session
+}
+
+func collectUserIDs(users []ListAdminUsersRow) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, len(users))
+	for _, user := range users {
+		ids = append(ids, user.ID)
+	}
+	return ids
 }
 
 func TestCreateUser(t *testing.T) {
@@ -146,4 +181,58 @@ func TestUpdateUserAllFields(t *testing.T) {
 	require.Equal(t, newHashedPassword, updatedUser.HashedPassword)
 	require.Equal(t, newFullName, updatedUser.FullName)
 	require.Equal(t, newEmail, updatedUser.Email)
+}
+
+func TestListAdminUsersFiltersVisitorsOnly(t *testing.T) {
+	ctx := context.Background()
+	visitor := createRandomUser(t)
+	admin := getOrCreateAdminUser(t)
+
+	users, err := testStore.ListAdminUsers(ctx, ListAdminUsersParams{
+		Limit:  10,
+		Offset: 0,
+		Status: "all",
+	})
+
+	require.NoError(t, err)
+	require.NotEmpty(t, users)
+	require.Contains(t, collectUserIDs(users), visitor.ID)
+	require.NotContains(t, collectUserIDs(users), admin.ID)
+}
+
+func TestDisableVisitorUserTxBlocksSessions(t *testing.T) {
+	ctx := context.Background()
+	user := createRandomUser(t)
+	session := createRandomSession(t, user.ID)
+
+	result, err := testStore.DisableVisitorUserTx(ctx, DisableVisitorUserTxParams{
+		ID:             user.ID,
+		DisabledReason: "spam",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, user.ID, result.User.ID)
+	require.Equal(t, "spam", result.User.DisabledReason)
+	require.True(t, result.User.DisabledAt.Valid)
+
+	blockedSession, err := testStore.GetSession(ctx, session.ID)
+	require.NoError(t, err)
+	require.True(t, blockedSession.IsBlocked)
+}
+
+func TestEnableVisitorUserClearsDisabledState(t *testing.T) {
+	ctx := context.Background()
+	user := createRandomUser(t)
+	disabled, err := testStore.DisableVisitorUser(ctx, DisableVisitorUserParams{
+		ID:             user.ID,
+		DisabledReason: "temporary",
+	})
+	require.NoError(t, err)
+	require.True(t, disabled.DisabledAt.Valid)
+
+	enabled, err := testStore.EnableVisitorUser(ctx, user.ID)
+
+	require.NoError(t, err)
+	require.False(t, enabled.DisabledAt.Valid)
+	require.Empty(t, enabled.DisabledReason)
 }
