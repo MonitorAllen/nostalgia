@@ -295,19 +295,28 @@ onMounted(() => {
       </div>
 
       <div class="mt-4 overflow-x-auto">
-        <table class="min-w-full border-separate border-spacing-0 text-left text-sm">
+        <table class="w-full min-w-[72rem] table-fixed border-separate border-spacing-0 text-left text-sm">
+          <colgroup>
+            <col class="w-[23%]" />
+            <col class="w-[21%]" />
+            <col class="w-[24%]" />
+            <col class="w-[6.5rem]" />
+            <col class="w-[6.5rem]" />
+            <col class="w-[8rem]" />
+            <col class="w-[11rem]" />
+          </colgroup>
           <thead class="text-xs uppercase text-muted-foreground">
             <tr>
               <th class="border-b border-border px-3 py-3 font-semibold" scope="col">用户名</th>
               <th class="border-b border-border px-3 py-3 font-semibold" scope="col">姓名</th>
               <th class="border-b border-border px-3 py-3 font-semibold" scope="col">邮箱</th>
-              <th class="border-b border-border px-3 py-3 font-semibold" scope="col">
+              <th class="border-b border-border px-3 py-3 font-semibold whitespace-nowrap" scope="col">
                 邮箱状态
               </th>
-              <th class="border-b border-border px-3 py-3 font-semibold" scope="col">
+              <th class="border-b border-border px-3 py-3 font-semibold whitespace-nowrap" scope="col">
                 账号状态
               </th>
-              <th class="border-b border-border px-3 py-3 font-semibold" scope="col">
+              <th class="border-b border-border px-3 py-3 font-semibold whitespace-nowrap" scope="col">
                 注册时间
               </th>
               <th class="border-b border-border px-3 py-3 text-right font-semibold" scope="col">
@@ -327,34 +336,40 @@ onMounted(() => {
               </td>
             </tr>
             <tr v-for="user in users" v-else :key="user.id">
-              <td class="border-b border-border/70 px-3 py-3 font-semibold text-foreground">
-                {{ user.username }}
+              <td class="max-w-0 border-b border-border/70 px-3 py-3 font-semibold text-foreground">
+                <span class="block truncate break-normal" :title="user.username">
+                  {{ user.username }}
+                </span>
               </td>
-              <td class="border-b border-border/70 px-3 py-3 text-foreground">
-                {{ user.full_name }}
+              <td class="max-w-0 border-b border-border/70 px-3 py-3 text-foreground">
+                <span class="block truncate break-normal" :title="user.full_name">
+                  {{ user.full_name }}
+                </span>
               </td>
-              <td class="border-b border-border/70 px-3 py-3 text-muted-foreground">
-                {{ user.email }}
+              <td class="max-w-0 border-b border-border/70 px-3 py-3 text-muted-foreground">
+                <span class="block truncate break-normal" :title="user.email">
+                  {{ user.email }}
+                </span>
               </td>
-              <td class="border-b border-border/70 px-3 py-3">
+              <td class="border-b border-border/70 px-3 py-3 whitespace-nowrap">
                 <AppBadge :tone="user.is_email_verified ? 'accent' : 'warning'">
                   <Check v-if="user.is_email_verified" class="size-3" aria-hidden="true" />
                   <X v-else class="size-3" aria-hidden="true" />
                   {{ user.is_email_verified ? '已验证' : '未验证' }}
                 </AppBadge>
               </td>
-              <td class="border-b border-border/70 px-3 py-3">
+              <td class="border-b border-border/70 px-3 py-3 whitespace-nowrap">
                 <AppBadge :tone="isDisabled(user) ? 'danger' : 'accent'">
                   {{ isDisabled(user) ? '已禁用' : '启用中' }}
                 </AppBadge>
               </td>
-              <td class="border-b border-border/70 px-3 py-3 text-muted-foreground tabular-nums">
+              <td class="border-b border-border/70 px-3 py-3 text-muted-foreground tabular-nums whitespace-nowrap">
                 {{ formatDate(user.created_at) }}
               </td>
-              <td class="border-b border-border/70 px-3 py-3">
+              <td class="border-b border-border/70 px-3 py-3 whitespace-nowrap">
                 <div class="flex justify-end gap-2">
                   <AppButton size="sm" variant="ghost" @click="openEdit(user)">
-                    <Pencil class="size-4" aria-hidden="true" />
+                    <Pencil class="size-[18px]" aria-hidden="true" />
                     编辑
                   </AppButton>
                   <AppButton
@@ -364,7 +379,7 @@ onMounted(() => {
                     :disabled="isBusy(`enable:${user.id}`)"
                     @click="openEnable(user)"
                   >
-                    <RotateCcw class="size-4" aria-hidden="true" />
+                    <RotateCcw class="size-[18px]" aria-hidden="true" />
                     恢复
                   </AppButton>
                   <AppButton
@@ -374,7 +389,7 @@ onMounted(() => {
                     :disabled="isBusy(`disable:${user.id}`)"
                     @click="openDisable(user)"
                   >
-                    <ShieldOff class="size-4" aria-hidden="true" />
+                    <ShieldOff class="size-[18px]" aria-hidden="true" />
                     禁用
                   </AppButton>
                 </div>

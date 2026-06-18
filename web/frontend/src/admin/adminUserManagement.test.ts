@@ -37,4 +37,24 @@ describe('admin user management source contract', () => {
     expect(view).toContain('openDisable')
     expect(view).toContain('openEnable')
   })
+
+  test('management table keeps status and action columns readable with long user data', () => {
+    const view = read('views/admin/AdminUserManagementView.vue')
+
+    expect(view).toContain('w-full min-w-[72rem] table-fixed')
+    expect(view).toContain('<col class="w-[23%]" />')
+    expect(view).toContain('<col class="w-[8rem]" />')
+    expect(view).toContain('max-w-0')
+    expect(view).toContain('truncate break-normal')
+    expect(view).toContain('whitespace-nowrap')
+  })
+
+  test('row action icons match the compact button text scale', () => {
+    const view = read('views/admin/AdminUserManagementView.vue')
+
+    expect(view).toContain('<Pencil class="size-[18px]"')
+    expect(view).toContain('<RotateCcw class="size-[18px]"')
+    expect(view).toContain('<ShieldOff class="size-[18px]"')
+    expect(view).toContain('<col class="w-[11rem]" />')
+  })
 })
