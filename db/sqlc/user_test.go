@@ -68,12 +68,20 @@ func createUserWithPrefix(t *testing.T, prefix string) User {
 
 func createAdminUserWithPrefix(t *testing.T, prefix string) User {
 	t.Helper()
+	ctx := context.Background()
+
+	user, err := testStore.GetFirstAdminUser(ctx)
+	if err == nil {
+		require.Equal(t, "admin", user.Role)
+		return user
+	}
+	require.ErrorIs(t, err, pgx.ErrNoRows)
 
 	hashPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
 	unique := prefix + "-" + uuid.NewString()
-	user, err := testStore.CreateUserWithRole(context.Background(), CreateUserWithRoleParams{
+	user, err = testStore.CreateUserWithRole(ctx, CreateUserWithRoleParams{
 		ID:              util.RandUserID(),
 		Username:        unique + "-username",
 		HashedPassword:  hashPassword,
@@ -87,6 +95,13 @@ func createAdminUserWithPrefix(t *testing.T, prefix string) User {
 	require.Equal(t, "admin", user.Role)
 
 	return user
+}
+
+func TestCreateAdminUserWithPrefixReusesSingleAdmin(t *testing.T) {
+	admin1 := createAdminUserWithPrefix(t, "admin-helper-one")
+	admin2 := createAdminUserWithPrefix(t, "admin-helper-two")
+
+	require.Equal(t, admin1.ID, admin2.ID)
 }
 
 func createRandomSession(t *testing.T, userID uuid.UUID) Session {
