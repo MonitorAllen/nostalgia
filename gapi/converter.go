@@ -3,6 +3,7 @@ package gapi
 import (
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
+	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -121,4 +122,41 @@ func convertCategoriesCountArticleRow(categories []db.ListCategoriesCountArticle
 	}
 
 	return categoriesList
+}
+
+func optionalTimestamp(value pgtype.Timestamptz) *timestamppb.Timestamp {
+	if !value.Valid {
+		return nil
+	}
+	return timestamppb.New(value.Time)
+}
+
+func convertUser(user db.User) *pb.User {
+	return &pb.User{
+		Id:              user.ID.String(),
+		Username:        user.Username,
+		FullName:        user.FullName,
+		Email:           user.Email,
+		IsEmailVerified: user.IsEmailVerified,
+		Role:            user.Role,
+		CreatedAt:       timestamppb.New(user.CreatedAt),
+		UpdatedAt:       timestamppb.New(user.UpdatedAt),
+		DisabledAt:      optionalTimestamp(user.DisabledAt),
+		DisabledReason:  user.DisabledReason,
+	}
+}
+
+func convertAdminUserRow(user db.ListAdminUsersRow) *pb.User {
+	return &pb.User{
+		Id:              user.ID.String(),
+		Username:        user.Username,
+		FullName:        user.FullName,
+		Email:           user.Email,
+		IsEmailVerified: user.IsEmailVerified,
+		Role:            user.Role,
+		CreatedAt:       timestamppb.New(user.CreatedAt),
+		UpdatedAt:       timestamppb.New(user.UpdatedAt),
+		DisabledAt:      optionalTimestamp(user.DisabledAt),
+		DisabledReason:  user.DisabledReason,
+	}
 }

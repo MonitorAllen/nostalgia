@@ -12,6 +12,17 @@ import (
 	"github.com/google/uuid"
 )
 
+const blockUserSessions = `-- name: BlockUserSessions :exec
+UPDATE sessions
+SET is_blocked = true
+WHERE user_id = $1
+`
+
+func (q *Queries) BlockUserSessions(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, blockUserSessions, userID)
+	return err
+}
+
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (id,
                       user_id,

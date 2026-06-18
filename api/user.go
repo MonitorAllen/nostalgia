@@ -135,6 +135,11 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
+	if user.DisabledAt.Valid {
+		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("account disabled")))
+		return
+	}
+
 	err = util.CheckPassword(req.Password, user.HashedPassword)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(fmt.Errorf("incorrect password")))

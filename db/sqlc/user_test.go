@@ -2,14 +2,19 @@ package db
 
 import (
 	"context"
-	"github.com/MonitorAllen/nostalgia/util"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/MonitorAllen/nostalgia/util"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/stretchr/testify/require"
 )
 
 func createRandomUser(t *testing.T) User {
+	t.Helper()
+
 	hashPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
@@ -34,6 +39,100 @@ func createRandomUser(t *testing.T) User {
 	require.NotZero(t, user.CreatedAt)
 
 	return user
+}
+
+func createUserWithPrefix(t *testing.T, prefix string) User {
+	t.Helper()
+
+	hashPassword, err := util.HashPassword(util.RandomString(6))
+	require.NoError(t, err)
+
+	unique := prefix + "-" + uuid.NewString()
+	arg := CreateUserParams{
+		ID:             util.RandUserID(),
+		Username:       unique + "-username",
+		HashedPassword: hashPassword,
+		FullName:       unique + "-full-name",
+		Email:          unique + "@example.com",
+	}
+
+	user, err := testStore.CreateUser(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+	require.Equal(t, arg.Username, user.Username)
+	require.Equal(t, arg.FullName, user.FullName)
+	require.Equal(t, arg.Email, user.Email)
+
+	return user
+}
+
+func createAdminUserWithPrefix(t *testing.T, prefix string) User {
+	t.Helper()
+	ctx := context.Background()
+
+	user, err := testStore.GetFirstAdminUser(ctx)
+	if err == nil {
+		require.Equal(t, "admin", user.Role)
+		return user
+	}
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+
+	hashPassword, err := util.HashPassword(util.RandomString(6))
+	require.NoError(t, err)
+
+	unique := prefix + "-" + uuid.NewString()
+	user, err = testStore.CreateUserWithRole(ctx, CreateUserWithRoleParams{
+		ID:              util.RandUserID(),
+		Username:        unique + "-username",
+		HashedPassword:  hashPassword,
+		FullName:        unique + "-full-name",
+		Email:           unique + "@example.com",
+		IsEmailVerified: true,
+		Role:            "admin",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+	require.Equal(t, "admin", user.Role)
+
+	return user
+}
+
+func TestCreateAdminUserWithPrefixReusesSingleAdmin(t *testing.T) {
+	admin1 := createAdminUserWithPrefix(t, "admin-helper-one")
+	admin2 := createAdminUserWithPrefix(t, "admin-helper-two")
+
+	require.Equal(t, admin1.ID, admin2.ID)
+}
+
+func createRandomSession(t *testing.T, userID uuid.UUID) Session {
+	t.Helper()
+
+	arg := CreateSessionParams{
+		ID:           uuid.New(),
+		UserID:       userID,
+		RefreshToken: uuid.NewString(),
+		UserAgent:    "db-test",
+		ClientIp:     "127.0.0.1",
+		IsBlocked:    false,
+		ExpiresAt:    time.Now().Add(time.Hour),
+	}
+
+	session, err := testStore.CreateSession(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, session)
+	require.Equal(t, arg.ID, session.ID)
+	require.Equal(t, arg.UserID, session.UserID)
+	require.False(t, session.IsBlocked)
+
+	return session
+}
+
+func collectUserIDs(users []ListAdminUsersRow) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, len(users))
+	for _, user := range users {
+		ids = append(ids, user.ID)
+	}
+	return ids
 }
 
 func TestCreateUser(t *testing.T) {
@@ -146,4 +245,95 @@ func TestUpdateUserAllFields(t *testing.T) {
 	require.Equal(t, newHashedPassword, updatedUser.HashedPassword)
 	require.Equal(t, newFullName, updatedUser.FullName)
 	require.Equal(t, newEmail, updatedUser.Email)
+}
+
+func TestListAdminUsersFiltersVisitorsOnly(t *testing.T) {
+	ctx := context.Background()
+	searchTerm := "visitor-search-" + uuid.NewString()
+	visitor := createUserWithPrefix(t, searchTerm)
+	admin := createAdminUserWithPrefix(t, searchTerm)
+	createRandomUser(t)
+	createRandomUser(t)
+
+	users, err := testStore.ListAdminUsers(ctx, ListAdminUsersParams{
+		Limit:  50,
+		Offset: 0,
+		Status: "all",
+		Q:      pgtype.Text{String: searchTerm, Valid: true},
+	})
+
+	require.NoError(t, err)
+	require.NotEmpty(t, users)
+	require.Contains(t, collectUserIDs(users), visitor.ID)
+	require.NotContains(t, collectUserIDs(users), admin.ID)
+	for _, user := range users {
+		require.Equal(t, "visitor", user.Role)
+		require.Contains(t, user.Username, searchTerm)
+	}
+}
+
+func TestDisableVisitorUserTxBlocksSessions(t *testing.T) {
+	ctx := context.Background()
+	user := createRandomUser(t)
+	session1 := createRandomSession(t, user.ID)
+	session2 := createRandomSession(t, user.ID)
+	otherUser := createRandomUser(t)
+	otherSession := createRandomSession(t, otherUser.ID)
+
+	result, err := testStore.DisableVisitorUserTx(ctx, DisableVisitorUserTxParams{
+		ID:             user.ID,
+		DisabledReason: "spam",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, user.ID, result.User.ID)
+	require.Equal(t, "spam", result.User.DisabledReason)
+	require.True(t, result.User.DisabledAt.Valid)
+
+	blockedSession1, err := testStore.GetSession(ctx, session1.ID)
+	require.NoError(t, err)
+	require.True(t, blockedSession1.IsBlocked)
+
+	blockedSession2, err := testStore.GetSession(ctx, session2.ID)
+	require.NoError(t, err)
+	require.True(t, blockedSession2.IsBlocked)
+
+	unblockedSession, err := testStore.GetSession(ctx, otherSession.ID)
+	require.NoError(t, err)
+	require.False(t, unblockedSession.IsBlocked)
+}
+
+func TestEnableVisitorUserClearsDisabledState(t *testing.T) {
+	ctx := context.Background()
+	user := createRandomUser(t)
+	disabled, err := testStore.DisableVisitorUser(ctx, DisableVisitorUserParams{
+		ID:             user.ID,
+		DisabledReason: "temporary",
+	})
+	require.NoError(t, err)
+	require.True(t, disabled.DisabledAt.Valid)
+
+	enabled, err := testStore.EnableVisitorUser(ctx, user.ID)
+
+	require.NoError(t, err)
+	require.False(t, enabled.DisabledAt.Valid)
+	require.Empty(t, enabled.DisabledReason)
+}
+
+func TestDisableVisitorUserTxRejectsAdminUser(t *testing.T) {
+	ctx := context.Background()
+	admin := createAdminUserWithPrefix(t, "admin-disable-target")
+
+	result, err := testStore.DisableVisitorUserTx(ctx, DisableVisitorUserTxParams{
+		ID:             admin.ID,
+		DisabledReason: "should-not-apply",
+	})
+
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+	require.Zero(t, result)
+
+	latestAdmin, err := testStore.GetUser(ctx, admin.ID)
+	require.NoError(t, err)
+	require.False(t, latestAdmin.DisabledAt.Valid)
+	require.Empty(t, latestAdmin.DisabledReason)
 }

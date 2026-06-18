@@ -10,6 +10,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Users,
   X
 } from '@lucide/vue'
 import { useAdminAuthStore } from '@/admin/stores/adminAuth'
@@ -40,6 +41,12 @@ const navItems: Array<{
     to: { name: 'adminCategories' },
     icon: FolderTree,
     activeRoutes: ['adminCategories'],
+  },
+  {
+    label: '用户',
+    to: { name: 'adminUsers' },
+    icon: Users,
+    activeRoutes: ['adminUsers'],
   },
   {
     label: 'AI 设置',

@@ -13,7 +13,9 @@ import (
 
 type Querier interface {
 	AddCommentLikes(ctx context.Context, id int64) (Comment, error)
+	BlockUserSessions(ctx context.Context, userID uuid.UUID) error
 	CountAdminUsers(ctx context.Context) (int64, error)
+	CountAdminUsersByFilter(ctx context.Context, arg CountAdminUsersByFilterParams) (int64, error)
 	CountAllArticles(ctx context.Context, title pgtype.Text) (int64, error)
 	CountArticles(ctx context.Context, arg CountArticlesParams) (int64, error)
 	CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error)
@@ -34,6 +36,8 @@ type Querier interface {
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
+	DisableVisitorUser(ctx context.Context, arg DisableVisitorUserParams) (User, error)
+	EnableVisitorUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetAIProviderConfig(ctx context.Context, purpose string) (AiProviderConfig, error)
 	GetArticle(ctx context.Context, id uuid.UUID) (GetArticleRow, error)
 	GetArticleBySlug(ctx context.Context, slug pgtype.Text) (GetArticleBySlugRow, error)
@@ -48,6 +52,7 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	IncrementArticleLikes(ctx context.Context, id uuid.UUID) error
 	IncrementArticleViews(ctx context.Context, id uuid.UUID) error
+	ListAdminUsers(ctx context.Context, arg ListAdminUsersParams) ([]ListAdminUsersRow, error)
 	ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error)
 	ListAllCategories(ctx context.Context) ([]Category, error)
 	ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error)
@@ -63,6 +68,7 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateVerifyEmail(ctx context.Context, arg UpdateVerifyEmailParams) (VerifyEmail, error)
+	UpdateVisitorUser(ctx context.Context, arg UpdateVisitorUserParams) (User, error)
 	UpsertAIProviderConfig(ctx context.Context, arg UpsertAIProviderConfigParams) (AiProviderConfig, error)
 }
 

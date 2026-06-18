@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -23,6 +24,35 @@ func (q *Queries) CountAdminUsers(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countAdminUsersByFilter = `-- name: CountAdminUsersByFilter :one
+SELECT count(*)
+FROM users
+WHERE role = 'visitor'
+  AND (
+    $1::text = 'all'
+    OR ($1::text = 'enabled' AND disabled_at IS NULL)
+    OR ($1::text = 'disabled' AND disabled_at IS NOT NULL)
+  )
+  AND (
+    $2::text IS NULL
+    OR username ILIKE '%' || $2::text || '%'
+    OR full_name ILIKE '%' || $2::text || '%'
+    OR email ILIKE '%' || $2::text || '%'
+  )
+`
+
+type CountAdminUsersByFilterParams struct {
+	Status string      `json:"status"`
+	Q      pgtype.Text `json:"q"`
+}
+
+func (q *Queries) CountAdminUsersByFilter(ctx context.Context, arg CountAdminUsersByFilterParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAdminUsersByFilter, arg.Status, arg.Q)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     id,
@@ -32,7 +62,7 @@ INSERT INTO users (
     email
 ) VALUES (
     $1, $2, $3, $4, $5
-) RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at
+) RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
 `
 
 type CreateUserParams struct {
@@ -64,6 +94,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
 	)
 	return i, err
 }
@@ -79,7 +111,7 @@ INSERT INTO users (
     role
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7
-) RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at
+) RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
 `
 
 type CreateUserWithRoleParams struct {
@@ -115,12 +147,83 @@ func (q *Queries) CreateUserWithRole(ctx context.Context, arg CreateUserWithRole
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
+	)
+	return i, err
+}
+
+const disableVisitorUser = `-- name: DisableVisitorUser :one
+UPDATE users
+SET
+    disabled_at = COALESCE(disabled_at, now()),
+    disabled_reason = $1,
+    updated_at = now()
+WHERE id = $2
+  AND role = 'visitor'
+RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
+`
+
+type DisableVisitorUserParams struct {
+	DisabledReason string    `json:"disabled_reason"`
+	ID             uuid.UUID `json:"id"`
+}
+
+func (q *Queries) DisableVisitorUser(ctx context.Context, arg DisableVisitorUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, disableVisitorUser, arg.DisabledReason, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.About,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
+	)
+	return i, err
+}
+
+const enableVisitorUser = `-- name: EnableVisitorUser :one
+UPDATE users
+SET
+    disabled_at = NULL,
+    disabled_reason = '',
+    updated_at = now()
+WHERE id = $1
+  AND role = 'visitor'
+RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
+`
+
+func (q *Queries) EnableVisitorUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, enableVisitorUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.About,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
 	)
 	return i, err
 }
 
 const getFirstAdminUser = `-- name: GetFirstAdminUser :one
-SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at
+SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
 FROM users
 WHERE role = 'admin'
 ORDER BY created_at ASC
@@ -142,12 +245,14 @@ func (q *Queries) GetFirstAdminUser(ctx context.Context) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at FROM users
+SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -166,12 +271,14 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at FROM users
+SELECT id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -190,8 +297,95 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
 	)
 	return i, err
+}
+
+const listAdminUsers = `-- name: ListAdminUsers :many
+SELECT
+    id,
+    username,
+    full_name,
+    email,
+    is_email_verified,
+    role,
+    created_at,
+    updated_at,
+    disabled_at,
+    disabled_reason
+FROM users
+WHERE role = 'visitor'
+  AND (
+    $3::text = 'all'
+    OR ($3::text = 'enabled' AND disabled_at IS NULL)
+    OR ($3::text = 'disabled' AND disabled_at IS NOT NULL)
+  )
+  AND (
+    $4::text IS NULL
+    OR username ILIKE '%' || $4::text || '%'
+    OR full_name ILIKE '%' || $4::text || '%'
+    OR email ILIKE '%' || $4::text || '%'
+  )
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListAdminUsersParams struct {
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	Status string      `json:"status"`
+	Q      pgtype.Text `json:"q"`
+}
+
+type ListAdminUsersRow struct {
+	ID              uuid.UUID          `json:"id"`
+	Username        string             `json:"username"`
+	FullName        string             `json:"full_name"`
+	Email           string             `json:"email"`
+	IsEmailVerified bool               `json:"is_email_verified"`
+	Role            string             `json:"role"`
+	CreatedAt       time.Time          `json:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	DisabledAt      pgtype.Timestamptz `json:"disabled_at"`
+	DisabledReason  string             `json:"disabled_reason"`
+}
+
+func (q *Queries) ListAdminUsers(ctx context.Context, arg ListAdminUsersParams) ([]ListAdminUsersRow, error) {
+	rows, err := q.db.Query(ctx, listAdminUsers,
+		arg.Limit,
+		arg.Offset,
+		arg.Status,
+		arg.Q,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAdminUsersRow{}
+	for rows.Next() {
+		var i ListAdminUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.FullName,
+			&i.Email,
+			&i.IsEmailVerified,
+			&i.Role,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DisabledAt,
+			&i.DisabledReason,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateUser = `-- name: UpdateUser :one
@@ -203,7 +397,7 @@ SET
     is_email_verified=COALESCE($4, is_email_verified)
 WHERE
     id = $5
-RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at
+RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
 `
 
 type UpdateUserParams struct {
@@ -235,6 +429,53 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
+	)
+	return i, err
+}
+
+const updateVisitorUser = `-- name: UpdateVisitorUser :one
+UPDATE users
+SET
+    full_name = $1,
+    email = $2,
+    is_email_verified = $3,
+    updated_at = now()
+WHERE id = $4
+  AND role = 'visitor'
+RETURNING id, username, hashed_password, full_name, email, is_email_verified, about, role, created_at, updated_at, deleted_at, disabled_at, disabled_reason
+`
+
+type UpdateVisitorUserParams struct {
+	FullName        string    `json:"full_name"`
+	Email           string    `json:"email"`
+	IsEmailVerified bool      `json:"is_email_verified"`
+	ID              uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateVisitorUser(ctx context.Context, arg UpdateVisitorUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateVisitorUser,
+		arg.FullName,
+		arg.Email,
+		arg.IsEmailVerified,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.IsEmailVerified,
+		&i.About,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.DisabledAt,
+		&i.DisabledReason,
 	)
 	return i, err
 }
