@@ -34,6 +34,10 @@ const (
 	Nostalgia_UpdateCategory_FullMethodName    = "/pb.Nostalgia/UpdateCategory"
 	Nostalgia_ListCategories_FullMethodName    = "/pb.Nostalgia/ListCategories"
 	Nostalgia_ListAllCategories_FullMethodName = "/pb.Nostalgia/ListAllCategories"
+	Nostalgia_ListUsers_FullMethodName         = "/pb.Nostalgia/ListUsers"
+	Nostalgia_UpdateUser_FullMethodName        = "/pb.Nostalgia/UpdateUser"
+	Nostalgia_DisableUser_FullMethodName       = "/pb.Nostalgia/DisableUser"
+	Nostalgia_EnableUser_FullMethodName        = "/pb.Nostalgia/EnableUser"
 )
 
 // NostalgiaClient is the client API for Nostalgia service.
@@ -55,6 +59,10 @@ type NostalgiaClient interface {
 	UpdateCategory(ctx context.Context, in *UpdateCategoryRequest, opts ...grpc.CallOption) (*UpdateCategoryResponse, error)
 	ListCategories(ctx context.Context, in *ListCategoriesRequest, opts ...grpc.CallOption) (*ListCategoriesResponse, error)
 	ListAllCategories(ctx context.Context, in *ListAllCategoriesRequest, opts ...grpc.CallOption) (*ListAllCategoriesResponse, error)
+	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
+	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error)
+	DisableUser(ctx context.Context, in *DisableUserRequest, opts ...grpc.CallOption) (*DisableUserResponse, error)
+	EnableUser(ctx context.Context, in *EnableUserRequest, opts ...grpc.CallOption) (*EnableUserResponse, error)
 }
 
 type nostalgiaClient struct {
@@ -215,6 +223,46 @@ func (c *nostalgiaClient) ListAllCategories(ctx context.Context, in *ListAllCate
 	return out, nil
 }
 
+func (c *nostalgiaClient) ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUsersResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_ListUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_UpdateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) DisableUser(ctx context.Context, in *DisableUserRequest, opts ...grpc.CallOption) (*DisableUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisableUserResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_DisableUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nostalgiaClient) EnableUser(ctx context.Context, in *EnableUserRequest, opts ...grpc.CallOption) (*EnableUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnableUserResponse)
+	err := c.cc.Invoke(ctx, Nostalgia_EnableUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NostalgiaServer is the server API for Nostalgia service.
 // All implementations must embed UnimplementedNostalgiaServer
 // for forward compatibility.
@@ -234,6 +282,10 @@ type NostalgiaServer interface {
 	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
 	ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error)
 	ListAllCategories(context.Context, *ListAllCategoriesRequest) (*ListAllCategoriesResponse, error)
+	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
+	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
+	DisableUser(context.Context, *DisableUserRequest) (*DisableUserResponse, error)
+	EnableUser(context.Context, *EnableUserRequest) (*EnableUserResponse, error)
 	mustEmbedUnimplementedNostalgiaServer()
 }
 
@@ -288,6 +340,18 @@ func (UnimplementedNostalgiaServer) ListCategories(context.Context, *ListCategor
 }
 func (UnimplementedNostalgiaServer) ListAllCategories(context.Context, *ListAllCategoriesRequest) (*ListAllCategoriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAllCategories not implemented")
+}
+func (UnimplementedNostalgiaServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUsers not implemented")
+}
+func (UnimplementedNostalgiaServer) UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
+}
+func (UnimplementedNostalgiaServer) DisableUser(context.Context, *DisableUserRequest) (*DisableUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisableUser not implemented")
+}
+func (UnimplementedNostalgiaServer) EnableUser(context.Context, *EnableUserRequest) (*EnableUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnableUser not implemented")
 }
 func (UnimplementedNostalgiaServer) mustEmbedUnimplementedNostalgiaServer() {}
 func (UnimplementedNostalgiaServer) testEmbeddedByValue()                   {}
@@ -580,6 +644,78 @@ func _Nostalgia_ListAllCategories_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Nostalgia_ListUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).ListUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_ListUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).ListUsers(ctx, req.(*ListUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_UpdateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).UpdateUser(ctx, req.(*UpdateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_DisableUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).DisableUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_DisableUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).DisableUser(ctx, req.(*DisableUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Nostalgia_EnableUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnableUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NostalgiaServer).EnableUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Nostalgia_EnableUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NostalgiaServer).EnableUser(ctx, req.(*EnableUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Nostalgia_ServiceDesc is the grpc.ServiceDesc for Nostalgia service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -646,6 +782,22 @@ var Nostalgia_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAllCategories",
 			Handler:    _Nostalgia_ListAllCategories_Handler,
+		},
+		{
+			MethodName: "ListUsers",
+			Handler:    _Nostalgia_ListUsers_Handler,
+		},
+		{
+			MethodName: "UpdateUser",
+			Handler:    _Nostalgia_UpdateUser_Handler,
+		},
+		{
+			MethodName: "DisableUser",
+			Handler:    _Nostalgia_DisableUser_Handler,
+		},
+		{
+			MethodName: "EnableUser",
+			Handler:    _Nostalgia_EnableUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

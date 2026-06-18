@@ -12,6 +12,7 @@ import "rpc_update_article.proto";
 import "rpc_upload_file.proto";
 import "rpc_polish_text.proto";
 import "category.proto";
+import "user.proto";
 
 option go_package = 'github.com/MonitorAllen/nostalgia/pb';
 
@@ -184,6 +185,49 @@ service Nostalgia {
       description: "Use this API to list all category";
       summary: "list all category";
       tags: "Category";
+    };
+  }
+  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/v1/users"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to list visitor users for admin management";
+      summary: "list users";
+      tags: "User";
+    };
+  }
+  rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      patch: "/v1/users/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to update visitor user profile fields";
+      summary: "update user";
+      tags: "User";
+    };
+  }
+  rpc DisableUser (DisableUserRequest) returns (DisableUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/{id}/disable"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to disable a visitor user and block sessions";
+      summary: "disable user";
+      tags: "User";
+    };
+  }
+  rpc EnableUser (EnableUserRequest) returns (EnableUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/{id}/enable"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Use this API to restore a disabled visitor user";
+      summary: "enable user";
+      tags: "User";
     };
   }
 }
