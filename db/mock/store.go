@@ -52,6 +52,20 @@ func (mr *MockStoreMockRecorder) AddCommentLikes(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommentLikes", reflect.TypeOf((*MockStore)(nil).AddCommentLikes), arg0, arg1)
 }
 
+// BlockUserSessions mocks base method.
+func (m *MockStore) BlockUserSessions(arg0 context.Context, arg1 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BlockUserSessions", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BlockUserSessions indicates an expected call of BlockUserSessions.
+func (mr *MockStoreMockRecorder) BlockUserSessions(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockUserSessions", reflect.TypeOf((*MockStore)(nil).BlockUserSessions), arg0, arg1)
+}
+
 // CountAdminUsers mocks base method.
 func (m *MockStore) CountAdminUsers(arg0 context.Context) (int64, error) {
 	m.ctrl.T.Helper()
@@ -65,6 +79,21 @@ func (m *MockStore) CountAdminUsers(arg0 context.Context) (int64, error) {
 func (mr *MockStoreMockRecorder) CountAdminUsers(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAdminUsers", reflect.TypeOf((*MockStore)(nil).CountAdminUsers), arg0)
+}
+
+// CountAdminUsersByFilter mocks base method.
+func (m *MockStore) CountAdminUsersByFilter(arg0 context.Context, arg1 db.CountAdminUsersByFilterParams) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountAdminUsersByFilter", arg0, arg1)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountAdminUsersByFilter indicates an expected call of CountAdminUsersByFilter.
+func (mr *MockStoreMockRecorder) CountAdminUsersByFilter(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAdminUsersByFilter", reflect.TypeOf((*MockStore)(nil).CountAdminUsersByFilter), arg0, arg1)
 }
 
 // CountAllArticles mocks base method.
@@ -435,6 +464,36 @@ func (mr *MockStoreMockRecorder) DeleteCommentsByArticleID(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCommentsByArticleID", reflect.TypeOf((*MockStore)(nil).DeleteCommentsByArticleID), arg0, arg1)
 }
 
+// DisableVisitorUser mocks base method.
+func (m *MockStore) DisableVisitorUser(arg0 context.Context, arg1 db.DisableVisitorUserParams) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableVisitorUser", arg0, arg1)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DisableVisitorUser indicates an expected call of DisableVisitorUser.
+func (mr *MockStoreMockRecorder) DisableVisitorUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableVisitorUser", reflect.TypeOf((*MockStore)(nil).DisableVisitorUser), arg0, arg1)
+}
+
+// EnableVisitorUser mocks base method.
+func (m *MockStore) EnableVisitorUser(arg0 context.Context, arg1 uuid.UUID) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnableVisitorUser", arg0, arg1)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EnableVisitorUser indicates an expected call of EnableVisitorUser.
+func (mr *MockStoreMockRecorder) EnableVisitorUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableVisitorUser", reflect.TypeOf((*MockStore)(nil).EnableVisitorUser), arg0, arg1)
+}
+
 // GetAIProviderConfig mocks base method.
 func (m *MockStore) GetAIProviderConfig(arg0 context.Context, arg1 string) (db.AiProviderConfig, error) {
 	m.ctrl.T.Helper()
@@ -641,6 +700,21 @@ func (m *MockStore) IncrementArticleViews(arg0 context.Context, arg1 uuid.UUID) 
 func (mr *MockStoreMockRecorder) IncrementArticleViews(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementArticleViews", reflect.TypeOf((*MockStore)(nil).IncrementArticleViews), arg0, arg1)
+}
+
+// ListAdminUsers mocks base method.
+func (m *MockStore) ListAdminUsers(arg0 context.Context, arg1 db.ListAdminUsersParams) ([]db.ListAdminUsersRow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAdminUsers", arg0, arg1)
+	ret0, _ := ret[0].([]db.ListAdminUsersRow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListAdminUsers indicates an expected call of ListAdminUsers.
+func (mr *MockStoreMockRecorder) ListAdminUsers(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAdminUsers", reflect.TypeOf((*MockStore)(nil).ListAdminUsers), arg0, arg1)
 }
 
 // ListAllArticles mocks base method.
@@ -909,6 +983,21 @@ func (m *MockStore) UpdateVerifyEmail(arg0 context.Context, arg1 db.UpdateVerify
 func (mr *MockStoreMockRecorder) UpdateVerifyEmail(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVerifyEmail", reflect.TypeOf((*MockStore)(nil).UpdateVerifyEmail), arg0, arg1)
+}
+
+// UpdateVisitorUser mocks base method.
+func (m *MockStore) UpdateVisitorUser(arg0 context.Context, arg1 db.UpdateVisitorUserParams) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateVisitorUser", arg0, arg1)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateVisitorUser indicates an expected call of UpdateVisitorUser.
+func (mr *MockStoreMockRecorder) UpdateVisitorUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVisitorUser", reflect.TypeOf((*MockStore)(nil).UpdateVisitorUser), arg0, arg1)
 }
 
 // UpsertAIProviderConfig mocks base method.
