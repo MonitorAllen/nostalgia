@@ -2,16 +2,28 @@ package gapi
 
 import (
 	"context"
-	"errors"
 
-	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
-	"github.com/MonitorAllen/nostalgia/internal/cache/key"
+	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/pb"
-	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func normalizeCategoryListPage(page int32) int32 {
+	if page < 1 {
+		return 1
+	}
+	return page
+}
+
+func normalizeCategoryListLimit(limit int32) int32 {
+	switch limit {
+	case 10, 20, 50:
+		return limit
+	default:
+		return 20
+	}
+}
 
 func (server *Server) ListCategories(ctx context.Context, req *pb.ListCategoriesRequest) (*pb.ListCategoriesResponse, error) {
 	_, _, err := server.authorizeAdmin(ctx)
@@ -19,52 +31,23 @@ func (server *Server) ListCategories(ctx context.Context, req *pb.ListCategories
 		return nil, unauthenticatedError(err)
 	}
 
-	resp := &pb.ListCategoriesResponse{}
-	categoryCache := cachepkg.NewCategoryCache(server.cache)
-	ok, err := categoryCache.GetList(ctx, resp)
-	if err != nil && !errors.Is(err, redis.Nil) {
-		log.Error().
-			Err(err).
-			Str("key", key.CategoryAllKey).
-			Str("module", "category").
-			Str("action", "cache_get").
-			Msg("获取分类缓存失败，降级为仅数据库")
-	}
-	if ok {
-		return resp, nil
-	}
-
-	value, err, _ := server.cacheLoadGroup.Do(key.CategoryAllKey, func() (any, error) {
-		categories, err := server.store.ListCategoriesCountArticles(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		resp := &pb.ListCategoriesResponse{
-			Categories: convertCategoriesCountArticleRow(categories),
-			Count:      int64(len(categories)),
-		}
-
-		err = categoryCache.SetList(ctx, resp)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Str("key", key.CategoryAllKey).
-				Str("module", "category").
-				Str("action", "cache_set").
-				Msg("设置分类缓存失败，降级为仅数据库")
-		}
-
-		return resp, nil
+	page := normalizeCategoryListPage(req.GetPage())
+	limit := normalizeCategoryListLimit(req.GetLimit())
+	categories, err := server.store.ListCategoriesCountArticles(ctx, db.ListCategoriesCountArticlesParams{
+		Limit:  limit,
+		Offset: (page - 1) * limit,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to list categories: %s", err)
+		return nil, status.Errorf(codes.Internal, "failed to list categories: %v", err)
 	}
 
-	resp, ok = value.(*pb.ListCategoriesResponse)
-	if !ok {
-		return nil, status.Error(codes.Internal, "unexpected category cache load result")
+	count, err := server.store.CountCategories(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count categories: %v", err)
 	}
 
-	return resp, nil
+	return &pb.ListCategoriesResponse{
+		Categories: convertCategoriesCountArticleRow(categories),
+		Count:      count,
+	}, nil
 }

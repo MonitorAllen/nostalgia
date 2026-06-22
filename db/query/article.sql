@@ -234,6 +234,16 @@ DELETE
 FROM articles
 WHERE id = $1;
 
+-- name: DeleteArticlesByCategoryID :exec
+DELETE
+FROM articles
+WHERE category_id = $1;
+
+-- name: ListArticleResourceRefsByCategoryID :many
+SELECT id, slug
+FROM articles
+WHERE category_id = $1;
+
 -- name: SetArticleDefaultCategoryIdByCategoryId :exec
 UPDATE articles
 SET category_id = 1

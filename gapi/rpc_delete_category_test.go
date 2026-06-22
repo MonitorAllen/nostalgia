@@ -21,7 +21,8 @@ import (
 // eqDeleteCategoryTxParamsMatcher 自定义 Matcher
 // 在参数匹配时执行 AfterDelete 回调
 type eqDeleteCategoryTxParamsMatcher struct {
-	expectedID int64
+	expectedID             int64
+	expectedDeleteArticles bool
 }
 
 func (m eqDeleteCategoryTxParamsMatcher) Matches(x interface{}) bool {
@@ -31,6 +32,9 @@ func (m eqDeleteCategoryTxParamsMatcher) Matches(x interface{}) bool {
 	}
 
 	if actualArg.ID != m.expectedID {
+		return false
+	}
+	if actualArg.DeleteArticles != m.expectedDeleteArticles {
 		return false
 	}
 
@@ -44,6 +48,10 @@ func (m eqDeleteCategoryTxParamsMatcher) String() string {
 
 func EqDeleteCategoryTxParams(id int64) gomock.Matcher {
 	return eqDeleteCategoryTxParamsMatcher{expectedID: id}
+}
+
+func EqDeleteCategoryTxParamsWithArticles(id int64) gomock.Matcher {
+	return eqDeleteCategoryTxParamsMatcher{expectedID: id, expectedDeleteArticles: true}
 }
 
 func TestDeleteCategory(t *testing.T) {
@@ -71,6 +79,30 @@ func TestDeleteCategory(t *testing.T) {
 				// 使用自定义 Matcher 执行 AfterDelete 回调
 				store.EXPECT().
 					DeleteCategoryTx(gomock.Any(), EqDeleteCategoryTxParams(category.ID)).
+					Times(1).
+					Return(nil)
+			},
+			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
+				return newContextWithAdminBearerToken(t, tokenMaker, time.Minute)
+			},
+			checkResponse: func(t *testing.T, res *pb.DeleteCategoryResponse, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "OKDeleteArticles",
+			req: &pb.DeleteCategoryRequest{
+				Id:             category.ID,
+				DeleteArticles: true,
+			},
+			buildStubs: func(store *mockdb.MockStore, taskDistributor *mockwk.MockTaskDistributor) {
+				taskDistributor.EXPECT().
+					DistributeTaskDelayDeleteCacheDefault(gomock.Any(), gomock.Eq(key.CategoryAllKey)).
+					Times(1).
+					Return(nil)
+
+				store.EXPECT().
+					DeleteCategoryTx(gomock.Any(), EqDeleteCategoryTxParamsWithArticles(category.ID)).
 					Times(1).
 					Return(nil)
 			},

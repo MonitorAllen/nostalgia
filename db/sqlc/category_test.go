@@ -50,6 +50,40 @@ func TestDeleteCategory(t *testing.T) {
 	require.Empty(t, articleList)
 }
 
+func TestDeleteCategoryWithArticles(t *testing.T) {
+	category := createRandomCategory(t)
+
+	articles := []Article{
+		createRandomArticle(t, true, category.ID),
+		createRandomArticle(t, true, category.ID),
+	}
+
+	arg := DeleteCategoryTxParams{
+		ID:             category.ID,
+		DeleteArticles: true,
+		AfterDelete: func() error {
+			return nil
+		},
+	}
+
+	err := testStore.DeleteCategoryTx(context.Background(), arg)
+	require.NoError(t, err)
+
+	listArg := ListArticlesByCategoryIDParams{
+		CategoryID: category.ID,
+		Offset:     0,
+		Limit:      2,
+	}
+	articleList, err := testStore.ListArticlesByCategoryID(context.Background(), listArg)
+	require.NoError(t, err)
+	require.Empty(t, articleList)
+
+	for _, article := range articles {
+		_, err := testStore.GetArticle(context.Background(), article.ID)
+		require.ErrorIs(t, err, ErrRecordNotFound)
+	}
+}
+
 func TestUpdateCategory(t *testing.T) {
 	category := createRandomCategory(t)
 
@@ -92,9 +126,40 @@ func TestListCategoriesCountArticles(t *testing.T) {
 		createRandomArticle(t, true, cate2.ID)
 	}
 
-	categories, err := testStore.ListCategoriesCountArticles(context.Background())
+	categories, err := testStore.ListCategoriesCountArticles(context.Background(), ListCategoriesCountArticlesParams{
+		Limit:  20,
+		Offset: 0,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, categories)
+}
+
+func TestListCategoriesCountArticlesPaginates(t *testing.T) {
+	for i := 0; i < 3; i++ {
+		createRandomCategory(t)
+	}
+
+	firstPage, err := testStore.ListCategoriesCountArticles(context.Background(), ListCategoriesCountArticlesParams{
+		Limit:  2,
+		Offset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, firstPage, 2)
+
+	secondPage, err := testStore.ListCategoriesCountArticles(context.Background(), ListCategoriesCountArticlesParams{
+		Limit:  2,
+		Offset: 2,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, secondPage)
+
+	firstPageIDs := make(map[int64]bool, len(firstPage))
+	for _, category := range firstPage {
+		firstPageIDs[category.ID] = true
+	}
+	for _, category := range secondPage {
+		require.False(t, firstPageIDs[category.ID])
+	}
 }
 
 func TestListArticlesByCategoryID(t *testing.T) {
