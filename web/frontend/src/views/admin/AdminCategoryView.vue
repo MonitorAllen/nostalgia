@@ -28,6 +28,8 @@ const newCategoryName = ref('')
 const selectedCategory = ref<AdminCategory | null>(null)
 const selectedCategoryIds = ref<string[]>([])
 const bulkDeleteCandidates = ref<AdminCategory[] | null>(null)
+const destructiveDeleteCandidates = ref<AdminCategory[] | null>(null)
+const deleteArticlesWithCategory = ref(false)
 const creating = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
@@ -60,7 +62,25 @@ const allSelectableSelected = computed(
 const bulkDeleteDescription = computed(() => {
   const candidates = bulkDeleteCandidates.value ?? []
   const names = candidates.map((category) => category.name).join('、')
+  if (deleteArticlesWithCategory.value) {
+    return `确认删除 ${candidates.length} 个分类吗？已勾选同步删除分类下的文章，继续后需要再次确认。${names ? `本次包括：${names}` : ''}`
+  }
   return `确认删除 ${candidates.length} 个分类吗？删除后相关文章会回到默认分类。${names ? `本次包括：${names}` : ''}`
+})
+const selectedDeleteDescription = computed(() => {
+  const name = selectedCategory.value?.name || '未命名分类'
+  if (deleteArticlesWithCategory.value) {
+    return `确认删除「${name}」吗？已勾选同步删除分类下的文章，继续后需要再次确认。`
+  }
+  return `确认删除「${name}」吗？删除后相关文章会回到默认分类。`
+})
+const destructiveDeleteDescription = computed(() => {
+  const candidates = destructiveDeleteCandidates.value ?? []
+  if (candidates.length === 1) {
+    return `确认同步删除「${candidates[0].name}」及其分类下所有文章吗？文章、评论和资源文件将一并删除，无法恢复。`
+  }
+  const names = candidates.map((category) => category.name).join('、')
+  return `确认同步删除 ${candidates.length} 个分类及其分类下所有文章吗？文章、评论和资源文件将一并删除，无法恢复。${names ? `本次包括：${names}` : ''}`
 })
 
 const numberLabel = (value?: string | number) => {
@@ -151,16 +171,17 @@ const togglePageSelection = () => {
 
 const openBulkDelete = () => {
   if (selectedCategories.value.length === 0) return
+  deleteArticlesWithCategory.value = false
   bulkDeleteCandidates.value = [...selectedCategories.value]
 }
 
 const cancelBulkDelete = () => {
   if (bulkDeleting.value) return
   bulkDeleteCandidates.value = null
+  deleteArticlesWithCategory.value = false
 }
 
-const confirmBulkDelete = async () => {
-  const candidates = bulkDeleteCandidates.value ?? []
+const deleteBulkCategories = async (candidates: AdminCategory[], deleteArticles: boolean) => {
   if (candidates.length === 0 || bulkDeleting.value) return
 
   bulkDeleting.value = true
@@ -169,7 +190,7 @@ const confirmBulkDelete = async () => {
 
   for (const category of candidates) {
     try {
-      await deleteAdminCategory(category.id)
+      await deleteAdminCategory(category.id, deleteArticles)
       successCount += 1
     } catch {
       failedCount += 1
@@ -178,6 +199,8 @@ const confirmBulkDelete = async () => {
 
   try {
     bulkDeleteCandidates.value = null
+    destructiveDeleteCandidates.value = null
+    deleteArticlesWithCategory.value = false
     selectedCategoryIds.value = []
     await fetchCategories()
 
@@ -185,7 +208,9 @@ const confirmBulkDelete = async () => {
       toast.add({
         severity: 'success',
         summary: '分类已删除',
-        detail: `已删除 ${numberLabel(successCount)} 个分类`,
+        detail: deleteArticles
+          ? `已删除 ${numberLabel(successCount)} 个分类及其文章`
+          : `已删除 ${numberLabel(successCount)} 个分类`,
         life: 2400
       })
     }
@@ -201,6 +226,20 @@ const confirmBulkDelete = async () => {
   } finally {
     bulkDeleting.value = false
   }
+}
+
+const confirmBulkDelete = async () => {
+  const candidates = bulkDeleteCandidates.value ?? []
+  if (candidates.length === 0) return
+
+  if (deleteArticlesWithCategory.value) {
+    destructiveDeleteCandidates.value = [...candidates]
+    bulkDeleteCandidates.value = null
+    deleteArticlesWithCategory.value = false
+    return
+  }
+
+  await deleteBulkCategories(candidates, false)
 }
 
 const createCategory = async () => {
@@ -280,29 +319,32 @@ const saveEdit = async (category: AdminCategory) => {
 
 const askDelete = (category: AdminCategory) => {
   if (category.is_system) return
+  deleteArticlesWithCategory.value = false
   selectedCategory.value = category
 }
 
 const cancelDelete = () => {
   if (deleting.value) return
   selectedCategory.value = null
+  deleteArticlesWithCategory.value = false
 }
 
-const confirmDelete = async () => {
-  if (!selectedCategory.value || deleting.value) return
+const deleteSingleCategory = async (category: AdminCategory, deleteArticles: boolean) => {
+  if (deleting.value) return
 
-  const category = selectedCategory.value
   deleting.value = true
 
   try {
-    await deleteAdminCategory(category.id)
+    await deleteAdminCategory(category.id, deleteArticles)
     selectedCategory.value = null
+    destructiveDeleteCandidates.value = null
+    deleteArticlesWithCategory.value = false
     selectedCategoryIds.value = selectedCategoryIds.value.filter((id) => id !== String(category.id))
     await fetchCategories()
     toast.add({
       severity: 'success',
       summary: '分类已删除',
-      detail: category.name,
+      detail: deleteArticles ? `${category.name} 及其文章` : category.name,
       life: 2400
     })
   } catch {
@@ -310,6 +352,36 @@ const confirmDelete = async () => {
   } finally {
     deleting.value = false
   }
+}
+
+const confirmDelete = async () => {
+  if (!selectedCategory.value || deleting.value) return
+
+  if (deleteArticlesWithCategory.value) {
+    destructiveDeleteCandidates.value = [selectedCategory.value]
+    selectedCategory.value = null
+    deleteArticlesWithCategory.value = false
+    return
+  }
+
+  await deleteSingleCategory(selectedCategory.value, false)
+}
+
+const cancelDestructiveDelete = () => {
+  if (deleting.value || bulkDeleting.value) return
+  destructiveDeleteCandidates.value = null
+}
+
+const confirmDestructiveDelete = async () => {
+  const candidates = destructiveDeleteCandidates.value ?? []
+  if (candidates.length === 0) return
+
+  if (candidates.length === 1) {
+    await deleteSingleCategory(candidates[0], true)
+    return
+  }
+
+  await deleteBulkCategories(candidates, true)
 }
 
 const formatDate = (value?: string) => {
@@ -559,13 +631,27 @@ onMounted(() => {
     <ConfirmDialog
       :open="Boolean(selectedCategory)"
       title="删除分类"
-      :description="`确认删除「${selectedCategory?.name || '未命名分类'}」吗？删除后相关文章会回到默认分类。`"
+      :description="selectedDeleteDescription"
       :confirm-label="deleting ? '删除中...' : '删除分类'"
       cancel-label="取消"
       danger
       @cancel="cancelDelete"
       @confirm="confirmDelete"
-    />
+    >
+      <div class="mt-4 rounded-archive border border-danger/20 bg-danger/5 p-3">
+        <label class="flex items-start gap-2 text-sm font-semibold text-foreground">
+          <input
+            v-model="deleteArticlesWithCategory"
+            type="checkbox"
+            class="mt-0.5 size-4 rounded border-border accent-accent"
+          />
+          <span>同步删除分类下的文章</span>
+        </label>
+        <p class="m-0 mt-2 text-xs leading-5 text-muted-foreground text-pretty">
+          勾选后会进入二次确认，文章、评论和资源文件将一并删除。
+        </p>
+      </div>
+    </ConfirmDialog>
 
     <ConfirmDialog
       :open="Boolean(bulkDeleteCandidates)"
@@ -576,6 +662,31 @@ onMounted(() => {
       danger
       @cancel="cancelBulkDelete"
       @confirm="confirmBulkDelete"
+    >
+      <div class="mt-4 rounded-archive border border-danger/20 bg-danger/5 p-3">
+        <label class="flex items-start gap-2 text-sm font-semibold text-foreground">
+          <input
+            v-model="deleteArticlesWithCategory"
+            type="checkbox"
+            class="mt-0.5 size-4 rounded border-border accent-accent"
+          />
+          <span>同步删除分类下的文章</span>
+        </label>
+        <p class="m-0 mt-2 text-xs leading-5 text-muted-foreground text-pretty">
+          勾选后会进入二次确认，文章、评论和资源文件将一并删除。
+        </p>
+      </div>
+    </ConfirmDialog>
+
+    <ConfirmDialog
+      :open="Boolean(destructiveDeleteCandidates)"
+      title="同步删除文章"
+      :description="destructiveDeleteDescription"
+      :confirm-label="deleting || bulkDeleting ? '删除中...' : '确认同步删除'"
+      cancel-label="取消"
+      danger
+      @cancel="cancelDestructiveDelete"
+      @confirm="confirmDestructiveDelete"
     />
   </main>
 </template>

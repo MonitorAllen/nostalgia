@@ -50,6 +50,40 @@ func TestDeleteCategory(t *testing.T) {
 	require.Empty(t, articleList)
 }
 
+func TestDeleteCategoryWithArticles(t *testing.T) {
+	category := createRandomCategory(t)
+
+	articles := []Article{
+		createRandomArticle(t, true, category.ID),
+		createRandomArticle(t, true, category.ID),
+	}
+
+	arg := DeleteCategoryTxParams{
+		ID:             category.ID,
+		DeleteArticles: true,
+		AfterDelete: func() error {
+			return nil
+		},
+	}
+
+	err := testStore.DeleteCategoryTx(context.Background(), arg)
+	require.NoError(t, err)
+
+	listArg := ListArticlesByCategoryIDParams{
+		CategoryID: category.ID,
+		Offset:     0,
+		Limit:      2,
+	}
+	articleList, err := testStore.ListArticlesByCategoryID(context.Background(), listArg)
+	require.NoError(t, err)
+	require.Empty(t, articleList)
+
+	for _, article := range articles {
+		_, err := testStore.GetArticle(context.Background(), article.ID)
+		require.ErrorIs(t, err, ErrRecordNotFound)
+	}
+}
+
 func TestUpdateCategory(t *testing.T) {
 	category := createRandomCategory(t)
 

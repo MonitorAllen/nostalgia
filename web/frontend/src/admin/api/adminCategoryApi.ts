@@ -27,6 +27,8 @@ export function updateAdminCategory(data: { id: AdminInt64; name: string }) {
   return adminHttp.patch<{ category: AdminCategory }>('/categories', data)
 }
 
-export function deleteAdminCategory(id: AdminInt64) {
-  return adminHttp.delete<void>(`/categories/${id}`)
+export function deleteAdminCategory(id: AdminInt64, deleteArticles = false) {
+  return adminHttp.delete<void>(`/categories/${id}`, {
+    params: { delete_articles: deleteArticles }
+  })
 }

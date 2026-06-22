@@ -36,6 +36,7 @@ defineEmits<{
       <div class="archive-surface w-full max-w-md rounded-archive p-5">
         <h2 class="m-0 text-lg font-bold text-foreground">{{ title }}</h2>
         <p v-if="description" class="mt-2 text-sm text-muted-foreground">{{ description }}</p>
+        <slot />
         <div class="mt-5 flex justify-end gap-2">
           <AppButton variant="ghost" @click="$emit('cancel')">{{ cancelLabel }}</AppButton>
           <AppButton :variant="danger ? 'danger' : 'primary'" @click="$emit('confirm')">

@@ -31,3 +31,9 @@ DELETE FROM comments WHERE parent_id = $1;
 
 -- name: DeleteCommentsByArticleID :exec
 DELETE FROM comments WHERE article_id = $1;
+
+-- name: DeleteCommentsByCategoryID :exec
+DELETE FROM comments
+WHERE article_id IN (
+    SELECT id FROM articles WHERE category_id = $1
+);

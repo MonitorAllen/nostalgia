@@ -228,6 +228,17 @@ func (q *Queries) DeleteArticle(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteArticlesByCategoryID = `-- name: DeleteArticlesByCategoryID :exec
+DELETE
+FROM articles
+WHERE category_id = $1
+`
+
+func (q *Queries) DeleteArticlesByCategoryID(ctx context.Context, categoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteArticlesByCategoryID, categoryID)
+	return err
+}
+
 const getArticle = `-- name: GetArticle :one
 SELECT a.id,
        a.title,
@@ -534,6 +545,37 @@ func (q *Queries) ListAllArticles(ctx context.Context, arg ListAllArticlesParams
 			&i.DeletedAt,
 			&i.CategoryName,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listArticleResourceRefsByCategoryID = `-- name: ListArticleResourceRefsByCategoryID :many
+SELECT id, slug
+FROM articles
+WHERE category_id = $1
+`
+
+type ListArticleResourceRefsByCategoryIDRow struct {
+	ID   uuid.UUID   `json:"id"`
+	Slug pgtype.Text `json:"slug"`
+}
+
+func (q *Queries) ListArticleResourceRefsByCategoryID(ctx context.Context, categoryID int64) ([]ListArticleResourceRefsByCategoryIDRow, error) {
+	rows, err := q.db.Query(ctx, listArticleResourceRefsByCategoryID, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListArticleResourceRefsByCategoryIDRow{}
+	for rows.Next() {
+		var i ListArticleResourceRefsByCategoryIDRow
+		if err := rows.Scan(&i.ID, &i.Slug); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

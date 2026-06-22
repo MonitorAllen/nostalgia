@@ -25,6 +25,7 @@ message CreateCategoryResponse {
 
 message DeleteCategoryRequest {
   int64 id = 1;
+  bool delete_articles = 2;
 }
 
 message DeleteCategoryResponse {}

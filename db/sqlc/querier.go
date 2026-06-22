@@ -32,10 +32,12 @@ type Querier interface {
 	CreateUserWithRole(ctx context.Context, arg CreateUserWithRoleParams) (User, error)
 	CreateVerifyEmail(ctx context.Context, arg CreateVerifyEmailParams) (VerifyEmail, error)
 	DeleteArticle(ctx context.Context, id uuid.UUID) error
+	DeleteArticlesByCategoryID(ctx context.Context, categoryID int64) error
 	DeleteCategory(ctx context.Context, id int64) error
 	DeleteChildComments(ctx context.Context, parentID int64) error
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentsByArticleID(ctx context.Context, articleID uuid.UUID) error
+	DeleteCommentsByCategoryID(ctx context.Context, categoryID int64) error
 	DisableVisitorUser(ctx context.Context, arg DisableVisitorUserParams) (User, error)
 	EnableVisitorUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetAIProviderConfig(ctx context.Context, purpose string) (AiProviderConfig, error)
@@ -55,6 +57,7 @@ type Querier interface {
 	ListAdminUsers(ctx context.Context, arg ListAdminUsersParams) ([]ListAdminUsersRow, error)
 	ListAllArticles(ctx context.Context, arg ListAllArticlesParams) ([]ListAllArticlesRow, error)
 	ListAllCategories(ctx context.Context) ([]Category, error)
+	ListArticleResourceRefsByCategoryID(ctx context.Context, categoryID int64) ([]ListArticleResourceRefsByCategoryIDRow, error)
 	ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error)
 	ListArticlesByCategoryID(ctx context.Context, arg ListArticlesByCategoryIDParams) ([]ListArticlesByCategoryIDRow, error)
 	ListCategoriesCountArticles(ctx context.Context, arg ListCategoriesCountArticlesParams) ([]ListCategoriesCountArticlesRow, error)
