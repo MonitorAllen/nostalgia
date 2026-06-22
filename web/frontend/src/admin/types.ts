@@ -70,9 +70,16 @@ export interface AdminArticleResponse {
 export interface AdminCategory {
   id: AdminInt64
   name: string
+  is_system?: boolean
+  isSystem?: boolean
   article_count?: AdminInt64
   created_at?: string
   updated_at?: string
+}
+
+export interface AdminCategoryListResponse {
+  categories: AdminCategory[]
+  count: string | number
 }
 
 export interface AdminCategoryAllResponse {

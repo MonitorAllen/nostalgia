@@ -11,7 +11,7 @@ const toast = useToast()
 
 const fetchCategories = async () => {
   try {
-    const resp = await listCategories()
+    const resp = await listCategories({ page: 1, limit: 20 })
     categories.value = resp.data.categories ?? []
   } catch (error: any) {
     toast.add({

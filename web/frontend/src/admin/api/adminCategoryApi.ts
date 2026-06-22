@@ -1,5 +1,19 @@
 import adminHttp from './adminHttp'
-import type { AdminCategory, AdminCategoryAllResponse, AdminInt64 } from '../types'
+import type {
+  AdminCategory,
+  AdminCategoryAllResponse,
+  AdminCategoryListResponse,
+  AdminInt64
+} from '../types'
+
+export interface ListAdminCategoriesParams {
+  page: number
+  limit: number
+}
+
+export function listAdminCategories(params: ListAdminCategoriesParams) {
+  return adminHttp.get<AdminCategoryListResponse>('/categories', { params })
+}
 
 export function listAllAdminCategories() {
   return adminHttp.get<AdminCategoryAllResponse>('/categories/all')

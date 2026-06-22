@@ -57,7 +57,7 @@ type Querier interface {
 	ListAllCategories(ctx context.Context) ([]Category, error)
 	ListArticles(ctx context.Context, arg ListArticlesParams) ([]ListArticlesRow, error)
 	ListArticlesByCategoryID(ctx context.Context, arg ListArticlesByCategoryIDParams) ([]ListArticlesByCategoryIDRow, error)
-	ListCategoriesCountArticles(ctx context.Context) ([]ListCategoriesCountArticlesRow, error)
+	ListCategoriesCountArticles(ctx context.Context, arg ListCategoriesCountArticlesParams) ([]ListCategoriesCountArticlesRow, error)
 	ListCommentsByArticleID(ctx context.Context, articleID uuid.UUID) ([]ListCommentsByArticleIDRow, error)
 	ListPublishedArticleSitemapItems(ctx context.Context) ([]ListPublishedArticleSitemapItemsRow, error)
 	ListPublishedCategorySitemapItems(ctx context.Context) ([]ListPublishedCategorySitemapItemsRow, error)

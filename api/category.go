@@ -2,71 +2,48 @@ package api
 
 import (
 	"errors"
-	db "github.com/MonitorAllen/nostalgia/db/sqlc"
-	cachepkg "github.com/MonitorAllen/nostalgia/internal/cache"
-	"github.com/MonitorAllen/nostalgia/internal/cache/key"
-	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"net/http"
-)
 
-var AllCategoriesKey = "categories:all"
+	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/gin-gonic/gin"
+)
 
 type listCategoriesResponse struct {
 	Categories []db.ListCategoriesCountArticlesRow `json:"categories"`
 	Count      int64                               `json:"count"`
 }
 
+type listCategoriesRequest struct {
+	Page  int32 `form:"page" binding:"required,min=1"`
+	Limit int32 `form:"limit" binding:"required,min=1,max=50"`
+}
+
 func (server *Server) listCategories(ctx *gin.Context) {
-	var resp listCategoriesResponse
-	categoryCache := cachepkg.NewCategoryCache(server.cache)
-	ok, err := categoryCache.GetList(ctx, &resp)
-	if err != nil && !errors.Is(err, redis.Nil) {
-		log.Error().
-			Err(err).
-			Str("key", key.CategoryAllKey).
-			Str("module", "category").
-			Str("action", "cache_get").
-			Msg("获取分类缓存失败，降级为仅数据库")
-	}
-	if ok {
-		ctx.JSON(http.StatusOK, resp)
+	var req listCategoriesRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	value, err, _ := server.cacheLoadGroup.Do(key.CategoryAllKey, func() (any, error) {
-		categories, err := server.store.ListCategoriesCountArticles(ctx)
-		if err != nil {
-			return listCategoriesResponse{}, err
-		}
-
-		resp := listCategoriesResponse{
-			Categories: categories,
-			Count:      int64(len(categories)),
-		}
-
-		err = categoryCache.SetList(ctx, resp)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Str("key", key.CategoryAllKey).
-				Str("module", "category").
-				Str("action", "cache_set").
-				Msg("设置分类缓存失败，降级为仅数据库")
-		}
-
-		return resp, nil
-	})
+	arg := db.ListCategoriesCountArticlesParams{
+		Limit:  req.Limit,
+		Offset: (req.Page - 1) * req.Limit,
+	}
+	categories, err := server.store.ListCategoriesCountArticles(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	resp, ok = value.(listCategoriesResponse)
-	if !ok {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(errors.New("unexpected category cache load result")))
+	count, err := server.store.CountCategories(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+
+	resp := listCategoriesResponse{
+		Categories: categories,
+		Count:      count,
 	}
 
 	ctx.JSON(http.StatusOK, resp)

@@ -92,9 +92,40 @@ func TestListCategoriesCountArticles(t *testing.T) {
 		createRandomArticle(t, true, cate2.ID)
 	}
 
-	categories, err := testStore.ListCategoriesCountArticles(context.Background())
+	categories, err := testStore.ListCategoriesCountArticles(context.Background(), ListCategoriesCountArticlesParams{
+		Limit:  20,
+		Offset: 0,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, categories)
+}
+
+func TestListCategoriesCountArticlesPaginates(t *testing.T) {
+	for i := 0; i < 3; i++ {
+		createRandomCategory(t)
+	}
+
+	firstPage, err := testStore.ListCategoriesCountArticles(context.Background(), ListCategoriesCountArticlesParams{
+		Limit:  2,
+		Offset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, firstPage, 2)
+
+	secondPage, err := testStore.ListCategoriesCountArticles(context.Background(), ListCategoriesCountArticlesParams{
+		Limit:  2,
+		Offset: 2,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, secondPage)
+
+	firstPageIDs := make(map[int64]bool, len(firstPage))
+	for _, category := range firstPage {
+		firstPageIDs[category.ID] = true
+	}
+	for _, category := range secondPage {
+		require.False(t, firstPageIDs[category.ID])
+	}
 }
 
 func TestListArticlesByCategoryID(t *testing.T) {

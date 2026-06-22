@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { CalendarDays, FolderTree, Pencil, Plus, Save, Trash2, X } from '@lucide/vue'
 import type { AdminCategory } from '@/admin/types'
 import {
   createAdminCategory,
   deleteAdminCategory,
-  listAllAdminCategories,
+  listAdminCategories,
   updateAdminCategory
 } from '@/admin/api/adminCategoryApi'
 import AppBadge from '@/components/ui/AppBadge.vue'
@@ -18,24 +18,188 @@ const toast = useToast()
 
 const categories = ref<AdminCategory[]>([])
 const loading = ref(false)
+const total = ref(0)
+const page = ref(1)
+const pageSize = ref(20)
+const jumpPage = ref('1')
 const editingId = ref<string | null>(null)
 const draftName = ref('')
 const newCategoryName = ref('')
 const selectedCategory = ref<AdminCategory | null>(null)
+const selectedCategoryIds = ref<string[]>([])
+const bulkDeleteCandidates = ref<AdminCategory[] | null>(null)
 const creating = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const bulkDeleting = ref(false)
+
+const pageSizeOptions = [10, 20, 50]
+
+const normalizeCategory = (category: AdminCategory): AdminCategory => ({
+  ...category,
+  is_system: Boolean(category.is_system ?? category.isSystem)
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+const showingFrom = computed(() => (total.value === 0 ? 0 : (page.value - 1) * pageSize.value + 1))
+const showingTo = computed(() => Math.min(page.value * pageSize.value, total.value))
+const selectableCategories = computed(() => categories.value.filter((category) => !category.is_system))
+const selectedCategories = computed(() =>
+  categories.value.filter(
+    (category) => !category.is_system && selectedCategoryIds.value.includes(String(category.id))
+  )
+)
+const selectedCategoryCount = computed(() => selectedCategories.value.length)
+const allSelectableSelected = computed(
+  () =>
+    selectableCategories.value.length > 0 &&
+    selectableCategories.value.every((category) =>
+      selectedCategoryIds.value.includes(String(category.id))
+    )
+)
+const bulkDeleteDescription = computed(() => {
+  const candidates = bulkDeleteCandidates.value ?? []
+  const names = candidates.map((category) => category.name).join('、')
+  return `确认删除 ${candidates.length} 个分类吗？删除后相关文章会回到默认分类。${names ? `本次包括：${names}` : ''}`
+})
+
+const numberLabel = (value?: string | number) => {
+  return new Intl.NumberFormat('zh-CN').format(Number(value || 0))
+}
 
 const fetchCategories = async () => {
+  if (loading.value) return
   loading.value = true
+  let shouldFetchPreviousPage = false
 
   try {
-    const response = await listAllAdminCategories()
-    categories.value = response.data.categories ?? []
+    const response = await listAdminCategories({
+      page: page.value,
+      limit: pageSize.value
+    })
+    categories.value = (response.data.categories ?? []).map(normalizeCategory)
+    total.value = Number(response.data.count || 0)
+    selectedCategoryIds.value = []
+
+    if (categories.value.length === 0 && page.value > 1) {
+      page.value -= 1
+      jumpPage.value = String(page.value)
+      shouldFetchPreviousPage = true
+    }
   } catch {
     categories.value = []
+    total.value = 0
+    selectedCategoryIds.value = []
   } finally {
     loading.value = false
+  }
+
+  if (shouldFetchPreviousPage) {
+    await fetchCategories()
+  }
+}
+
+const resetToFirstPage = async () => {
+  page.value = 1
+  jumpPage.value = '1'
+  await fetchCategories()
+}
+
+const changePageSize = (event: Event) => {
+  pageSize.value = Number((event.target as HTMLSelectElement).value)
+  void resetToFirstPage()
+}
+
+const goPage = (next: number) => {
+  if (next < 1 || next > totalPages.value || next === page.value) return
+  page.value = next
+  jumpPage.value = String(next)
+  void fetchCategories()
+}
+
+const jumpToPage = () => {
+  const next = Number(jumpPage.value)
+  if (!Number.isFinite(next)) return
+  goPage(Math.min(totalPages.value, Math.max(1, Math.floor(next))))
+}
+
+const isCategorySelected = (category: AdminCategory) => {
+  return selectedCategoryIds.value.includes(String(category.id))
+}
+
+const toggleCategorySelection = (category: AdminCategory) => {
+  if (category.is_system) return
+
+  const id = String(category.id)
+  if (selectedCategoryIds.value.includes(id)) {
+    selectedCategoryIds.value = selectedCategoryIds.value.filter((value) => value !== id)
+    return
+  }
+
+  selectedCategoryIds.value = [...selectedCategoryIds.value, id]
+}
+
+const togglePageSelection = () => {
+  const ids = selectableCategories.value.map((category) => String(category.id))
+  if (allSelectableSelected.value) {
+    selectedCategoryIds.value = selectedCategoryIds.value.filter((id) => !ids.includes(id))
+    return
+  }
+
+  selectedCategoryIds.value = Array.from(new Set([...selectedCategoryIds.value, ...ids]))
+}
+
+const openBulkDelete = () => {
+  if (selectedCategories.value.length === 0) return
+  bulkDeleteCandidates.value = [...selectedCategories.value]
+}
+
+const cancelBulkDelete = () => {
+  if (bulkDeleting.value) return
+  bulkDeleteCandidates.value = null
+}
+
+const confirmBulkDelete = async () => {
+  const candidates = bulkDeleteCandidates.value ?? []
+  if (candidates.length === 0 || bulkDeleting.value) return
+
+  bulkDeleting.value = true
+  let successCount = 0
+  let failedCount = 0
+
+  for (const category of candidates) {
+    try {
+      await deleteAdminCategory(category.id)
+      successCount += 1
+    } catch {
+      failedCount += 1
+    }
+  }
+
+  try {
+    bulkDeleteCandidates.value = null
+    selectedCategoryIds.value = []
+    await fetchCategories()
+
+    if (successCount > 0) {
+      toast.add({
+        severity: 'success',
+        summary: '分类已删除',
+        detail: `已删除 ${numberLabel(successCount)} 个分类`,
+        life: 2400
+      })
+    }
+
+    if (failedCount > 0) {
+      toast.add({
+        severity: 'warning',
+        summary: '部分分类删除失败',
+        detail: `${numberLabel(failedCount)} 个分类未能删除`,
+        life: 3000
+      })
+    }
+  } finally {
+    bulkDeleting.value = false
   }
 }
 
@@ -57,7 +221,7 @@ const createCategory = async () => {
   try {
     await createAdminCategory({ name })
     newCategoryName.value = ''
-    await fetchCategories()
+    await resetToFirstPage()
     toast.add({
       severity: 'success',
       summary: '分类已创建',
@@ -72,6 +236,7 @@ const createCategory = async () => {
 }
 
 const startEdit = (category: AdminCategory) => {
+  if (category.is_system) return
   editingId.value = String(category.id)
   draftName.value = category.name
 }
@@ -114,6 +279,7 @@ const saveEdit = async (category: AdminCategory) => {
 }
 
 const askDelete = (category: AdminCategory) => {
+  if (category.is_system) return
   selectedCategory.value = category
 }
 
@@ -131,6 +297,7 @@ const confirmDelete = async () => {
   try {
     await deleteAdminCategory(category.id)
     selectedCategory.value = null
+    selectedCategoryIds.value = selectedCategoryIds.value.filter((id) => id !== String(category.id))
     await fetchCategories()
     toast.add({
       severity: 'success',
@@ -157,9 +324,9 @@ const formatDate = (value?: string) => {
   return `${year}-${month}-${day}`
 }
 
-const numberLabel = (value?: string | number) => {
-  return new Intl.NumberFormat('zh-CN').format(Number(value || 0))
-}
+watch(page, (value) => {
+  jumpPage.value = String(value)
+})
 
 onMounted(() => {
   void fetchCategories()
@@ -175,7 +342,7 @@ onMounted(() => {
             分类管理
           </h1>
           <AppBadge tone="neutral" class="tabular-nums">
-            共 {{ numberLabel(categories.length) }} 个
+            共 {{ numberLabel(total) }} 个
           </AppBadge>
         </div>
         <p class="m-0 max-w-2xl text-sm leading-6 text-muted-foreground text-pretty">
@@ -198,6 +365,48 @@ onMounted(() => {
       </AppButton>
     </form>
 
+    <section class="archive-surface rounded-archive p-4" aria-label="分类操作">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+            <input
+              type="checkbox"
+              class="size-4 rounded border-border accent-accent"
+              :checked="allSelectableSelected"
+              :disabled="selectableCategories.length === 0"
+              @change="togglePageSelection"
+            />
+            全选本页
+          </label>
+          <span class="text-sm text-muted-foreground tabular-nums">
+            已选择 {{ numberLabel(selectedCategoryCount) }} 个
+          </span>
+          <AppButton
+            size="sm"
+            variant="danger"
+            :disabled="selectedCategoryCount === 0 || bulkDeleting"
+            @click="openBulkDelete"
+          >
+            <Trash2 class="size-4" aria-hidden="true" />
+            批量删除
+          </AppButton>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          每页
+          <select
+            :value="pageSize"
+            class="h-10 rounded-full border border-border bg-surface px-3 text-sm font-semibold text-foreground focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/18"
+            @change="changePageSize"
+          >
+            <option v-for="size in pageSizeOptions" :key="size" :value="size">
+              {{ size }} 条
+            </option>
+          </select>
+        </label>
+      </div>
+    </section>
+
     <section
       v-if="loading"
       class="archive-surface rounded-archive p-8 text-center text-sm font-semibold text-muted-foreground"
@@ -206,94 +415,146 @@ onMounted(() => {
       正在读取分类
     </section>
 
-    <section v-else-if="categories.length > 0" class="space-y-3" aria-label="分类列表">
-      <article
-        v-for="category in categories"
-        :key="category.id"
-        class="archive-surface rounded-archive p-4 transition duration-200 hover:border-accent/35 hover:bg-surface-raised/70"
-      >
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div class="min-w-0 flex-1 space-y-3">
-            <form
-              v-if="editingId === String(category.id)"
-              class="flex flex-col gap-2 sm:flex-row"
-              @submit.prevent="saveEdit(category)"
-            >
-              <label class="min-w-0 flex-1">
-                <span class="sr-only">分类名称</span>
-                <AppInput v-model="draftName" placeholder="分类名称" :disabled="saving" />
-              </label>
-              <div class="flex gap-2">
-                <AppButton type="submit" size="sm" :disabled="saving">
-                  <Save class="size-4" aria-hidden="true" />
-                  保存
-                </AppButton>
-                <AppButton variant="ghost" size="sm" :disabled="saving" @click="cancelEdit">
-                  <X class="size-4" aria-hidden="true" />
-                  取消
-                </AppButton>
-              </div>
-            </form>
-
-            <div v-else class="flex min-w-0 items-center gap-3">
-              <span
-                class="grid size-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"
+    <section v-else class="space-y-3" aria-label="分类列表">
+      <template v-if="categories.length > 0">
+        <article
+          v-for="category in categories"
+          :key="category.id"
+          class="archive-surface rounded-archive p-4 transition-colors duration-200 hover:border-accent/35 hover:bg-surface-raised/70"
+          :class="isCategorySelected(category) ? 'border-accent/50 bg-accent/5' : ''"
+        >
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0 flex-1 space-y-3">
+              <form
+                v-if="editingId === String(category.id)"
+                class="flex flex-col gap-2 sm:flex-row"
+                @submit.prevent="saveEdit(category)"
               >
-                <FolderTree class="size-4" aria-hidden="true" />
-              </span>
-              <div class="min-w-0">
-                <h2 class="m-0 truncate text-lg font-black leading-snug text-foreground">
-                  {{ category.name }}
-                </h2>
-                <dl
-                  class="m-0 mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground"
+                <label class="min-w-0 flex-1">
+                  <span class="sr-only">分类名称</span>
+                  <AppInput v-model="draftName" placeholder="分类名称" :disabled="saving" />
+                </label>
+                <div class="flex gap-2">
+                  <AppButton type="submit" size="sm" :disabled="saving">
+                    <Save class="size-4" aria-hidden="true" />
+                    保存
+                  </AppButton>
+                  <AppButton variant="ghost" size="sm" :disabled="saving" @click="cancelEdit">
+                    <X class="size-4" aria-hidden="true" />
+                    取消
+                  </AppButton>
+                </div>
+              </form>
+
+              <div v-else class="flex min-w-0 items-center gap-3">
+                <label class="grid size-10 shrink-0 place-items-center">
+                  <span class="sr-only">选择 {{ category.name }}</span>
+                  <input
+                    type="checkbox"
+                    class="size-4 rounded border-border accent-accent"
+                    :checked="isCategorySelected(category)"
+                    :disabled="category.is_system"
+                    @change="toggleCategorySelection(category)"
+                  />
+                </label>
+                <span
+                  class="grid size-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"
                 >
-                  <div class="flex items-center gap-1.5">
-                    <dt class="sr-only">文章数量</dt>
-                    <dd class="m-0 tabular-nums">
-                      {{ numberLabel(category.article_count) }} 篇文章
-                    </dd>
+                  <FolderTree class="size-4" aria-hidden="true" />
+                </span>
+                <div class="min-w-0">
+                  <div class="flex min-w-0 flex-wrap items-center gap-2">
+                    <h2 class="m-0 truncate text-lg font-black leading-snug text-foreground">
+                      {{ category.name }}
+                    </h2>
+                    <AppBadge v-if="category.is_system" tone="neutral">系统</AppBadge>
                   </div>
-                  <div class="flex items-center gap-1.5">
-                    <dt class="sr-only">创建时间</dt>
-                    <CalendarDays class="size-3.5" aria-hidden="true" />
-                    <dd class="m-0 tabular-nums">{{ formatDate(category.created_at) }}</dd>
-                  </div>
-                </dl>
+                  <dl
+                    class="m-0 mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground"
+                  >
+                    <div class="flex items-center gap-1.5">
+                      <dt class="sr-only">文章数量</dt>
+                      <dd class="m-0 tabular-nums">
+                        {{ numberLabel(category.article_count) }} 篇文章
+                      </dd>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <dt class="sr-only">创建时间</dt>
+                      <CalendarDays class="size-3.5" aria-hidden="true" />
+                      <dd class="m-0 tabular-nums">{{ formatDate(category.created_at) }}</dd>
+                    </div>
+                  </dl>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-            <AppButton
-              variant="secondary"
-              size="sm"
-              :disabled="editingId === String(category.id)"
-              @click="startEdit(category)"
-            >
-              <Pencil class="size-4" aria-hidden="true" />
-              重命名
-            </AppButton>
-            <AppButton
-              variant="ghost"
-              size="sm"
-              class="text-danger hover:text-danger"
-              @click="askDelete(category)"
-            >
-              <Trash2 class="size-4" aria-hidden="true" />
-              删除
-            </AppButton>
+            <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+              <AppButton
+                variant="secondary"
+                size="sm"
+                :disabled="category.is_system || editingId === String(category.id)"
+                @click="startEdit(category)"
+              >
+                <Pencil class="size-4" aria-hidden="true" />
+                重命名
+              </AppButton>
+              <AppButton
+                variant="ghost"
+                size="sm"
+                class="text-danger hover:text-danger"
+                :disabled="category.is_system || deleting || bulkDeleting"
+                @click="askDelete(category)"
+              >
+                <Trash2 class="size-4" aria-hidden="true" />
+                删除
+              </AppButton>
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
+      </template>
+
+      <section v-else class="archive-surface rounded-archive p-8 text-center">
+        <p class="m-0 text-lg font-black text-foreground">还没有分类</p>
+        <p class="m-0 mt-2 text-sm leading-6 text-muted-foreground">
+          创建第一个分类后，就可以在文章编辑器里归档内容。
+        </p>
+      </section>
     </section>
 
-    <section v-else class="archive-surface rounded-archive p-8 text-center">
-      <p class="m-0 text-lg font-black text-foreground">还没有分类</p>
-      <p class="m-0 mt-2 text-sm leading-6 text-muted-foreground">
-        创建第一个分类后，就可以在文章编辑器里归档内容。
-      </p>
-    </section>
+    <footer
+      class="archive-surface flex flex-col gap-3 rounded-archive p-4 text-sm text-muted-foreground lg:flex-row lg:items-center lg:justify-between"
+    >
+      <span class="tabular-nums">
+        显示 {{ numberLabel(showingFrom) }} - {{ numberLabel(showingTo) }}，共
+        {{ numberLabel(total) }} 条
+      </span>
+      <div class="flex flex-wrap items-center gap-2">
+        <AppButton size="sm" variant="ghost" :disabled="page <= 1" @click="goPage(page - 1)">
+          上一页
+        </AppButton>
+        <span class="font-semibold text-foreground tabular-nums">
+          {{ numberLabel(page) }} / {{ numberLabel(totalPages) }}
+        </span>
+        <AppButton
+          size="sm"
+          variant="ghost"
+          :disabled="page >= totalPages"
+          @click="goPage(page + 1)"
+        >
+          下一页
+        </AppButton>
+        <label>
+          <span class="sr-only">跳转页码</span>
+          <AppInput
+            v-model="jumpPage"
+            class="h-9 w-20 px-3 text-center tabular-nums"
+            inputmode="numeric"
+            @keyup.enter="jumpToPage"
+          />
+        </label>
+        <AppButton size="sm" variant="secondary" @click="jumpToPage">跳转</AppButton>
+      </div>
+    </footer>
 
     <ConfirmDialog
       :open="Boolean(selectedCategory)"
@@ -304,6 +565,17 @@ onMounted(() => {
       danger
       @cancel="cancelDelete"
       @confirm="confirmDelete"
+    />
+
+    <ConfirmDialog
+      :open="Boolean(bulkDeleteCandidates)"
+      title="批量删除分类"
+      :description="bulkDeleteDescription"
+      :confirm-label="bulkDeleting ? '删除中...' : '批量删除'"
+      cancel-label="取消"
+      danger
+      @cancel="cancelBulkDelete"
+      @confirm="confirmBulkDelete"
     />
   </main>
 </template>

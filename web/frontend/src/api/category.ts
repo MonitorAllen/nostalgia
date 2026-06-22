@@ -12,6 +12,11 @@ export interface ListCategoriesResponse {
     count: number
 }
 
-export async function listCategories(): Promise<ApiSuccessResponse<ListCategoriesResponse>> {
-    return http.get('/categories', {skipAuth: true})
+export interface ListCategoriesParams {
+    page: number
+    limit: number
+}
+
+export async function listCategories(params: ListCategoriesParams): Promise<ApiSuccessResponse<ListCategoriesResponse>> {
+    return http.get('/categories', {skipAuth: true, params})
 }

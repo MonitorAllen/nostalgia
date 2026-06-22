@@ -22,7 +22,8 @@ FROM categories c
     AND a.is_publish = true
 GROUP BY
     c.id
-ORDER BY article_count DESC, c.created_at DESC;
+ORDER BY article_count DESC, c.created_at DESC
+LIMIT $1 OFFSET $2;
 
 -- name: CountCategories :one
 SELECT count(*) FROM categories;
