@@ -296,7 +296,7 @@ watch(
           <div class="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row">
             <button
               type="button"
-              class="group block w-full shrink-0 overflow-hidden rounded-archive border border-border bg-muted transition-colors hover:border-accent/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-44 lg:w-40"
+              class="group block aspect-[16/9] w-full shrink-0 overflow-hidden rounded-archive border border-border bg-muted transition-colors hover:border-accent/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-44 lg:w-40"
               :aria-label="`预览 ${article.title || '无标题文章'} 封面`"
               @click="openArticlePreview(article)"
             >
@@ -305,6 +305,7 @@ watch(
                 :alt="article.title ? `${article.title} 封面` : '文章封面'"
                 variant="list"
                 fallback-src="/images/go.png"
+                class="pointer-events-none"
               />
             </button>
 

@@ -86,7 +86,7 @@ onMounted(() => {
       >
         <RouterLink
           :to="`/article/${item.slug ? item.slug : item.id}`"
-          class="relative block overflow-hidden rounded-archive border border-border bg-muted transition-colors group-hover:border-accent/35 md:aspect-[16/9] md:self-start"
+          class="relative block overflow-hidden rounded-archive border border-border bg-muted transition-colors group-hover:border-accent/35 md:aspect-[16/9] md:self-center"
         >
           <ArticleCover
             :src="item.cover"
