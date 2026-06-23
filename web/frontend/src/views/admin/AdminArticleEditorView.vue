@@ -213,9 +213,14 @@ const inspectCoverFromUrl = async (url: string) => {
 }
 
 const inspectCoverFromFile = async (file: File) => {
+  const requestToken = ++coverInspectionToken
+
   try {
-    coverInspection.value = inspectArticleCoverDimensions(await loadArticleCoverFileDimensions(file))
+    const dimensions = await loadArticleCoverFileDimensions(file)
+    if (requestToken !== coverInspectionToken) return
+    coverInspection.value = inspectArticleCoverDimensions(dimensions)
   } catch {
+    if (requestToken !== coverInspectionToken) return
     coverInspection.value = inspectArticleCoverDimensions(null)
   }
 }
@@ -885,9 +890,9 @@ const handleCoverInput = async (event: Event) => {
     return
   }
 
-  if (!article.value.id) return
-
   void inspectCoverFromFile(file!)
+
+  if (!article.value.id) return
 
   isCoverUploading.value = true
 
