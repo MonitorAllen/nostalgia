@@ -6,6 +6,7 @@ import { isAutomationDraft } from '@/admin/articleAutomation'
 import type { AdminArticle } from '@/admin/types'
 import {
   deleteAdminArticle,
+  getAdminArticle,
   listAdminArticles,
   updateAdminArticle,
 } from '@/admin/api/adminArticleApi'
@@ -13,6 +14,7 @@ import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import ArticlePreviewDialog from '@/components/article/ArticlePreviewDialog.vue'
 import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
@@ -23,8 +25,11 @@ const articles = ref<AdminArticle[]>([])
 const loading = ref(false)
 const total = ref(0)
 const selectedArticle = ref<AdminArticle | null>(null)
+const previewArticle = ref<AdminArticle | null>(null)
+const previewLoading = ref(false)
 const deleting = ref(false)
 const activeAction = ref('')
+let previewRequestToken = 0
 
 const query = reactive({
   title: '',
@@ -101,6 +106,30 @@ const createArticle = () => {
 
 const editArticle = (id: string) => {
   void router.push({ name: 'adminArticleEdit', params: { id }, query: route.query })
+}
+
+const openArticlePreview = async (article: AdminArticle) => {
+  const requestToken = ++previewRequestToken
+  previewArticle.value = article
+  previewLoading.value = true
+
+  try {
+    const response = await getAdminArticle(article.id, true)
+    if (requestToken !== previewRequestToken) return
+    previewArticle.value = response.data.article
+  } catch {
+    // Admin HTTP client already shows a toast for request failures.
+  } finally {
+    if (requestToken === previewRequestToken) {
+      previewLoading.value = false
+    }
+  }
+}
+
+const closeArticlePreview = () => {
+  previewRequestToken++
+  previewLoading.value = false
+  previewArticle.value = null
 }
 
 const togglePublish = async (article: AdminArticle) => {
@@ -298,7 +327,7 @@ watch(
               <button
                 type="button"
                 class="block max-w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                @click="editArticle(article.id)"
+                @click="openArticlePreview(article)"
               >
                 <h2
                   class="m-0 truncate text-lg font-black leading-snug text-foreground transition-colors hover:text-accent"
@@ -408,6 +437,24 @@ watch(
       danger
       @cancel="cancelDelete"
       @confirm="confirmDelete"
+    />
+
+    <ArticlePreviewDialog
+      :open="Boolean(previewArticle)"
+      :loading="previewLoading"
+      :article-title="previewArticle?.title || ''"
+      :summary="previewArticle?.summary || ''"
+      :content="previewArticle?.content || ''"
+      :category-name="categoryLabel(previewArticle || ({} as AdminArticle))"
+      :status-label="previewArticle?.is_publish ? '已发布' : '草稿'"
+      :status-tone="previewArticle?.is_publish ? 'accent' : 'neutral'"
+      :cover="previewArticle?.cover || ''"
+      :created-at="previewArticle?.created_at || ''"
+      :likes="previewArticle?.likes"
+      :views="previewArticle?.views"
+      show-meta
+      show-cover
+      @close="closeArticlePreview"
     />
   </main>
 </template>

@@ -32,6 +32,7 @@
   line-height: 1.25;
   margin: 2rem 0 0.85rem;
   text-wrap: balance;
+  word-break: normal;
 }
 
 .reading-prose h1 {
@@ -84,6 +85,30 @@
   padding-left: 1.55rem;
 }
 
+.reading-prose ul {
+  list-style-type: disc;
+}
+
+.reading-prose ol {
+  list-style-type: decimal;
+}
+
+.reading-prose ul ul {
+  list-style-type: circle;
+}
+
+.reading-prose ul ul ul {
+  list-style-type: square;
+}
+
+.reading-prose ol ol {
+  list-style-type: lower-latin;
+}
+
+.reading-prose ol ol ol {
+  list-style-type: lower-roman;
+}
+
 .reading-prose li {
   margin: 0.4rem 0;
   padding-left: 0.15rem;
@@ -92,6 +117,174 @@
 .reading-prose li::marker {
   color: rgb(var(--color-accent));
   font-weight: 700;
+}
+
+.reading-prose .todo-list,
+.admin-editor-content .ck-content .todo-list {
+  --ck-todo-list-checkmark-size: 16px;
+
+  list-style-type: none;
+}
+
+.reading-prose .todo-list li,
+.admin-editor-content .ck-content .todo-list li {
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.reading-prose .todo-list li .todo-list,
+.admin-editor-content .ck-content .todo-list li .todo-list {
+  margin-top: 5px;
+}
+
+.reading-prose .todo-list li::marker,
+.admin-editor-content .ck-content .todo-list li::marker {
+  content: none;
+}
+
+.reading-prose .todo-list .todo-list__label > input,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input {
+  appearance: none;
+  display: inline-block;
+  position: relative;
+  left: -25px;
+  right: 0;
+  width: var(--ck-todo-list-checkmark-size);
+  height: var(--ck-todo-list-checkmark-size);
+  margin-right: -15px;
+  margin-left: 0;
+  border: 0;
+  vertical-align: middle;
+}
+
+.reading-prose .todo-list .todo-list__label > input::before,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input::before,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input::before {
+  display: block;
+  position: absolute;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgb(var(--color-foreground) / 0.72);
+  border-radius: 2px;
+  background: rgb(var(--color-surface));
+  content: '';
+  transition: box-shadow 200ms ease-out;
+}
+
+.reading-prose .todo-list .todo-list__label > input::after,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input::after,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input::after {
+  display: block;
+  position: absolute;
+  box-sizing: content-box;
+  top: calc(var(--ck-todo-list-checkmark-size) / 5.3);
+  left: calc(var(--ck-todo-list-checkmark-size) / 3);
+  width: calc(var(--ck-todo-list-checkmark-size) / 5.3);
+  height: calc(var(--ck-todo-list-checkmark-size) / 2.6);
+  border-width: 0 calc(var(--ck-todo-list-checkmark-size) / 8)
+    calc(var(--ck-todo-list-checkmark-size) / 8) 0;
+  border-style: solid;
+  border-color: transparent;
+  content: '';
+  pointer-events: none;
+  transform: rotate(45deg);
+}
+
+.reading-prose .todo-list .todo-list__label > input:checked::before,
+.reading-prose .todo-list .todo-list__label > input[checked]::before,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input:checked::before,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input[checked]::before,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input:checked::before,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input[checked]::before {
+  border-color: rgb(var(--color-accent));
+  background: rgb(var(--color-accent));
+}
+
+.reading-prose .todo-list .todo-list__label > input:checked::after,
+.reading-prose .todo-list .todo-list__label > input[checked]::after,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input:checked::after,
+.admin-editor-content .ck-content .todo-list .todo-list__label > input[checked]::after,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input:checked::after,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input[checked]::after {
+  border-color: rgb(var(--color-accent-foreground));
+}
+
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > input:hover::before,
+.admin-editor-content
+  .ck-editor__editable.ck-content
+  .todo-list
+  .todo-list__label
+  > span[contenteditable='false']
+  > input:hover::before {
+  box-shadow: 0 0 0 5px rgb(var(--color-accent) / 0.14);
+}
+
+.reading-prose .todo-list .todo-list__label .todo-list__label__description,
+.admin-editor-content .ck-content .todo-list .todo-list__label .todo-list__label__description {
+  vertical-align: middle;
+}
+
+.reading-prose .todo-list .todo-list__label.todo-list__label_without-description input[type='checkbox'],
+.admin-editor-content
+  .ck-content
+  .todo-list
+  .todo-list__label.todo-list__label_without-description
+  input[type='checkbox'] {
+  position: absolute;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-prose .todo-list .todo-list__label > input::before,
+  .admin-editor-content .ck-content .todo-list .todo-list__label > input::before,
+  .admin-editor-content
+    .ck-editor__editable.ck-content
+    .todo-list
+    .todo-list__label
+    > span[contenteditable='false']
+    > input::before {
+    transition: none;
+  }
 }
 
 .reading-prose blockquote {
@@ -192,6 +385,7 @@
 }
 
 .reading-prose > :where(h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote) {
+  width: min(100%, var(--prose-measure));
   max-width: min(100%, var(--prose-measure));
   margin-right: auto;
   margin-left: auto;
@@ -420,7 +614,8 @@
   z-index: 20;
 }
 
-.admin-editor-content .ck.ck-toolbar {
+.admin-editor-content .ck.ck-toolbar,
+#comment-editor .ck.ck-toolbar {
   border-color: rgb(var(--color-border));
   background: rgb(var(--color-surface-raised));
 }
@@ -437,26 +632,84 @@
 }
 
 .admin-editor-content .ck.ck-button,
-.admin-editor-content .ck.ck-dropdown__button {
+.admin-editor-content .ck.ck-dropdown__button,
+#comment-editor .ck.ck-button,
+#comment-editor .ck.ck-dropdown__button {
   border-radius: 0.55rem;
   color: rgb(var(--color-muted-foreground));
 }
 
 .admin-editor-content .ck.ck-button:hover:not(.ck-disabled),
-.admin-editor-content .ck.ck-dropdown__button:hover:not(.ck-disabled) {
+.admin-editor-content .ck.ck-dropdown__button:hover:not(.ck-disabled),
+#comment-editor .ck.ck-button:hover:not(.ck-disabled),
+#comment-editor .ck.ck-dropdown__button:hover:not(.ck-disabled) {
   background: rgb(var(--color-accent) / 0.12);
   color: rgb(var(--color-foreground));
 }
 
 .admin-editor-content .ck.ck-button:hover:not(.ck-disabled) .ck-icon,
-.admin-editor-content .ck.ck-dropdown__button:hover:not(.ck-disabled) .ck-icon {
+.admin-editor-content .ck.ck-dropdown__button:hover:not(.ck-disabled) .ck-icon,
+#comment-editor .ck.ck-button:hover:not(.ck-disabled) .ck-icon,
+#comment-editor .ck.ck-dropdown__button:hover:not(.ck-disabled) .ck-icon {
   color: currentColor;
 }
 
 .admin-editor-content .ck.ck-button.ck-on,
-.admin-editor-content .ck.ck-dropdown__button.ck-on {
+.admin-editor-content .ck.ck-dropdown__button.ck-on,
+#comment-editor .ck.ck-button.ck-on,
+#comment-editor .ck.ck-dropdown__button.ck-on {
   background: rgb(var(--color-accent) / 0.14);
   color: rgb(var(--color-accent));
+}
+
+.admin-editor-content .ck.ck-dropdown__panel,
+#comment-editor .ck.ck-dropdown__panel {
+  border-color: rgb(var(--color-border));
+  border-radius: 0.75rem;
+  background: rgb(var(--color-surface));
+  box-shadow: var(--shadow-archive);
+}
+
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list,
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list {
+  background: rgb(var(--color-surface));
+  color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button,
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list-item-button,
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button,
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list-item-button {
+  border-radius: 0.45rem;
+  background: transparent;
+  color: rgb(var(--color-muted-foreground));
+}
+
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button:hover:not(.ck-disabled),
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button:focus:not(.ck-disabled),
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list-item-button:hover:not(.ck-disabled),
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list-item-button:focus:not(.ck-disabled),
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button:hover:not(.ck-disabled),
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button:focus:not(.ck-disabled),
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list-item-button:hover:not(.ck-disabled),
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list-item-button:focus:not(.ck-disabled) {
+  background: rgb(var(--color-accent) / 0.12);
+  color: rgb(var(--color-foreground));
+}
+
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button.ck-on,
+.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list-item-button.ck-on,
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button.ck-on,
+#comment-editor .ck.ck-dropdown__panel .ck.ck-list-item-button.ck-on {
+  background: rgb(var(--color-accent) / 0.14);
+  color: rgb(var(--color-accent));
+}
+
+.admin-editor-content .ck.ck-dropdown__panel .ck-button__label,
+.admin-editor-content .ck.ck-dropdown__panel .ck-icon,
+#comment-editor .ck.ck-dropdown__panel .ck-button__label,
+#comment-editor .ck.ck-dropdown__panel .ck-icon {
+  color: currentColor;
 }
 
 .admin-editor-content .ck.ck-editor__main {
@@ -519,6 +772,7 @@
   margin: 2rem 0 0.85rem;
   max-width: min(100%, var(--prose-measure));
   text-wrap: balance;
+  word-break: normal;
 }
 
 .admin-editor-content .ck-content h1 {
@@ -581,6 +835,30 @@
   margin-top: 1rem;
   margin-bottom: 1rem;
   padding-left: 1.55rem;
+}
+
+.admin-editor-content .ck-content ul {
+  list-style-type: disc;
+}
+
+.admin-editor-content .ck-content ol {
+  list-style-type: decimal;
+}
+
+.admin-editor-content .ck-content ul ul {
+  list-style-type: circle;
+}
+
+.admin-editor-content .ck-content ul ul ul {
+  list-style-type: square;
+}
+
+.admin-editor-content .ck-content ol ol {
+  list-style-type: lower-latin;
+}
+
+.admin-editor-content .ck-content ol ol ol {
+  list-style-type: lower-roman;
 }
 
 .admin-editor-content .ck-content li {

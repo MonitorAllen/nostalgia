@@ -90,11 +90,6 @@ onMounted(() => {
   color: rgb(var(--color-foreground));
 }
 
-:deep(.ck-toolbar) {
-  background: rgb(var(--color-surface-raised)) !important;
-  border-color: rgb(var(--color-border)) !important;
-}
-
 :deep(.ck-content) {
   background: rgb(var(--color-surface)) !important;
 }
