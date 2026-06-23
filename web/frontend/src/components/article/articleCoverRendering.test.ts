@@ -48,4 +48,16 @@ describe('article cover rendering contracts', () => {
     expect(list).not.toContain('p-2 transition')
     expect(list).not.toContain('md:h-full')
   })
+
+  test('admin cover panel exposes guidance, warnings, and multi-surface previews', () => {
+    const panel = read('admin/editor/AdminArticleCoverPanel.vue')
+
+    expect(panel).toContain('推荐 1600x900')
+    expect(panel).toContain('1920x1080')
+    expect(panel).toContain('详情页头图')
+    expect(panel).toContain('列表卡片')
+    expect(panel).toContain('分享预览')
+    expect(panel).toContain('inspection.warnings')
+    expect(panel).toContain('ArticleCover')
+  })
 })
