@@ -75,13 +75,14 @@ describe('admin UI polish contracts', () => {
     const source = readSource('views/admin/AdminArticleEditorView.vue')
     const configSource = readSource('admin/editor/adminEditorConfig.ts')
     const contentCss = readSource('assets/content.css')
+    const previewDialogSource = readSource('components/article/ArticlePreviewDialog.vue')
 
     expect(source).toContain('previewOpen')
     expect(source).toContain('previewOverrides')
     expect(source).toContain('openPreview')
-    expect(source).toContain('sanitizeHtml')
-    expect(source).toContain('文章预览')
-    expect(source).toContain('实际阅读效果')
+    expect(source).toContain('ArticlePreviewDialog')
+    expect(previewDialogSource).toContain('文章预览')
+    expect(previewDialogSource).toContain('实际阅读效果')
     expect(source).toContain('aria-label="文章标题"')
     expect(source).toContain('id="admin-article-title"')
     expect(source).toContain('id="admin-article-summary"')
@@ -170,7 +171,8 @@ describe('admin UI polish contracts', () => {
     expect(contentCss).toContain('height: var(--admin-editor-workbench-height);')
     expect(contentCss).toContain('min-height: 32rem;')
     expect(contentCss).toContain('overflow: visible;')
-    expect(contentCss).toContain('.admin-editor-content .ck.ck-toolbar {')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-toolbar,')
+    expect(contentCss).toContain('#comment-editor .ck.ck-toolbar {')
     expect(contentCss).toContain('.admin-editor-content .ck.ck-editor {')
     expect(contentCss).toContain('display: flex;')
     expect(contentCss).toContain('flex-direction: column;')
@@ -228,7 +230,8 @@ describe('admin UI polish contracts', () => {
     expect(contentCss).toContain('.admin-editor-content .ck-content figure.table > figcaption')
     expect(contentCss).toContain('display: block;')
     expect(contentCss).toContain('writing-mode: horizontal-tb;')
-    expect(source).toContain('class="reading-prose ck-content admin-preview-content"')
+    expect(source).toContain('<ArticlePreviewDialog')
+    expect(source).not.toContain('class="reading-prose ck-content admin-preview-content"')
     expect(source).toContain('aiDrawerOpen')
     expect(source).toContain('aiPolishSession')
     expect(source).toContain('admin-ai-drawer')
@@ -283,6 +286,90 @@ describe('admin UI polish contracts', () => {
     expect(contentCss).toContain('.admin-ai-polish-target')
     expect(apiSource).toContain('AI_POLISH_REQUEST_TIMEOUT_MS')
     expect(apiSource).toContain('timeout: AI_POLISH_REQUEST_TIMEOUT_MS')
+  })
+
+  test('article reading surfaces share the same preview and rich content contract', () => {
+    const publicArticleSource = readSource('views/article/ArticleView.vue')
+    const editorSource = readSource('views/admin/AdminArticleEditorView.vue')
+    const listSource = readSource('views/admin/AdminArticleListView.vue')
+    const readerSource = readSource('components/article/ArticleReader.vue')
+    const richContentSource = readSource('components/article/ArticleRichContent.vue')
+    const previewDialogSource = readSource('components/article/ArticlePreviewDialog.vue')
+    const contentCss = readSource('assets/content.css')
+
+    expect(publicArticleSource).toContain('ArticleReader')
+    expect(publicArticleSource).not.toContain('sanitizedArticleContent')
+    expect(editorSource).toContain('ArticlePreviewDialog')
+    expect(listSource).toContain('ArticlePreviewDialog')
+    expect(listSource).toContain('openArticlePreview')
+    expect(listSource).toContain('previewRequestToken')
+    expect(listSource).toContain('@click="openArticlePreview(article)"')
+    expect(listSource).toContain('getAdminArticle(article.id, true)')
+    expect(readerSource).toContain('ArticleRichContent')
+    expect(readerSource).toContain('article-reader-title')
+    expect(readerSource).toContain('article-reader-content')
+    expect(readerSource).toContain('class="article-reader-content mt-8"')
+    expect(richContentSource).toContain('sanitizeHtml')
+    expect(richContentSource).toContain('reading-prose')
+    expect(richContentSource).toContain('ck-content')
+    expect(previewDialogSource).toContain('ArticleReader')
+    expect(previewDialogSource).toContain('max-w-[820px]')
+    expect(contentCss).toContain('.reading-prose ul,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content ul {')
+    expect(contentCss).toContain('list-style-type: disc;')
+    expect(contentCss).toContain('list-style-type: decimal;')
+    expect(contentCss).toContain('.reading-prose .todo-list,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content .todo-list {')
+    expect(contentCss).toContain('.reading-prose .todo-list li,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content .todo-list li {')
+    expect(contentCss).toContain('.reading-prose .todo-list .todo-list__label > input,')
+    expect(contentCss).toContain(
+      '.admin-editor-content .ck-content .todo-list .todo-list__label > input,'
+    )
+    expect(contentCss).toContain('.reading-prose .todo-list .todo-list__label > input:checked::before,')
+    expect(contentCss).toContain(
+      '.admin-editor-content .ck-content .todo-list .todo-list__label > input:checked::before,'
+    )
+    expect(contentCss).toContain(
+      '.reading-prose .todo-list .todo-list__label .todo-list__label__description,'
+    )
+    expect(contentCss).toContain('.reading-prose .todo-list li::marker,')
+    expect(contentCss).toContain('.admin-editor-content .ck-content .todo-list li::marker {')
+    expect(contentCss).toContain('width: min(100%, var(--prose-measure));')
+    expect(contentCss).toContain('word-break: normal;')
+  })
+
+  test('comment editor shares ck toolbar styling with the admin editor', () => {
+    const commentEditorSource = readSource('components/article/CommentEditor.vue')
+    const contentCss = readSource('assets/content.css')
+
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-toolbar,')
+    expect(contentCss).toContain('#comment-editor .ck.ck-toolbar {')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-button:hover:not(.ck-disabled),')
+    expect(contentCss).toContain('#comment-editor .ck.ck-button:hover:not(.ck-disabled),')
+    expect(contentCss).toContain('background: rgb(var(--color-accent) / 0.12);')
+    expect(contentCss).toContain('color: rgb(var(--color-foreground));')
+    expect(contentCss).toContain('#comment-editor .ck.ck-button.ck-on,')
+    expect(contentCss).toContain('color: rgb(var(--color-accent));')
+    expect(contentCss).toContain('#comment-editor .ck.ck-button:hover:not(.ck-disabled) .ck-icon,')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-dropdown__panel,')
+    expect(contentCss).toContain('#comment-editor .ck.ck-dropdown__panel {')
+    expect(contentCss).toContain('.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list,')
+    expect(contentCss).toContain('#comment-editor .ck.ck-dropdown__panel .ck.ck-list {')
+    expect(contentCss).toContain(
+      '.admin-editor-content .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button,'
+    )
+    expect(contentCss).toContain(
+      '#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button,'
+    )
+    expect(contentCss).toContain(
+      '#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button:hover:not(.ck-disabled),'
+    )
+    expect(contentCss).toContain(
+      '#comment-editor .ck.ck-dropdown__panel .ck.ck-list__item > .ck-button.ck-on'
+    )
+    expect(commentEditorSource).toContain('id="comment-editor"')
+    expect(commentEditorSource).not.toContain(':deep(.ck-toolbar)')
   })
 
   test('admin routes include a dedicated AI settings page', () => {

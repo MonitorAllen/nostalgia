@@ -46,8 +46,8 @@ import { htmlToPlainText, writeRichClipboard } from '@/admin/editor/richClipboar
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
+import ArticlePreviewDialog from '@/components/article/ArticlePreviewDialog.vue'
 import { useToast } from '@/composables/useToast'
-import { sanitizeHtml } from '@/util/sanitizeHtml'
 
 interface DraftPayload {
   id: string
@@ -165,12 +165,17 @@ const canSave = computed(() => {
 const coverPreview = computed(() => article.value.cover || '')
 const previewTitle = computed(() => previewOverrides.value?.title ?? articleTitle.value)
 const previewSummary = computed(() => previewOverrides.value?.summary ?? articleSummary.value)
-const previewContent = computed(() =>
-  sanitizeHtml(previewOverrides.value?.content ?? editorData.value ?? '')
-)
+const previewContent = computed(() => previewOverrides.value?.content ?? editorData.value ?? '')
 const adminArticleListLocation = computed(() => ({ name: 'adminArticles', query: route.query }))
 const savedPublishTone = computed(() => (savedIsPublished.value ? 'accent' : 'neutral'))
 const savedPublishText = computed(() => (savedIsPublished.value ? '已发布' : '草稿'))
+const previewCategoryName = computed(() => {
+  if (!article.value.category_id) return ''
+  return (
+    categories.value.find((category) => String(category.id) === String(article.value.category_id))
+      ?.name || '分类'
+  )
+})
 
 const polishPanelTitle = computed(() => {
   if (polishTarget.value === 'title') return '标题候选'
@@ -1336,65 +1341,17 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <Teleport to="body">
-      <div
-        v-if="previewOpen"
-        class="fixed inset-0 z-50 overflow-y-auto bg-background/72 p-4 backdrop-blur-sm"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="admin-article-preview-title"
-        @click.self="closePreview"
-      >
-        <div class="mx-auto my-6 w-full max-w-[860px]">
-          <div class="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p class="m-0 text-xs font-bold text-muted-foreground">实际阅读效果</p>
-              <h2 id="admin-article-preview-title" class="m-0 text-xl font-black text-foreground">
-                文章预览
-              </h2>
-            </div>
-            <AppButton variant="secondary" size="icon" aria-label="关闭预览" @click="closePreview">
-              <X class="size-4" aria-hidden="true" />
-            </AppButton>
-          </div>
-
-          <article class="archive-surface rounded-[1.1rem] p-5 md:p-8">
-            <header class="space-y-5 border-b border-border pb-6">
-              <div class="flex flex-wrap gap-2">
-                <AppBadge v-if="article.category_id" tone="accent">
-                  {{
-                    categories.find(
-                      (category) => String(category.id) === String(article.category_id)
-                    )?.name || '分类'
-                  }}
-                </AppBadge>
-                <AppBadge :tone="isPublished ? 'accent' : 'neutral'">
-                  {{ isPublished ? '已发布' : '草稿' }}
-                </AppBadge>
-              </div>
-              <h1 class="m-0 text-3xl font-extrabold leading-tight text-foreground md:text-4xl">
-                {{ previewTitle || '无标题文章' }}
-              </h1>
-            </header>
-
-            <section
-              v-if="previewSummary"
-              class="my-6 rounded-archive border border-border bg-surface-raised p-4"
-            >
-              <p class="m-0 text-xs font-black text-muted-foreground">摘要</p>
-              <p class="m-0 mt-2 text-base leading-8 text-foreground/85">{{ previewSummary }}</p>
-            </section>
-
-            <img
-              v-if="coverPreview"
-              :src="coverPreview"
-              :alt="previewTitle || '文章封面'"
-              class="mb-6 aspect-[16/9] w-full rounded-archive object-cover"
-            />
-            <div class="reading-prose ck-content admin-preview-content" v-html="previewContent" />
-          </article>
-        </div>
-      </div>
-    </Teleport>
+    <ArticlePreviewDialog
+      :open="previewOpen"
+      :article-title="previewTitle"
+      :summary="previewSummary"
+      :content="previewContent"
+      :category-name="previewCategoryName"
+      :status-label="isPublished ? '已发布' : '草稿'"
+      :status-tone="isPublished ? 'accent' : 'neutral'"
+      :cover="coverPreview"
+      show-cover
+      @close="closePreview"
+    />
   </main>
 </template>

@@ -12,11 +12,8 @@ import {
 import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
-  Calendar,
   Check,
-  Clock,
   Copy,
-  Eye,
   Heart,
   HeartOff,
   Link as LinkIcon,
@@ -38,7 +35,6 @@ import 'prismjs/components/prism-sql.min.js'
 import 'prismjs/components/prism-typescript.min.js'
 import 'prismjs/themes/prism-solarizedlight.css'
 
-import date from '@/util/date'
 import type { Article, ArticleComments } from '@/types/article'
 import { useUserStore } from '@/store/module/user'
 import { useCommentStore } from '@/store/module/comment'
@@ -50,12 +46,11 @@ import {
 } from '@/api/article'
 import { listComments } from '@/api/comment'
 import CommentItem from '@/components/article/CommentItem.vue'
+import ArticleReader from '@/components/article/ArticleReader.vue'
 import { isUUID } from '@/util/validate'
 import { useToast } from '@/composables/useToast'
 import AppButton from '@/components/ui/AppButton.vue'
-import AppBadge from '@/components/ui/AppBadge.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
-import { sanitizeHtml } from '@/util/sanitizeHtml'
 import { shouldRenderCommentEditor } from '@/components/article/commentEditorGate'
 import { applySeoMetadata, buildArticleSeoMetadata } from '@/util/seo'
 
@@ -84,7 +79,6 @@ const replyCommentParentId = ref(0)
 
 const deleteDialogOpen = ref(false)
 const pendingDeleteId = ref<number | null>(null)
-const sanitizedArticleContent = computed(() => sanitizeHtml(article.value?.content || ''))
 const isArticlePathCopied = ref(false)
 const canRenderCommentEditor = computed(() =>
   shouldRenderCommentEditor({
@@ -444,42 +438,17 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <article v-if="article" class="archive-surface rounded-[1.1rem] p-5 md:p-8">
-      <header class="space-y-5 border-b border-border pb-6">
-        <div class="flex flex-wrap gap-2">
-          <AppBadge tone="accent">{{ article.category_name }}</AppBadge>
-          <AppBadge v-if="article.read_time">{{ article.read_time }}</AppBadge>
-        </div>
-        <h1
-          class="m-0 text-3xl font-extrabold leading-tight text-foreground md:text-4xl lg:text-[2.65rem]"
-        >
-          {{ article.title }}
-        </h1>
-        <div
-          class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-muted-foreground"
-        >
-          <span class="inline-flex items-center gap-1"
-            ><Calendar class="h-4 w-4" />{{ date.format(article.created_at, 'YYYY-MM-DD') }}</span
-          >
-          <span class="inline-flex items-center gap-1"
-            ><Heart class="h-4 w-4" />{{ article.likes }}</span
-          >
-          <span class="inline-flex items-center gap-1"
-            ><Eye class="h-4 w-4" />{{ article.views }}</span
-          >
-          <span v-if="article.read_time" class="inline-flex items-center gap-1"
-            ><Clock class="h-4 w-4" />{{ article.read_time }}</span
-          >
-        </div>
-      </header>
-
-      <section class="my-6 rounded-archive border border-border bg-surface-raised p-4">
-        <p class="m-0 text-xs font-black uppercase text-muted-foreground">摘要</p>
-        <p class="m-0 mt-2 text-base leading-8 text-foreground/85">{{ article.summary }}</p>
-      </section>
-
-      <div class="reading-prose ck-content" v-html="sanitizedArticleContent" />
-    </article>
+    <ArticleReader
+      v-if="article"
+      :title="article.title"
+      :summary="article.summary"
+      :content="article.content"
+      :category-name="article.category_name"
+      :read-time="article.read_time"
+      :created-at="article.created_at"
+      :likes="article.likes"
+      :views="article.views"
+    />
 
     <div v-else class="archive-surface rounded-archive p-8 text-center">
       <p class="m-0 text-lg font-bold">正在加载这篇文章</p>
@@ -550,7 +519,7 @@ onUnmounted(() => {
           </div>
           <AppButton size="sm" class="w-max" @click="activateCommentEditor">写评论</AppButton>
         </div>
-        <div class="mt-3 flex items-center justify-between gap-3">
+        <div v-if="canRenderCommentEditor" class="mt-3 flex items-center justify-between gap-3">
           <span class="text-sm font-semibold text-muted-foreground">{{ replyUserName }}</span>
           <div class="flex gap-2">
             <AppButton
