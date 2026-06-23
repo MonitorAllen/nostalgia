@@ -4,10 +4,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 )
+
+const DefaultResourcePath = "./resources"
 
 type Config struct {
 	Environment               string        `mapstructure:"ENVIRONMENT"`
@@ -57,6 +60,7 @@ func LoadConfig(path string) (config Config, err error) {
 	configReader.AutomaticEnv()
 	configReader.SetDefault("REDIS_CACHE_DB", 0)
 	configReader.SetDefault("REDIS_QUEUE_DB", 1)
+	configReader.SetDefault("RESOURCE_PATH", DefaultResourcePath)
 	configReader.SetDefault("AUTOMATION_SIGNATURE_TTL", 5*time.Minute)
 	configReader.SetDefault("AUTOMATION_DAILY_DRAFT_LIMIT", 1)
 	configReader.SetDefault("AI_POLISH_PROVIDER", "openai")
@@ -79,6 +83,13 @@ func LoadConfig(path string) (config Config, err error) {
 
 	err = configReader.Unmarshal(&config)
 	return
+}
+
+func ResolveResourcePath(resourcePath string) string {
+	if strings.TrimSpace(resourcePath) == "" {
+		return DefaultResourcePath
+	}
+	return resourcePath
 }
 
 func configEnvKeys() []string {

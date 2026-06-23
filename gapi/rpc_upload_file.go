@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/MonitorAllen/nostalgia/pb"
+	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/google/uuid"
 	"github.com/h2non/filetype"
 	"google.golang.org/grpc/codes"
@@ -44,7 +44,7 @@ func (server *Server) UploadFile(ctx context.Context, req *pb.UploadFileRequest)
 		return nil, status.Errorf(codes.Unimplemented, "不支持的文件类型: %s", kind.MIME.Value)
 	}
 
-	root := server.config.ResourcePath
+	root := util.ResolveResourcePath(server.config.ResourcePath)
 	folderPath := ""
 	if req.GetArticleId() != "" {
 		folderPath = filepath.Join(root, "articles", req.GetArticleId())
@@ -75,9 +75,11 @@ func (server *Server) UploadFile(ctx context.Context, req *pb.UploadFileRequest)
 		return nil, status.Errorf(codes.Internal, "保存文件失败: %v", err)
 	}
 
-	relativePath := "/" + filepath.ToSlash(fullSavePath)
-
-	relativePath = strings.Replace(relativePath, "/./", "/", 1)
+	resourceRelativePath, err := filepath.Rel(root, fullSavePath)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "生成文件访问路径失败: %v", err)
+	}
+	relativePath := "/resources/" + filepath.ToSlash(resourceRelativePath)
 
 	resp := &pb.UploadFileResponse{
 		Url:      relativePath,

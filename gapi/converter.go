@@ -15,6 +15,7 @@ func convertArticle(article db.ListAllArticlesRow) *pb.Article {
 		IsPublish:           &article.IsPublish,
 		Views:               &article.Views,
 		Likes:               &article.Likes,
+		Cover:               article.Cover,
 		Slug:                article.Slug.String,
 		CheckOutdated:       &article.CheckOutdated,
 		ReadTime:            article.ReadTime,
@@ -53,6 +54,7 @@ func convertOnlyArticle(article db.Article, needContent bool) *pb.Article {
 		DeletedAt:  timestamppb.New(article.DeletedAt),
 		Owner:      article.Owner.String(),
 		CategoryId: article.CategoryID,
+		Cover:      article.Cover,
 	}
 	if needContent {
 		pbArticle.Content = &article.Content
@@ -77,6 +79,7 @@ func convertArticleWithCategory(article db.GetArticleRow, needContent bool) *pb.
 		Owner:         article.Owner.String(),
 		CategoryId:    article.CategoryID,
 		CategoryName:  article.CategoryName.String,
+		Cover:         article.Cover,
 	}
 	if needContent {
 		pbArticle.Content = &article.Content

@@ -445,9 +445,11 @@ onUnmounted(() => {
       :content="article.content"
       :category-name="article.category_name"
       :read-time="article.read_time"
+      :cover="article.cover"
       :created-at="article.created_at"
       :likes="article.likes"
       :views="article.views"
+      show-cover
     />
 
     <div v-else class="archive-surface rounded-archive p-8 text-center">
