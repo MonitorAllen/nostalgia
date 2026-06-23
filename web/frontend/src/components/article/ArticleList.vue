@@ -5,6 +5,7 @@ import { Calendar, Eye, Heart, Tag, User } from '@lucide/vue'
 import date from '@/util/date'
 import { listArticle, searchArticles } from '@/api/article'
 import type { Article } from '@/types/article'
+import ArticleCover from './ArticleCover.vue'
 import TextHighlight from '@/components/common/TextHighlight.vue'
 import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 import PaginationControl from '@/components/ui/PaginationControl.vue'
@@ -55,10 +56,6 @@ const onPageChange = (page: number) => {
   fetchArticles(currentPage.value, limit.value)
 }
 
-const onImageError = (e: Event) => {
-  ;(e.target as HTMLImageElement).src = '/images/go.png'
-}
-
 onMounted(() => {
   fetchArticles(currentPage.value, limit.value)
 })
@@ -68,7 +65,7 @@ onMounted(() => {
   <section class="space-y-4">
     <template v-if="loading">
       <div v-for="i in 4" :key="i" class="archive-surface grid gap-4 rounded-archive p-4 md:grid-cols-[12rem_1fr]">
-        <SkeletonBlock class="h-40 w-full md:h-32" />
+        <SkeletonBlock class="aspect-[16/9] w-full md:self-start" />
         <div class="space-y-4">
           <SkeletonBlock class="h-6 w-2/3" />
           <SkeletonBlock class="h-16 w-full" />
@@ -85,13 +82,13 @@ onMounted(() => {
       >
         <RouterLink
           :to="`/article/${item.slug ? item.slug : item.id}`"
-          class="relative block aspect-[16/10] overflow-hidden bg-muted md:aspect-auto md:h-full"
+          class="relative block overflow-hidden bg-muted md:self-start"
         >
-          <img
-            class="h-full w-full object-contain p-2 transition duration-500 group-hover:scale-[1.03]"
+          <ArticleCover
             :src="item.cover"
             :alt="item.title"
-            @error="onImageError"
+            variant="list"
+            fallback-src="/images/go.png"
           />
         </RouterLink>
 

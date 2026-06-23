@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Calendar, Clock, Eye, Heart } from '@lucide/vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import date from '@/util/date'
+import ArticleCover from './ArticleCover.vue'
 import ArticleRichContent from './ArticleRichContent.vue'
 
 type BadgeTone = 'neutral' | 'accent' | 'danger' | 'warning'
@@ -67,6 +68,14 @@ const showEngagementMeta = computed(
 
 <template>
   <article class="archive-surface rounded-[1.1rem] p-5 md:p-8">
+    <ArticleCover
+      v-if="showCover && cover"
+      :src="cover"
+      :alt="displayTitle || '文章封面'"
+      variant="detail"
+      class="mb-6"
+    />
+
     <header class="space-y-5 border-b border-border pb-6">
       <div v-if="hasHeaderBadges" class="flex flex-wrap gap-2">
         <AppBadge v-if="categoryName" tone="accent">{{ categoryName }}</AppBadge>
@@ -107,13 +116,6 @@ const showEngagementMeta = computed(
       <p class="m-0 text-xs font-black uppercase text-muted-foreground">摘要</p>
       <p class="m-0 mt-2 text-pretty text-base leading-8 text-foreground/85">{{ summary }}</p>
     </section>
-
-    <img
-      v-if="showCover && cover"
-      :src="cover"
-      :alt="displayTitle || '文章封面'"
-      class="mb-6 aspect-[16/9] w-full rounded-archive object-cover"
-    />
 
     <div class="article-reader-content mt-8">
       <ArticleRichContent :content="content" :preview="previewContent" />
