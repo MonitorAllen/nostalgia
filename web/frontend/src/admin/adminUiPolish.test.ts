@@ -29,13 +29,15 @@ describe('admin UI polish contracts', () => {
     expect(source).not.toContain('src="/logo.svg"')
   })
 
-  test('article list keeps automation drafts first and renders cover thumbnails', () => {
+  test('article list keeps automation drafts first and renders shared cover thumbnails', () => {
     const source = readSource('views/admin/AdminArticleListView.vue')
 
     expect(source).toContain('visibleArticles')
     expect(source).toContain('sortAutomationDraftsFirst')
-    expect(source).toContain('coverLabel')
-    expect(source).toContain(':src="coverLabel(article)"')
+    expect(source).toContain('ArticleCover')
+    expect(source).toContain(':src="article.cover"')
+    expect(source).toContain('fallback-src="/images/go.png"')
+    expect(source).toContain('@click="openArticlePreview(article)"')
     expect(source).toContain('aria-label="搜索文章"')
     expect(source).toContain('创建时间')
     expect(source).toContain('formatDate(article.created_at)')
