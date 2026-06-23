@@ -43,6 +43,13 @@ import {
   insertSuggestionContent
 } from '@/admin/editor/markdownRichText'
 import { htmlToPlainText, writeRichClipboard } from '@/admin/editor/richClipboard'
+import AdminArticleCoverPanel from '@/admin/editor/AdminArticleCoverPanel.vue'
+import {
+  inspectArticleCoverDimensions,
+  loadArticleCoverDimensions,
+  loadArticleCoverFileDimensions,
+  type ArticleCoverInspection
+} from '@/components/article/articleCoverPolicy'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppInput from '@/components/ui/AppInput.vue'
@@ -85,6 +92,7 @@ const hasDraft = ref(false)
 const lastSavedAt = ref('')
 const loadError = ref('')
 const coverInput = ref<HTMLInputElement | null>(null)
+const coverInspection = ref<ArticleCoverInspection | null>(null)
 const editorInstance = ref<ClassicEditor | null>(null)
 const lastEditorSelectionRange = ref<any | null>(null)
 const lastEditorSelectionText = ref('')
@@ -104,6 +112,7 @@ const savedIsPublished = ref(false)
 let initialContent = ''
 let initialArticle = ''
 let aiPolishMarkerSeed = 0
+let coverInspectionToken = 0
 
 const AI_POLISH_MARKER_GROUP = 'ai-polish-target'
 
@@ -184,6 +193,36 @@ const polishPanelTitle = computed(() => {
 })
 
 const canUseAIPolish = computed(() => isLayoutReady.value && !isPolishing.value)
+
+const inspectCoverFromUrl = async (url: string) => {
+  const requestToken = ++coverInspectionToken
+
+  if (!url) {
+    coverInspection.value = null
+    return
+  }
+
+  try {
+    const dimensions = await loadArticleCoverDimensions(url)
+    if (requestToken !== coverInspectionToken) return
+    coverInspection.value = inspectArticleCoverDimensions(dimensions)
+  } catch {
+    if (requestToken !== coverInspectionToken) return
+    coverInspection.value = inspectArticleCoverDimensions(null)
+  }
+}
+
+const inspectCoverFromFile = async (file: File) => {
+  try {
+    coverInspection.value = inspectArticleCoverDimensions(await loadArticleCoverFileDimensions(file))
+  } catch {
+    coverInspection.value = inspectArticleCoverDimensions(null)
+  }
+}
+
+watch(coverPreview, (nextCover) => {
+  void inspectCoverFromUrl(nextCover)
+})
 
 const snapshotArticle = () =>
   JSON.stringify({
@@ -848,6 +887,8 @@ const handleCoverInput = async (event: Event) => {
 
   if (!article.value.id) return
 
+  void inspectCoverFromFile(file!)
+
   isCoverUploading.value = true
 
   try {
@@ -1287,54 +1328,21 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="space-y-3">
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-sm font-bold text-foreground">封面图</span>
-                <input
-                  ref="coverInput"
-                  type="file"
-                  :accept="ADMIN_IMAGE_ACCEPT"
-                  class="hidden"
-                  @change="handleCoverInput"
-                />
-                <AppButton
-                  variant="secondary"
-                  size="sm"
-                  :disabled="isCoverUploading"
-                  @click="openCoverPicker"
-                >
-                  <ImagePlus class="size-4" aria-hidden="true" />
-                  {{ isCoverUploading ? '上传中...' : '上传' }}
-                </AppButton>
-              </div>
-
-              <div
-                v-if="coverPreview"
-                class="overflow-hidden rounded-archive border border-border bg-muted"
-              >
-                <img
-                  :src="coverPreview"
-                  :alt="articleTitle || '文章封面'"
-                  class="aspect-[16/9] w-full object-cover"
-                />
-                <div class="flex justify-end border-t border-border bg-surface p-2">
-                  <AppButton
-                    variant="ghost"
-                    size="sm"
-                    class="text-danger hover:text-danger"
-                    @click="removeCover"
-                  >
-                    <Trash2 class="size-4" aria-hidden="true" />
-                    移除封面
-                  </AppButton>
-                </div>
-              </div>
-
-              <div
-                v-else
-                class="rounded-archive border border-dashed border-border bg-surface-raised p-5 text-center"
-              >
-                <p class="m-0 text-sm font-semibold text-muted-foreground">还没有封面图</p>
-              </div>
+              <input
+                ref="coverInput"
+                type="file"
+                :accept="ADMIN_IMAGE_ACCEPT"
+                class="hidden"
+                @change="handleCoverInput"
+              />
+              <AdminArticleCoverPanel
+                :cover="coverPreview"
+                :title="articleTitle"
+                :is-uploading="isCoverUploading"
+                :inspection="coverInspection"
+                @upload="openCoverPicker"
+                @remove="removeCover"
+              />
             </div>
           </div>
         </aside>

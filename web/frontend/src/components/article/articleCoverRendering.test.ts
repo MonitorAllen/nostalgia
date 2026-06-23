@@ -60,4 +60,16 @@ describe('article cover rendering contracts', () => {
     expect(panel).toContain('inspection.warnings')
     expect(panel).toContain('ArticleCover')
   })
+
+  test('admin editor wires cover diagnostics into the cover panel', () => {
+    const view = read('views/admin/AdminArticleEditorView.vue')
+
+    expect(view).toContain("import AdminArticleCoverPanel from '@/admin/editor/AdminArticleCoverPanel.vue'")
+    expect(view).toContain('inspectArticleCoverDimensions')
+    expect(view).toContain('loadArticleCoverDimensions')
+    expect(view).toContain('loadArticleCoverFileDimensions')
+    expect(view).toContain('coverInspection')
+    expect(view).toContain('<AdminArticleCoverPanel')
+    expect(view).toContain(':inspection="coverInspection"')
+  })
 })
