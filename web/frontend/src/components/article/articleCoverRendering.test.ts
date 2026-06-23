@@ -15,6 +15,7 @@ describe('article cover rendering contracts', () => {
     expect(component).toContain('object-cover')
     expect(component).toContain('fallbackSrc')
     expect(component).toContain('handleImageError')
+    expect(component).toContain("if (props.variant === 'list') return base")
     expect(component).toContain('transition-transform duration-200')
     expect(component).not.toContain('return `${base} h-full`')
   })

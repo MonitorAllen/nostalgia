@@ -29,7 +29,7 @@ watch(
 
 const containerClass = computed(() => {
   const base = 'relative block aspect-[16/9] w-full overflow-hidden bg-muted'
-  if (props.variant === 'preview') return `${base} rounded-archive`
+  if (props.variant === 'list') return base
   return `${base} rounded-archive`
 })
 
