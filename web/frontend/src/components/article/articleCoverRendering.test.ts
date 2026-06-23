@@ -9,6 +9,8 @@ describe('article cover rendering contracts', () => {
   test('shared ArticleCover component uses a stable 16:9 object-cover container', () => {
     const component = read('components/article/ArticleCover.vue')
 
+    expect(component).toContain('<span :class="containerClass">')
+    expect(component).toContain('<img v-if="displaySrc"')
     expect(component).toContain('aspect-[16/9]')
     expect(component).toContain('object-cover')
     expect(component).toContain('fallbackSrc')

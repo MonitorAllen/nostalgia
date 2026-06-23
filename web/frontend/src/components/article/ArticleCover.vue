@@ -51,7 +51,12 @@ const handleImageError = () => {
 </script>
 
 <template>
-  <span v-if="displaySrc" :class="containerClass">
-    <img :src="displaySrc" :alt="alt" :class="imageClass" @error="handleImageError" />
+  <span :class="containerClass">
+    <img v-if="displaySrc" :src="displaySrc" :alt="alt" :class="imageClass" @error="handleImageError" />
+    <span
+      v-else
+      class="absolute inset-0 bg-muted/70"
+      aria-hidden="true"
+    />
   </span>
 </template>
