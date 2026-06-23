@@ -29,14 +29,13 @@ watch(
 
 const containerClass = computed(() => {
   const base = 'relative block aspect-[16/9] w-full overflow-hidden bg-muted'
-  if (props.variant === 'list') return `${base} h-full`
   if (props.variant === 'preview') return `${base} rounded-archive`
   return `${base} rounded-archive`
 })
 
 const imageClass = computed(() => {
-  const base = 'h-full w-full object-cover transition duration-500'
-  if (props.variant === 'list') return `${base} group-hover:scale-[1.03]`
+  const base = 'h-full w-full object-cover'
+  if (props.variant === 'list') return `${base} transition-transform duration-200 group-hover:scale-[1.03]`
   return base
 })
 
