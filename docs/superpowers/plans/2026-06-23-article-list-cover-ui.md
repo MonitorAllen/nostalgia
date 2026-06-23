@@ -65,7 +65,7 @@ Insert these tests inside the existing `describe('article cover rendering contra
     expect(view).toContain(':src="article.cover"')
     expect(view).toContain('fallback-src="/images/go.png"')
     expect(view).toContain('@click="openArticlePreview(article)"')
-    expect(view).toContain(':aria-label="`预览 ${article.title || \\'无标题文章\\'} 封面`"')
+    expect(view).toContain(":aria-label=\"`预览 ${article.title || '无标题文章'} 封面`\"")
     expect(view).not.toContain('coverLabel(article)')
     expect(view).not.toContain('@click="editArticle(article.id)"\\n            >\\n              <img')
   })
@@ -377,4 +377,3 @@ git status --short
 Expected result: only intentional, already-reviewed files remain modified or the working tree is clean.
 
 If verification required no additional edits, do not create a verification-only commit.
-
