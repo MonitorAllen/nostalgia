@@ -93,6 +93,7 @@ const lastSavedAt = ref('')
 const loadError = ref('')
 const coverInput = ref<HTMLInputElement | null>(null)
 const coverInspection = ref<ArticleCoverInspection | null>(null)
+const coverPreviewVersion = ref(0)
 const editorInstance = ref<ClassicEditor | null>(null)
 const lastEditorSelectionRange = ref<any | null>(null)
 const lastEditorSelectionText = ref('')
@@ -171,7 +172,10 @@ const canSave = computed(() => {
   return Boolean(article.value.id && isLayoutReady.value && !isSaving.value)
 })
 
-const coverPreview = computed(() => article.value.cover || '')
+const coverPreview = computed(() => {
+  const cover = article.value.cover || ''
+  return cover && coverPreviewVersion.value ? `${cover}?t=${coverPreviewVersion.value}` : cover
+})
 const previewTitle = computed(() => previewOverrides.value?.title ?? articleTitle.value)
 const previewSummary = computed(() => previewOverrides.value?.summary ?? articleSummary.value)
 const previewContent = computed(() => previewOverrides.value?.content ?? editorData.value ?? '')
@@ -904,7 +908,8 @@ const handleCoverInput = async (event: Event) => {
       content,
       type: 'cover'
     })
-    article.value.cover = `${response.data.url}?t=${Date.now()}`
+    article.value.cover = response.data.url
+    coverPreviewVersion.value = Date.now()
     toast.add({
       severity: 'success',
       summary: '封面已更新',
@@ -925,6 +930,7 @@ const handleCoverInput = async (event: Event) => {
 
 const removeCover = () => {
   article.value.cover = ''
+  coverPreviewVersion.value = 0
   coverInspection.value = null
 }
 

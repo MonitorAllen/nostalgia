@@ -67,6 +67,14 @@ func TestLoadConfigEnvironmentOverridesDotEnvFile(t *testing.T) {
 	require.Equal(t, "0.0.0.0:8080", config.HTTPServerAddress)
 }
 
+func TestLoadConfigResourcePathDefaultsToResources(t *testing.T) {
+	configPath := t.TempDir() + string(os.PathSeparator)
+
+	config, err := LoadConfig(configPath)
+	require.NoError(t, err)
+	require.Equal(t, "./resources", config.ResourcePath)
+}
+
 func TestConfigDoesNotExposeDefaultUserBootstrapEnv(t *testing.T) {
 	removedKeys := []string{
 		"DEFAULT_USER_ID",

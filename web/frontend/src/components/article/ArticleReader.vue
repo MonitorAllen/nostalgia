@@ -44,6 +44,12 @@ const props = withDefaults(
 )
 
 const displayTitle = computed(() => props.title?.trim() || '无标题文章')
+const titleClass = computed(() =>
+  [
+    'article-reader-title m-0 text-3xl font-extrabold leading-tight text-foreground md:text-4xl lg:text-[2.65rem]',
+    props.previewContent ? 'text-pretty' : 'text-balance'
+  ].join(' ')
+)
 const hasHeaderBadges = computed(
   () =>
     Boolean(props.categoryName?.trim()) ||
@@ -84,7 +90,7 @@ const showEngagementMeta = computed(
       </div>
 
       <h1
-        class="article-reader-title m-0 text-balance text-3xl font-extrabold leading-tight text-foreground md:text-4xl lg:text-[2.65rem]"
+        :class="titleClass"
       >
         {{ displayTitle }}
       </h1>

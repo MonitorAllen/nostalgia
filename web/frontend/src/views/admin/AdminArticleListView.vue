@@ -222,6 +222,15 @@ const categoryLabel = (article: AdminArticle) => {
   return article.category_name?.trim() || '未分类'
 }
 
+const defaultArticleCoverSrc = '/images/go.png'
+const articleCoverSrc = (article: AdminArticle) => {
+  const cover = article.cover?.trim() || ''
+  return cover === defaultArticleCoverSrc ? '' : cover
+}
+const hasCustomArticleCover = (article: AdminArticle) => {
+  return Boolean(articleCoverSrc(article))
+}
+
 const isActionBusy = (key: string) => activeAction.value === key
 
 onMounted(() => {
@@ -292,24 +301,29 @@ watch(
         :key="article.id"
         class="archive-surface rounded-archive p-4 transition duration-200 hover:border-accent/35 hover:bg-surface-raised/70"
       >
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div class="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div class="grid min-w-0 grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4 sm:grid-cols-[8rem_minmax(0,1fr)] lg:grid-cols-[9rem_minmax(0,1fr)]">
             <button
               type="button"
-              class="group block aspect-[16/9] w-full shrink-0 overflow-hidden rounded-archive border border-border bg-muted transition-colors hover:border-accent/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-44 lg:w-40"
+              class="group relative block aspect-[16/9] w-full overflow-hidden rounded-archive border border-border bg-muted transition-colors hover:border-accent/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               :aria-label="`预览 ${article.title || '无标题文章'} 封面`"
               @click="openArticlePreview(article)"
             >
               <ArticleCover
-                :src="article.cover"
+                :src="articleCoverSrc(article)"
                 :alt="article.title ? `${article.title} 封面` : '文章封面'"
                 variant="list"
-                fallback-src="/images/go.png"
                 class="pointer-events-none"
               />
+              <span
+                v-if="!hasCustomArticleCover(article)"
+                class="pointer-events-none absolute inset-0 flex items-center justify-center px-3 text-center text-xs font-semibold leading-5 text-muted-foreground"
+              >
+                未设置封面
+              </span>
             </button>
 
-            <div class="min-w-0 flex-1 space-y-3 sm:pt-0.5">
+            <div class="min-w-0 space-y-3 sm:pt-0.5">
               <div class="flex flex-wrap items-center gap-2">
                 <AppBadge :tone="article.is_publish ? 'accent' : 'neutral'">
                   {{ article.is_publish ? '已发布' : '草稿' }}

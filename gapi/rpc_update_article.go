@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -97,7 +98,7 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 			// 同步文章的文件列表，确保不会存在冗余文件
 			contentFileNames := util.ExtractFileNames(article.Content)
 
-			resourcePath := fmt.Sprintf("%s/%s/%s", server.config.ResourcePath, "articles", article.ID.String())
+			resourcePath := filepath.Join(util.ResolveResourcePath(server.config.ResourcePath), "articles", article.ID.String())
 			folderFiles, err := util.ListFiles(resourcePath)
 			if err != nil {
 				return err
@@ -108,7 +109,7 @@ func (server *Server) UpdateArticle(ctx context.Context, req *pb.UpdateArticleRe
 					continue
 				}
 				if !slices.Contains(contentFileNames, fileName) {
-					err := os.Remove(fmt.Sprintf("%s/%s", resourcePath, fileName))
+					err := os.Remove(filepath.Join(resourcePath, fileName))
 					if err != nil {
 						return err
 					}

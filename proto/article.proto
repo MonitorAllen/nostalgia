@@ -26,4 +26,5 @@ message Article {
   google.protobuf.Timestamp last_updated = 17;
   optional bool created_by_automation = 18;
   string automation_status = 19;
+  string cover = 20;
 }

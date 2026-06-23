@@ -30,10 +30,11 @@ func TestGetArticleAPI(t *testing.T) {
 	user, _ := randomUser(t)
 
 	article := randomGetArticleRow(t, user.ID, true)
+	article.Cover = "/resources/articles/" + article.ID.String() + "/cover.jpg"
 	unpublishedArticle := article
 	unpublishedArticle.IsPublish = false
 
-	var cacheArticle db.GetArticleRow
+	cacheArticle := article
 	cacheKey := key.GetArticleIDKey(article.ID)
 	unpublishedCacheKey := key.GetArticleIDKey(unpublishedArticle.ID)
 
@@ -48,7 +49,7 @@ func TestGetArticleAPI(t *testing.T) {
 			articleID: article.ID.String(),
 			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
 				cache.EXPECT().
-					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(&cacheArticle)).
+					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Any()).
 					Times(1).
 					Return(false, redis.Nil)
 
@@ -72,9 +73,12 @@ func TestGetArticleAPI(t *testing.T) {
 			articleID: article.ID.String(),
 			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
 				cache.EXPECT().
-					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Eq(&cacheArticle)).
+					Get(gomock.Any(), gomock.Eq(cacheKey), gomock.Any()).
 					Times(1).
-					Return(true, nil)
+					DoAndReturn(func(_ context.Context, _ string, dest *db.GetArticleRow) (bool, error) {
+						*dest = cacheArticle
+						return true, nil
+					})
 
 				store.EXPECT().GetArticle(gomock.Any(), gomock.Eq(article.ID)).Times(0)
 
@@ -207,6 +211,7 @@ func TestListArticleAPI(t *testing.T) {
 			CreatedAt: article.CreatedAt,
 			UpdatedAt: article.UpdatedAt,
 			DeletedAt: article.DeletedAt,
+			Cover:     "/resources/articles/" + article.ID.String() + "/cover.jpg",
 			Username: pgtype.Text{
 				String: user.Username,
 				Valid:  true,
@@ -337,6 +342,7 @@ func TestListArticleAPICacheHit(t *testing.T) {
 				CreatedAt: article.CreatedAt,
 				UpdatedAt: article.UpdatedAt,
 				DeletedAt: article.DeletedAt,
+				Cover:     "/resources/articles/" + article.ID.String() + "/cover.jpg",
 			},
 		},
 	}
@@ -391,6 +397,7 @@ func TestListArticleAPICacheMissStoresPage(t *testing.T) {
 			CreatedAt: article.CreatedAt,
 			UpdatedAt: article.UpdatedAt,
 			DeletedAt: article.DeletedAt,
+			Cover:     "/resources/articles/" + article.ID.String() + "/cover.jpg",
 		},
 	}
 
@@ -450,6 +457,7 @@ func TestListArticleAPICacheMissUsesSingleflight(t *testing.T) {
 			CreatedAt: article.CreatedAt,
 			UpdatedAt: article.UpdatedAt,
 			DeletedAt: article.DeletedAt,
+			Cover:     "/resources/articles/" + article.ID.String() + "/cover.jpg",
 		},
 	}
 
@@ -555,6 +563,7 @@ func TestSearchArticleAPI(t *testing.T) {
 			CreatedAt: article.CreatedAt,
 			UpdatedAt: article.UpdatedAt,
 			DeletedAt: article.DeletedAt,
+			Cover:     "/resources/articles/" + article.ID.String() + "/cover.jpg",
 			Username: pgtype.Text{
 				String: user.Username,
 				Valid:  true,
@@ -743,12 +752,13 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 		IsPublish:     randomArticle.IsPublish,
 		Owner:         randomArticle.Owner,
 		CategoryID:    randomArticle.CategoryID,
+		Cover:         "/resources/articles/" + randomArticle.ID.String() + "/cover.jpg",
 	}
 
 	unpublishedArticle := getArticleBySlugRow
 	unpublishedArticle.IsPublish = false
 
-	var cacheArticle db.GetArticleBySlugRow
+	cacheArticle := getArticleBySlugRow
 	slug := getArticleBySlugRow.Slug.String
 	articleSlugKey := key.GetArticleSlugKey(slug)
 
@@ -763,7 +773,7 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 			slug: slug,
 			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
 				cache.EXPECT().
-					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&cacheArticle)).
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Any()).
 					Times(1).
 					Return(false, redis.Nil)
 
@@ -787,9 +797,12 @@ func TestGetArticleBySlugAPI(t *testing.T) {
 			slug: slug,
 			buildStubs: func(store *mockdb.MockStore, cache *mockcache.MockCache) {
 				cache.EXPECT().
-					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Eq(&cacheArticle)).
+					Get(gomock.Any(), gomock.Eq(articleSlugKey), gomock.Any()).
 					Times(1).
-					Return(true, nil)
+					DoAndReturn(func(_ context.Context, _ string, dest *db.GetArticleBySlugRow) (bool, error) {
+						*dest = cacheArticle
+						return true, nil
+					})
 
 				store.EXPECT().GetArticleBySlug(gomock.Any(), gomock.Any()).Times(0)
 
@@ -917,6 +930,7 @@ func requireBodyMatchGetArticleBySlugRow(t *testing.T, body *bytes.Buffer, artic
 	require.Equal(t, article.Content, resp.Article.Content)
 	require.Equal(t, article.IsPublish, resp.Article.IsPublish)
 	require.Equal(t, article.Owner, resp.Article.Owner)
+	require.Equal(t, article.Cover, resp.Article.Cover)
 	require.Equal(t, article.Slug, resp.Article.Slug)
 	require.Equal(t, article.Summary, resp.Article.Summary)
 }
@@ -933,6 +947,7 @@ func requireBodyMatchSearchArticles(t *testing.T, body *bytes.Buffer, expectedRo
 	if len(expectedRows) > 0 {
 		require.Equal(t, expectedRows[0].ID, resp.Articles[0].ID)
 		require.Equal(t, expectedRows[0].Title, resp.Articles[0].Title)
+		require.Equal(t, expectedRows[0].Cover, resp.Articles[0].Cover)
 	}
 }
 
@@ -1002,6 +1017,7 @@ func requireBodyMatchGetArticleRow(t *testing.T, body *bytes.Buffer, article db.
 	require.Equal(t, article.Content, resp.Article.Content)
 	require.Equal(t, article.IsPublish, resp.Article.IsPublish)
 	require.Equal(t, article.Owner, resp.Article.Owner)
+	require.Equal(t, article.Cover, resp.Article.Cover)
 }
 
 type durationRangeMatcher struct {

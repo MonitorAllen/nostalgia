@@ -28,13 +28,19 @@ defineEmits<{
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between gap-3">
-      <div>
+      <div class="min-w-0">
         <span class="block text-sm font-bold text-foreground">封面图</span>
         <span class="block text-xs leading-5 text-muted-foreground">
           推荐 1600x900，高清可用 1920x1080，最低建议 1200x675。
         </span>
       </div>
-      <AppButton variant="secondary" size="sm" :disabled="isUploading" @click="$emit('upload')">
+      <AppButton
+        variant="secondary"
+        size="sm"
+        class="min-w-20 shrink-0 whitespace-nowrap"
+        :disabled="isUploading"
+        @click="$emit('upload')"
+      >
         <ImagePlus class="size-4" aria-hidden="true" />
         {{ isUploading ? '上传中...' : '上传' }}
       </AppButton>

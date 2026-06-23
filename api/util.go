@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type uploadFileResponse struct {
@@ -56,8 +55,12 @@ func (server *Server) uploadFile(ctx *gin.Context) {
 		return
 	}
 
-	relativePath := "/" + filepath.ToSlash(fullSavePath)
-	relativePath = strings.Replace(relativePath, "/./", "/", 1)
+	resourceRelativePath, err := filepath.Rel(baseResourceDir, fullSavePath)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("生成文件访问路径失败：%v", err)))
+		return
+	}
+	relativePath := "/resources/" + filepath.ToSlash(resourceRelativePath)
 
 	resp := uploadFileResponse{
 		Url:      relativePath,
