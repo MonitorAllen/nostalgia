@@ -73,11 +73,13 @@ describe('article cover rendering contracts', () => {
     expect(view).toContain(':inspection="coverInspection"')
     expect(view).toContain('const requestToken = ++coverInspectionToken')
     expect(view).toContain('if (requestToken !== coverInspectionToken) return')
+    expect(view).toContain('coverInspection.value = null')
     expect(view.indexOf('const requestToken = ++coverInspectionToken')).toBeLessThan(
       view.indexOf('if (requestToken !== coverInspectionToken) return')
     )
     expect(view.indexOf('void inspectCoverFromFile(file!)')).toBeLessThan(
       view.indexOf('if (!article.value.id) return')
     )
+    expect(view).toContain("const coverInspection = ref<ArticleCoverInspection | null>(null)")
   })
 })

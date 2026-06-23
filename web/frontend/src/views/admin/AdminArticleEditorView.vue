@@ -198,6 +198,7 @@ const inspectCoverFromUrl = async (url: string) => {
   const requestToken = ++coverInspectionToken
 
   if (!url) {
+    if (requestToken !== coverInspectionToken) return
     coverInspection.value = null
     return
   }
@@ -924,6 +925,7 @@ const handleCoverInput = async (event: Event) => {
 
 const removeCover = () => {
   article.value.cover = ''
+  coverInspection.value = null
 }
 
 const plainSuggestionText = (value: string) => {

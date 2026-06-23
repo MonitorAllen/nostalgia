@@ -67,6 +67,7 @@ describe('seo helpers', () => {
     expect(metadata.robots).toBe('index,follow')
     expect(metadata.openGraph?.type).toBe('article')
     expect(metadata.openGraph?.image).toBe('https://blog.example.com/resources/covers/redis.png')
+    expect(metadata.twitterCard).toBe('summary_large_image')
     expect(metadata.jsonLd).toMatchObject({
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
@@ -79,6 +80,19 @@ describe('seo helpers', () => {
       dateModified: '2026-06-11T08:00:00Z',
       mainEntityOfPage: 'https://blog.example.com/article/redis-cache-consistency'
     })
+    expect(metadata.jsonLd).toMatchObject({
+      image: 'https://blog.example.com/resources/covers/redis.png'
+    })
+  })
+
+  test('uses summary twitter card when an article has no cover image', () => {
+    const metadata = buildArticleSeoMetadata(
+      { ...article, cover: '' },
+      { siteOrigin: 'https://blog.example.com/' }
+    )
+
+    expect(metadata.openGraph?.image).toBeUndefined()
+    expect(metadata.twitterCard).toBe('summary')
   })
 
   test('marks private routes noindex and public routes indexable', () => {
