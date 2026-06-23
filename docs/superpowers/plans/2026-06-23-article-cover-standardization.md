@@ -322,8 +322,13 @@ const handleImageError = () => {
 </script>
 
 <template>
-  <span v-if="displaySrc" :class="containerClass">
-    <img :src="displaySrc" :alt="alt" :class="imageClass" @error="handleImageError" />
+  <span :class="containerClass">
+    <img v-if="displaySrc" :src="displaySrc" :alt="alt" :class="imageClass" @error="handleImageError" />
+    <span
+      v-else
+      class="absolute inset-0 bg-muted/70"
+      aria-hidden="true"
+    />
   </span>
 </template>
 ```
@@ -469,7 +474,7 @@ Replace the image `RouterLink` with:
 ```vue
 <RouterLink
   :to="`/article/${item.slug ? item.slug : item.id}`"
-  class="relative block aspect-[16/9] overflow-hidden bg-muted md:h-full"
+  class="relative block overflow-hidden bg-muted md:self-start"
 >
   <ArticleCover
     :src="item.cover"
@@ -489,7 +494,7 @@ Update the loading skeleton image block from:
 to:
 
 ```vue
-<SkeletonBlock class="aspect-[16/9] w-full md:h-full" />
+<SkeletonBlock class="aspect-[16/9] w-full md:self-start" />
 ```
 
 - [ ] **Step 6: Run rendering tests**
