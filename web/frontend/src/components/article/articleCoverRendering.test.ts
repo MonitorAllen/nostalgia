@@ -49,6 +49,31 @@ describe('article cover rendering contracts', () => {
     expect(list).not.toContain('md:h-full')
   })
 
+  test('public article list presents covers as medium-emphasis reading cards', () => {
+    const list = read('components/article/ArticleList.vue')
+
+    expect(list).toContain("import ArticleCover from './ArticleCover.vue'")
+    expect(list).toContain('md:grid-cols-[15rem_minmax(0,1fr)]')
+    expect(list).toContain('variant="list"')
+    expect(list).toContain('fallback-src="/images/go.png"')
+    expect(list).toContain('md:aspect-[16/9]')
+    expect(list).toContain('group-hover:border-accent/35')
+    expect(list).not.toContain('md:grid-cols-[13rem_1fr]')
+  })
+
+  test('admin article list uses shared covers and previews from cover clicks', () => {
+    const view = read('views/admin/AdminArticleListView.vue')
+
+    expect(view).toContain("import ArticleCover from '@/components/article/ArticleCover.vue'")
+    expect(view).toContain('<ArticleCover')
+    expect(view).toContain(':src="article.cover"')
+    expect(view).toContain('fallback-src="/images/go.png"')
+    expect(view).toContain('@click="openArticlePreview(article)"')
+    expect(view).toContain(":aria-label=\"`预览 ${article.title || '无标题文章'} 封面`\"")
+    expect(view).not.toContain('coverLabel(article)')
+    expect(view).not.toContain('@click="editArticle(article.id)"\n            >\n              <img')
+  })
+
   test('admin cover panel exposes guidance, warnings, and multi-surface previews', () => {
     const panel = read('admin/editor/AdminArticleCoverPanel.vue')
 

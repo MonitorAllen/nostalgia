@@ -64,8 +64,12 @@ onMounted(() => {
 <template>
   <section class="space-y-4">
     <template v-if="loading">
-      <div v-for="i in 4" :key="i" class="archive-surface grid gap-4 rounded-archive p-4 md:grid-cols-[12rem_1fr]">
-        <SkeletonBlock class="aspect-[16/9] w-full md:self-start" />
+      <div
+        v-for="i in 4"
+        :key="i"
+        class="archive-surface grid gap-4 rounded-archive p-3 md:grid-cols-[15rem_minmax(0,1fr)] md:p-4"
+      >
+        <SkeletonBlock class="aspect-[16/9] w-full rounded-archive md:self-start" />
         <div class="space-y-4">
           <SkeletonBlock class="h-6 w-2/3" />
           <SkeletonBlock class="h-16 w-full" />
@@ -78,11 +82,11 @@ onMounted(() => {
       <article
         v-for="item in articles"
         :key="item.id"
-        class="group archive-surface grid overflow-hidden rounded-archive transition duration-300 hover:-translate-y-0.5 hover:border-accent/35 md:grid-cols-[13rem_1fr]"
+        class="group archive-surface grid overflow-hidden rounded-archive transition duration-300 hover:-translate-y-0.5 hover:border-accent/35 md:grid-cols-[15rem_minmax(0,1fr)] md:p-3"
       >
         <RouterLink
           :to="`/article/${item.slug ? item.slug : item.id}`"
-          class="relative block overflow-hidden bg-muted md:self-start"
+          class="relative block overflow-hidden rounded-archive border border-border bg-muted transition-colors group-hover:border-accent/35 md:aspect-[16/9] md:self-start"
         >
           <ArticleCover
             :src="item.cover"
@@ -92,7 +96,7 @@ onMounted(() => {
           />
         </RouterLink>
 
-        <div class="flex min-w-0 flex-col justify-between gap-4 p-4">
+        <div class="flex min-w-0 flex-col justify-between gap-4 p-4 md:px-2 md:py-1">
           <div class="space-y-2">
             <div class="flex flex-wrap items-center gap-2">
               <AppBadge tone="accent">
@@ -103,7 +107,7 @@ onMounted(() => {
             </div>
 
             <RouterLink :to="`/article/${item.slug ? item.slug : item.id}`" class="block">
-              <h2 class="m-0 text-xl font-black leading-snug text-foreground transition group-hover:text-accent md:text-2xl">
+              <h2 class="m-0 text-xl font-black leading-snug text-foreground transition-colors group-hover:text-accent md:text-[1.45rem]">
                 <TextHighlight :content="item.title" :keyword="props.keyword" />
               </h2>
             </RouterLink>
