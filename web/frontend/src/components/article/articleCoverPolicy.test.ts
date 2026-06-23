@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
   ARTICLE_COVER_ASPECT_RATIO,
+  ARTICLE_COVER_HIGH_RES_HEIGHT,
+  ARTICLE_COVER_HIGH_RES_WIDTH,
   ARTICLE_COVER_MIN_HEIGHT,
   ARTICLE_COVER_MIN_WIDTH,
+  ARTICLE_COVER_RATIO_TOLERANCE,
   ARTICLE_COVER_RECOMMENDED_HEIGHT,
   ARTICLE_COVER_RECOMMENDED_WIDTH,
   inspectArticleCoverDimensions
@@ -11,8 +14,11 @@ import {
 describe('article cover policy', () => {
   test('defines the canonical 16:9 cover standard', () => {
     expect(ARTICLE_COVER_ASPECT_RATIO).toBe(16 / 9)
+    expect(ARTICLE_COVER_RATIO_TOLERANCE).toBe(0.12)
     expect(ARTICLE_COVER_RECOMMENDED_WIDTH).toBe(1600)
     expect(ARTICLE_COVER_RECOMMENDED_HEIGHT).toBe(900)
+    expect(ARTICLE_COVER_HIGH_RES_WIDTH).toBe(1920)
+    expect(ARTICLE_COVER_HIGH_RES_HEIGHT).toBe(1080)
     expect(ARTICLE_COVER_MIN_WIDTH).toBe(1200)
     expect(ARTICLE_COVER_MIN_HEIGHT).toBe(675)
   })
