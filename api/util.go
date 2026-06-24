@@ -2,12 +2,14 @@ package api
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/MonitorAllen/nostalgia/util"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type uploadFileResponse struct {
@@ -23,12 +25,29 @@ func (server *Server) uploadFile(ctx *gin.Context) {
 	articleID := ctx.PostForm("article_id")
 	uploadType := ctx.PostForm("upload_type")
 
-	baseResourceDir := "./resources"
+	baseResourceDir := util.ResolveResourcePath(server.config.ResourcePath)
+	absBaseResourceDir, err := filepath.Abs(baseResourceDir)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("无法解析资源路径: %v", err)))
+		return
+	}
+
 	var folderPath string
 	if articleID != "" {
-		folderPath = filepath.Join(baseResourceDir, articleID)
+		// Validate articleID is a valid UUID to prevent path traversal
+		validID, err := util.ValidateArticleID(articleID)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("无效的文章ID: %v", err)))
+			return
+		}
+		safePath, err := util.SafeJoinPath(absBaseResourceDir, validID.String())
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("路径不合法: %v", err)))
+			return
+		}
+		folderPath = safePath
 	} else {
-		folderPath = filepath.Join(baseResourceDir, "temp")
+		folderPath = filepath.Join(absBaseResourceDir, "temp")
 	}
 
 	if err := os.MkdirAll(folderPath, 0755); err != nil {
@@ -44,6 +63,7 @@ func (server *Server) uploadFile(ctx *gin.Context) {
 		newUUID, err := uuid.NewUUID()
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("生成文件名失败")))
+			return
 		}
 		saveFileName = fmt.Sprintf("%s.%s", newUUID.String(), fileExt)
 	}
@@ -55,7 +75,7 @@ func (server *Server) uploadFile(ctx *gin.Context) {
 		return
 	}
 
-	resourceRelativePath, err := filepath.Rel(baseResourceDir, fullSavePath)
+	resourceRelativePath, err := filepath.Rel(absBaseResourceDir, fullSavePath)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("生成文件访问路径失败：%v", err)))
 		return
