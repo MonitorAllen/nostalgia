@@ -79,7 +79,7 @@ func buildAutomationDraftEmail(payload PayloadNotifyAutomationDraft) (string, st
 分类：%s<br/>
 模型：%s<br/>
 幂等键：%s<br/>
-审核入口：<a target="blank" href="%s">%s</a><br/>`,
+审核入口：<a target="_blank" href="%s">%s</a><br/>`,
 			payload.Title,
 			payload.CategoryName,
 			payload.GenerationModel,
