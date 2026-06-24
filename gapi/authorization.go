@@ -3,12 +3,14 @@ package gapi
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 const (
@@ -45,6 +47,12 @@ func (server *Server) authorizeAdmin(ctx context.Context) (*token.Payload, strin
 	}
 	if payload.Role != util.Admin {
 		return nil, "", status.Error(codes.PermissionDenied, "admin role required")
+	}
+
+	// Check if user has been disabled
+	var disabled bool
+	if found, _ := server.cache.Get(ctx, key.GetUserDisabledKey(payload.UserID.String()), &disabled); found && disabled {
+		return nil, "", status.Error(codes.PermissionDenied, "account disabled")
 	}
 
 	return payload, accessToken, nil

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -33,6 +34,9 @@ func (server *Server) DisableUser(ctx context.Context, req *pb.DisableUserReques
 		}
 		return nil, status.Errorf(codes.Internal, "failed to disable user: %v", err)
 	}
+
+	// Mark user as disabled in cache so active tokens are rejected
+	_ = server.cache.Set(ctx, key.GetUserDisabledKey(id.String()), true, 0)
 
 	return &pb.DisableUserResponse{User: convertUser(result.User)}, nil
 }

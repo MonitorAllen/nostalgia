@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/pb"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -29,6 +30,9 @@ func (server *Server) EnableUser(ctx context.Context, req *pb.EnableUserRequest)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to enable user: %v", err)
 	}
+
+	// Remove disabled flag from cache so user can use tokens again
+	_ = server.cache.Del(ctx, key.GetUserDisabledKey(id.String()))
 
 	return &pb.EnableUserResponse{User: convertUser(user)}, nil
 }
