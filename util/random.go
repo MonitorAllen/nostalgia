@@ -1,37 +1,52 @@
 package util
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"math/rand"
+	mathrand "math/rand"
 	"strings"
 	"time"
 )
 
 //goland:noinspection SpellCheckingInspection
-const alphabet = "abcdefghijklmnopqrstuvwsyz"
+const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	mathrand.Seed(time.Now().UnixNano())
 }
 
-// RandomInt generates a random integer between min an max
+// RandomInt generates a random integer between min and max.
+// NOTE: Uses math/rand — suitable for tests and non-security purposes only.
 func RandomInt(min, max int64) int64 {
-	return min + rand.Int63n(max-min+1)
+	return min + mathrand.Int63n(max-min+1)
 }
 
-// RandomString generates a random string of length n
+// RandomString generates a random string of length n.
+// NOTE: Uses math/rand — suitable for tests and non-security purposes only.
 func RandomString(n int) string {
 	var sb strings.Builder
 	k := len(alphabet)
 
 	for i := 0; i < n; i++ {
-		c := alphabet[rand.Intn(k)]
+		c := alphabet[mathrand.Intn(k)]
 		sb.WriteByte(c)
 	}
 
 	return sb.String()
+}
+
+// SecureRandomString generates a cryptographically secure random hex string.
+// The returned string has length 2*n (hex-encoded n random bytes).
+// Use this for security-sensitive tokens (email verification, password resets, etc.).
+func SecureRandomString(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("crypto/rand read failed: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func RandUserID() uuid.UUID {
@@ -42,24 +57,24 @@ func RandUserID() uuid.UUID {
 	return UserID
 }
 
-// RandomOwner generates a random owner name
+// RandomOwner generates a random owner name (test only)
 func RandomOwner() string {
 	return RandomString(6)
 }
 
-// RandomMoney generates a random amount of money
+// RandomMoney generates a random amount of money (test only)
 func RandomMoney() int64 {
 	return RandomInt(0, 1000)
 }
 
-// RandomCurrency generates a random currency code
+// RandomCurrency generates a random currency code (test only)
 func RandomCurrency() string {
 	currencies := []string{RMB, EUR, USD, CAD}
 	n := len(currencies)
-	return currencies[rand.Intn(n)]
+	return currencies[mathrand.Intn(n)]
 }
 
-// RandomEmail generates a random email
+// RandomEmail generates a random email (test only)
 func RandomEmail() string {
 	return fmt.Sprintf("%s@email.com", RandomString(6))
 }

@@ -71,7 +71,9 @@ func uploadFileMiddleware(config util.Config) gin.HandlerFunc {
 		openFile, err := file.Open()
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse(errors.New("无法读取上传的文件")))
+			return
 		}
+		defer openFile.Close()
 
 		// 读取文件的前 261 个字节
 		head := make([]byte, 261)

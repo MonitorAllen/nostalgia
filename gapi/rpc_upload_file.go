@@ -45,11 +45,25 @@ func (server *Server) UploadFile(ctx context.Context, req *pb.UploadFileRequest)
 	}
 
 	root := util.ResolveResourcePath(server.config.ResourcePath)
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "无法解析资源路径: %v", err)
+	}
+
 	folderPath := ""
 	if req.GetArticleId() != "" {
-		folderPath = filepath.Join(root, "articles", req.GetArticleId())
+		// Validate articleId is a valid UUID to prevent path traversal
+		validID, err := util.ValidateArticleID(req.GetArticleId())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "无效的文章ID: %v", err)
+		}
+		safePath, err := util.SafeJoinPath(absRoot, "articles", validID.String())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "路径不合法: %v", err)
+		}
+		folderPath = safePath
 	} else {
-		folderPath = filepath.Join(root, "temp")
+		folderPath = filepath.Join(absRoot, "temp")
 	}
 
 	err = os.MkdirAll(folderPath, os.ModePerm)
@@ -75,7 +89,7 @@ func (server *Server) UploadFile(ctx context.Context, req *pb.UploadFileRequest)
 		return nil, status.Errorf(codes.Internal, "保存文件失败: %v", err)
 	}
 
-	resourceRelativePath, err := filepath.Rel(root, fullSavePath)
+	resourceRelativePath, err := filepath.Rel(absRoot, fullSavePath)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "生成文件访问路径失败: %v", err)
 	}
