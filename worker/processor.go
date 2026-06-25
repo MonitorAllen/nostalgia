@@ -6,6 +6,7 @@ import (
 	db "github.com/MonitorAllen/nostalgia/db/sqlc"
 	"github.com/MonitorAllen/nostalgia/internal/cache"
 	"github.com/MonitorAllen/nostalgia/mail"
+	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
@@ -24,6 +25,7 @@ type RedisTaskProcessor struct {
 	store  db.Store
 	cache  cache.Cache
 	mailer mail.EmailSender
+	config util.Config
 }
 
 const (
@@ -31,7 +33,7 @@ const (
 	QueueDefault  = "default"
 )
 
-func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, cache cache.Cache, mailer mail.EmailSender) TaskProcessor {
+func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, cache cache.Cache, mailer mail.EmailSender, config util.Config) TaskProcessor {
 	logger := NewLogger()
 	redis.SetLogger(logger)
 
@@ -55,6 +57,7 @@ func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, cache 
 		store:  store,
 		cache:  cache,
 		mailer: mailer,
+		config: config,
 	}
 }
 
