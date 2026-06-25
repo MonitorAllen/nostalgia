@@ -37,13 +37,14 @@ FROM
 WHERE
     category_id = $1
     AND is_publish = true
+    AND a.deleted_at = '0001-01-01 00:00:00Z'
 ORDER BY a.created_at DESC
 LIMIT $2
 OFFSET
     $3;
 
 -- name: CountArticlesByCategoryID :one
-SELECT count(*) FROM articles WHERE category_id = $1;
+SELECT count(*) FROM articles WHERE category_id = $1 AND deleted_at = '0001-01-01 00:00:00Z';
 
 -- name: GetCategory :one
 SELECT * FROM categories WHERE id = @id LIMIT 1;

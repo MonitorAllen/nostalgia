@@ -31,6 +31,7 @@ SELECT count(*)
 FROM articles
 WHERE is_publish = COALESCE($1, is_publish)
   AND category_id = COALESCE($2, category_id)
+  AND deleted_at = '0001-01-01 00:00:00Z'
 `
 
 type CountArticlesParams struct {
@@ -609,6 +610,7 @@ FROM articles a
          LEFT JOIN users u on a.owner = u.id
 WHERE a.is_publish = COALESCE($3, a.is_publish)
   AND a.category_id = COALESCE($4, a.category_id)
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
 ORDER BY a.created_at DESC
 LIMIT $1 OFFSET $2
 `
