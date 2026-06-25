@@ -3,13 +3,16 @@ package api
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"slices"
+	"strings"
+
+	"github.com/MonitorAllen/nostalgia/internal/cache"
+	"github.com/MonitorAllen/nostalgia/internal/cache/key"
 	"github.com/MonitorAllen/nostalgia/token"
 	"github.com/MonitorAllen/nostalgia/util"
 	"github.com/gin-gonic/gin"
 	"github.com/h2non/filetype"
-	"net/http"
-	"slices"
-	"strings"
 )
 
 const (
@@ -18,7 +21,7 @@ const (
 	authorizationPayloadKey = "authorization_payload"
 )
 
-func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
+func authMiddleware(tokenMaker token.Maker, c cache.Cache) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
 		if len(authorizationHeader) == 0 {
@@ -45,6 +48,13 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		payload, err := tokenMaker.VerifyToken(accessToken)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+
+		// Check if user has been disabled after token was issued
+		var disabled bool
+		if found, _ := c.Get(ctx, key.GetUserDisabledKey(payload.UserID.String()), &disabled); found && disabled {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, errorResponse(errors.New("account disabled")))
 			return
 		}
 

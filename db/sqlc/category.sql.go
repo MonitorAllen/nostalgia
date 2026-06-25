@@ -14,7 +14,7 @@ import (
 )
 
 const countArticlesByCategoryID = `-- name: CountArticlesByCategoryID :one
-SELECT count(*) FROM articles WHERE category_id = $1
+SELECT count(*) FROM articles WHERE category_id = $1 AND deleted_at = '0001-01-01 00:00:00Z'
 `
 
 func (q *Queries) CountArticlesByCategoryID(ctx context.Context, categoryID int64) (int64, error) {
@@ -134,6 +134,7 @@ FROM
 WHERE
     category_id = $1
     AND is_publish = true
+    AND a.deleted_at = '0001-01-01 00:00:00Z'
 ORDER BY a.created_at DESC
 LIMIT $2
 OFFSET

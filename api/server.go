@@ -101,7 +101,7 @@ func (server *Server) setupRouter() {
 		public.GET("/categories/:id", server.getCategory)
 	}
 
-	authRoutes := router.Group("/api").Use(authMiddleware(server.tokenMaker))
+	authRoutes := router.Group("/api").Use(authMiddleware(server.tokenMaker, server.cache))
 	{
 		authRoutes.POST("/comments", server.createComment)
 		authRoutes.DELETE("/comments/:id", server.deleteComment)

@@ -134,6 +134,7 @@ FROM articles a
          LEFT JOIN users u on a.owner = u.id
 WHERE a.is_publish = COALESCE(sqlc.narg(is_publish), a.is_publish)
   AND a.category_id = COALESCE(sqlc.narg(category_id), a.category_id)
+  AND a.deleted_at = '0001-01-01 00:00:00Z'
 ORDER BY a.created_at DESC
 LIMIT $1 OFFSET $2;
 
@@ -141,7 +142,8 @@ LIMIT $1 OFFSET $2;
 SELECT count(*)
 FROM articles
 WHERE is_publish = COALESCE(sqlc.narg(is_publish), is_publish)
-  AND category_id = COALESCE(sqlc.narg(category_id), category_id);
+  AND category_id = COALESCE(sqlc.narg(category_id), category_id)
+  AND deleted_at = '0001-01-01 00:00:00Z';
 
 -- name: UpdateArticle :one
 UPDATE articles

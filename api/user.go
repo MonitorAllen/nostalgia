@@ -246,7 +246,23 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(refreshPayload.UserID, refreshPayload.Username, refreshPayload.Role, server.config.AccessTokenDuration)
+	// Check if user has been disabled since the refresh token was issued
+	user, err := server.store.GetUser(ctx, refreshPayload.UserID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("user not found")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	if user.DisabledAt.Valid {
+		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("account disabled")))
+		return
+	}
+
+	// Use current role from DB, not stale role from refresh token
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(refreshPayload.UserID, refreshPayload.Username, user.Role, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

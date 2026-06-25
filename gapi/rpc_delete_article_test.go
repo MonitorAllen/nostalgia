@@ -34,6 +34,12 @@ func TestDeleteArticleInvalidatesDetailAndListCaches(t *testing.T) {
 	taskDistributor := mockwk.NewMockTaskDistributor(ctrl)
 	redisCache := mockcache.NewMockCache(ctrl)
 
+	// authorizeAdmin checks the disabled-user flag; report "active"
+	redisCache.EXPECT().
+		Get(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(false, nil).
+		AnyTimes()
+
 	store.EXPECT().GetArticle(gomock.Any(), gomock.Eq(articleID)).Times(1).Return(article, nil)
 	taskDistributor.EXPECT().
 		DistributeTaskDelayDeleteCacheDefault(
